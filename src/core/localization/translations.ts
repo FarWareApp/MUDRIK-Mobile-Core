@@ -17,6 +17,19 @@ export const translations = {
     restoreConversationFailed:
       'تعذر استعادة المحادثة المحلية.',
     retry: 'إعادة المحاولة',
+
+    searchConversations: 'البحث في المحادثات',
+    activeConversations: 'الحالية',
+    archivedConversations: 'المؤرشفة',
+    noConversations: 'لا توجد محادثات.',
+    loadingConversations: 'جارٍ تحميل المحادثات…',
+    conversationHistoryFailed:
+      'تعذر تحميل سجل المحادثات.',
+    deleteConversation: 'حذف المحادثة',
+    deleteConversationMessage:
+      'هل تريد حذف هذه المحادثة نهائيًا؟',
+    cancel: 'إلغاء',
+    delete: 'حذف',
   },
 
   de: {
@@ -37,6 +50,20 @@ export const translations = {
     restoreConversationFailed:
       'Die lokale Unterhaltung konnte nicht wiederhergestellt werden.',
     retry: 'Erneut versuchen',
+
+    searchConversations: 'Unterhaltungen durchsuchen',
+    activeConversations: 'Aktiv',
+    archivedConversations: 'Archiviert',
+    noConversations: 'Keine Unterhaltungen vorhanden.',
+    loadingConversations:
+      'Unterhaltungen werden geladen…',
+    conversationHistoryFailed:
+      'Unterhaltungsverlauf konnte nicht geladen werden.',
+    deleteConversation: 'Unterhaltung löschen',
+    deleteConversationMessage:
+      'Diese Unterhaltung endgültig löschen?',
+    cancel: 'Abbrechen',
+    delete: 'Löschen',
   },
 
   en: {
@@ -57,6 +84,20 @@ export const translations = {
     restoreConversationFailed:
       'The local conversation could not be restored.',
     retry: 'Retry',
+
+    searchConversations: 'Search conversations',
+    activeConversations: 'Active',
+    archivedConversations: 'Archived',
+    noConversations: 'No conversations.',
+    loadingConversations:
+      'Loading conversations…',
+    conversationHistoryFailed:
+      'Conversation history could not be loaded.',
+    deleteConversation: 'Delete conversation',
+    deleteConversationMessage:
+      'Delete this conversation permanently?',
+    cancel: 'Cancel',
+    delete: 'Delete',
   },
 } as const;
 

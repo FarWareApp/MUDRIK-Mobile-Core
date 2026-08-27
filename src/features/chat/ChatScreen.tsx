@@ -15,6 +15,7 @@ import { DraftRepository } from '../../contracts/DraftRepository';
 import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { useActiveConversation } from '../conversations/ActiveConversationProvider';
 import { ChatBootstrapState } from './components/ChatBootstrapState';
 import { ChatErrorBanner } from './components/ChatErrorBanner';
 import { ChatHeader } from './components/ChatHeader';
@@ -39,6 +40,11 @@ export function ChatScreen({
   draftRepository,
 }: Props) {
   const { colors } = useTheme();
+
+  const {
+    activeConversationId,
+    activateConversation,
+  } = useActiveConversation();
 
   const [
     quickActionsOpen,
@@ -67,6 +73,10 @@ export function ChatScreen({
     conversationRepository,
     messageRepository,
     draftRepository,
+    selectedConversationId:
+      activeConversationId,
+    onConversationActivated:
+      activateConversation,
   });
 
   const navigate = (

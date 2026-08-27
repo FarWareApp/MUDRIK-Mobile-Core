@@ -20,6 +20,8 @@ import {
 } from '../../../contracts/MessageTransport';
 import { TransportCancelledError } from '../../../contracts/TransportCancelledError';
 import { diagnosticsService } from '../../../core/diagnostics/DiagnosticsService';
+import { createConversationId } from '../../conversations/createConversationId';
+import { deriveConversationTitle } from '../../conversations/deriveConversationTitle';
 import { ChatMessage } from '../types';
 
 export type ChatSendError = {
@@ -32,19 +34,18 @@ type Dependencies = {
   conversationRepository: ConversationRepository;
   messageRepository: MessageRepository;
   draftRepository: DraftRepository;
+  selectedConversationId: string | null;
+  onConversationActivated: (id: string) => void;
 };
 
-function createConversationId(): string {
-  return `conversation-${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2, 10)}`;
-}
 
 export function useConversationController({
   transport,
   conversationRepository,
   messageRepository,
   draftRepository,
+  selectedConversationId,
+  onConversationActivated,
 }: Dependencies) {
   const activeTaskRef =
     useRef<MessageTransportTask | null>(null);
@@ -54,6 +55,9 @@ export function useConversationController({
 
   const [conversationId, setConversationId] =
     useState<string | null>(null);
+
+  const [conversationTitle, setConversationTitle] =
+    useState('');
 
   const [messages, setMessages] =
     useState<ChatMessage[]>([]);
@@ -110,7 +114,11 @@ export function useConversationController({
 
       try {
         let conversation =
-          await conversationRepository.getMostRecent();
+          selectedConversationId
+            ? await conversationRepository.getById(
+                selectedConversationId,
+              )
+            : await conversationRepository.getMostRecent();
 
         if (!conversation) {
           const id =
@@ -118,6 +126,12 @@ export function useConversationController({
 
           conversation =
             await conversationRepository.getById(id);
+
+          if (conversation) {
+            onConversationActivated(
+              conversation.id,
+            );
+          }
         }
 
         if (!conversation) {
@@ -161,6 +175,9 @@ export function useConversationController({
             }));
 
         setConversationId(conversation.id);
+        setConversationTitle(
+          conversation.title,
+        );
         setMessages(restoredMessages);
         setDraft(storedDraft?.text ?? '');
 
@@ -196,6 +213,8 @@ export function useConversationController({
       createFreshConversation,
       draftRepository,
       messageRepository,
+      onConversationActivated,
+      selectedConversationId,
     ]);
 
   useEffect(() => {
@@ -302,10 +321,23 @@ export function useConversationController({
             createdAt: userMessage.createdAt,
           });
 
-          await conversationRepository.touch(
-            conversationId,
-            now,
-          );
+          if (!conversationTitle.trim()) {
+            const title =
+              deriveConversationTitle(text);
+
+            await conversationRepository.rename(
+              conversationId,
+              title,
+              now,
+            );
+
+            setConversationTitle(title);
+          } else {
+            await conversationRepository.touch(
+              conversationId,
+              now,
+            );
+          }
 
           setMessages((current) => [
             ...current,
@@ -421,6 +453,7 @@ export function useConversationController({
     [
       conversationId,
       conversationRepository,
+      conversationTitle,
       draftRepository,
       messageRepository,
       sending,
@@ -504,8 +537,11 @@ export function useConversationController({
         }
 
         setConversationId(id);
+        setConversationTitle('');
         setMessages([]);
         setDraft('');
+
+        onConversationActivated(id);
 
         diagnosticsService.record(
           'chat',
@@ -534,6 +570,7 @@ export function useConversationController({
       createFreshConversation,
       draft,
       draftRepository,
+      onConversationActivated,
     ]);
 
   return {
