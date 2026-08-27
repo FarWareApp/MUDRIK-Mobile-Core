@@ -34,6 +34,24 @@ export interface ConversationRepository {
     updatedAt: number,
   ): Promise<void>;
 
+  rename(
+    id: string,
+    title: string,
+    updatedAt: number,
+  ): Promise<void>;
+
+  setPinned(
+    id: string,
+    pinned: boolean,
+    updatedAt: number,
+  ): Promise<void>;
+
+  setArchived(
+    id: string,
+    archived: boolean,
+    updatedAt: number,
+  ): Promise<void>;
+
   delete(
     id: string,
   ): Promise<void>;

@@ -114,7 +114,7 @@ export class SQLiteConversationRepository
   }
 
   async list(
-    limit = 100,
+    limit = 500,
   ): Promise<ConversationRecord[]> {
     const database = await this.getDatabase();
 
@@ -158,6 +158,57 @@ export class SQLiteConversationRepository
         WHERE id = ?
       `,
       [updatedAt, id],
+    );
+  }
+
+  async rename(
+    id: string,
+    title: string,
+    updatedAt: number,
+  ): Promise<void> {
+    const database = await this.getDatabase();
+
+    await database.runAsync(
+      `
+        UPDATE conversations
+        SET title = ?, updated_at = ?
+        WHERE id = ?
+      `,
+      [title, updatedAt, id],
+    );
+  }
+
+  async setPinned(
+    id: string,
+    pinned: boolean,
+    updatedAt: number,
+  ): Promise<void> {
+    const database = await this.getDatabase();
+
+    await database.runAsync(
+      `
+        UPDATE conversations
+        SET is_pinned = ?, updated_at = ?
+        WHERE id = ?
+      `,
+      [pinned ? 1 : 0, updatedAt, id],
+    );
+  }
+
+  async setArchived(
+    id: string,
+    archived: boolean,
+    updatedAt: number,
+  ): Promise<void> {
+    const database = await this.getDatabase();
+
+    await database.runAsync(
+      `
+        UPDATE conversations
+        SET is_archived = ?, updated_at = ?
+        WHERE id = ?
+      `,
+      [archived ? 1 : 0, updatedAt, id],
     );
   }
 
