@@ -14,8 +14,11 @@ export type MessageTransportOutput = {
   createdAt: number;
 };
 
+export type MessageTransportTask = {
+  result: Promise<MessageTransportOutput>;
+  cancel: () => void;
+};
+
 export interface MessageTransport {
-  send(
-    input: MessageTransportInput,
-  ): Promise<MessageTransportOutput>;
+  send(input: MessageTransportInput): MessageTransportTask;
 }

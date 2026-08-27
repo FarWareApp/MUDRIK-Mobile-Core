@@ -15,18 +15,21 @@ import { spacing } from '../../../design-system/tokens/spacing';
 type Props = {
   sending: boolean;
   onSend: (text: string) => Promise<void>;
+  onStop: () => void;
 };
 
 export function MessageComposer({
   sending,
   onSend,
+  onStop,
 }: Props) {
   const [text, setText] = useState('');
 
   const { colors } = useTheme();
   const { isRTL, t } = useLocale();
 
-  const canSend = text.trim().length > 0 && !sending;
+  const canSend =
+    text.trim().length > 0 && !sending;
 
   const submit = async () => {
     if (!canSend) {
@@ -34,6 +37,7 @@ export function MessageComposer({
     }
 
     const value = text;
+
     setText('');
 
     await onSend(value);
@@ -78,6 +82,7 @@ export function MessageComposer({
         <TextInput
           value={text}
           onChangeText={setText}
+          editable={!sending}
           multiline
           maxLength={12000}
           placeholder={t('composerPlaceholder')}
@@ -94,6 +99,7 @@ export function MessageComposer({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Voice"
+          disabled={sending}
           style={styles.sideButton}
         >
           <Text
@@ -101,6 +107,7 @@ export function MessageComposer({
               styles.voiceText,
               {
                 color: colors.textSecondary,
+                opacity: sending ? 0.4 : 1,
               },
             ]}
           >
@@ -108,34 +115,50 @@ export function MessageComposer({
           </Text>
         </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Send"
-          disabled={!canSend}
-          onPress={() => {
-            void submit();
-          }}
-          style={[
-            styles.sendButton,
-            {
-              backgroundColor: canSend
-                ? colors.accent
-                : colors.surfaceElevated,
-            },
-          ]}
-        >
-          <Text
-            style={{
-              color: canSend
-                ? colors.accentText
-                : colors.textSecondary,
-              fontSize: 18,
-              fontWeight: '800',
-            }}
+        {sending ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Stop"
+            onPress={onStop}
+            style={[
+              styles.sendButton,
+              {
+                backgroundColor: colors.accent,
+              },
+            ]}
           >
-            ↑
-          </Text>
-        </Pressable>
+            <View style={styles.stopIcon} />
+          </Pressable>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Send"
+            disabled={!canSend}
+            onPress={() => {
+              void submit();
+            }}
+            style={[
+              styles.sendButton,
+              {
+                backgroundColor: canSend
+                  ? colors.accent
+                  : colors.surfaceElevated,
+              },
+            ]}
+          >
+            <Text
+              style={{
+                color: canSend
+                  ? colors.accentText
+                  : colors.textSecondary,
+                fontSize: 18,
+                fontWeight: '800',
+              }}
+            >
+              ↑
+            </Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -191,5 +214,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 21,
+  },
+
+  stopIcon: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    backgroundColor: '#FFFFFF',
   },
 });

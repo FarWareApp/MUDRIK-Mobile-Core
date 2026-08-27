@@ -10,11 +10,13 @@ import { router } from 'expo-router';
 
 import { MessageTransport } from '../../contracts/MessageTransport';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { ChatErrorBanner } from './components/ChatErrorBanner';
 import { ChatHeader } from './components/ChatHeader';
 import { MessageComposer } from './components/MessageComposer';
 import { MessageList } from './components/MessageList';
 import { QuickActionButton } from './components/QuickActionButton';
 import { QuickActionMenu } from './components/QuickActionMenu';
+import { SendingIndicator } from './components/SendingIndicator';
 import { useConversationController } from './hooks/useConversationController';
 
 type Props = {
@@ -32,7 +34,11 @@ export function ChatScreen({
   const {
     messages,
     sending,
+    error,
     send,
+    retry,
+    stop,
+    dismissError,
     clear,
   } = useConversationController(transport);
 
@@ -61,13 +67,17 @@ export function ChatScreen({
         behavior={
           Platform.OS === 'ios'
             ? 'padding'
-            : undefined
+            : 'height'
         }
       >
-        <ChatHeader onNewConversation={clear} />
+        <ChatHeader
+          onNewConversation={clear}
+        />
 
         <View style={styles.content}>
           <MessageList messages={messages} />
+
+          {sending && <SendingIndicator />}
 
           <QuickActionMenu
             visible={quickActionsOpen}
@@ -88,14 +98,27 @@ export function ChatScreen({
           <QuickActionButton
             expanded={quickActionsOpen}
             onPress={() => {
-              setQuickActionsOpen((value) => !value);
+              setQuickActionsOpen(
+                (value) => !value,
+              );
             }}
           />
         </View>
 
+        {error && (
+          <ChatErrorBanner
+            message={error.message}
+            onRetry={() => {
+              void retry();
+            }}
+            onDismiss={dismissError}
+          />
+        )}
+
         <MessageComposer
           sending={sending}
           onSend={send}
+          onStop={stop}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>
