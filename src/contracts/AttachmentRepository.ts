@@ -29,6 +29,11 @@ export interface AttachmentRepository {
     attachmentIds: string[],
   ): Promise<void>;
 
+  moveDraftAttachmentsToMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<void>;
+
   delete(
     id: string,
   ): Promise<void>;

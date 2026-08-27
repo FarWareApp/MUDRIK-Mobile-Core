@@ -229,6 +229,55 @@ export class SQLiteAttachmentRepository
     );
   }
 
+  async moveDraftAttachmentsToMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<void> {
+    const database =
+      await this.getDatabase();
+
+    await database.withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.runAsync(
+          `
+            DELETE FROM message_attachments
+            WHERE message_id = ?
+          `,
+          [messageId],
+        );
+
+        await transaction.runAsync(
+          `
+            INSERT INTO message_attachments (
+              message_id,
+              attachment_id,
+              position
+            )
+            SELECT
+              ?,
+              attachment_id,
+              position
+            FROM draft_attachments
+            WHERE conversation_id = ?
+            ORDER BY position ASC
+          `,
+          [
+            messageId,
+            conversationId,
+          ],
+        );
+
+        await transaction.runAsync(
+          `
+            DELETE FROM draft_attachments
+            WHERE conversation_id = ?
+          `,
+          [conversationId],
+        );
+      },
+    );
+  }
+
   async delete(
     id: string,
   ): Promise<void> {
