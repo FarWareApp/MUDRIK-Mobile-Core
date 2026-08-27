@@ -1,19 +1,26 @@
 import React, { PropsWithChildren } from 'react';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import { ThemeProvider } from '../../design-system/theme/ThemeProvider';
 import { LifecycleProvider } from '../lifecycle/LifecycleProvider';
 import { LocaleProvider } from '../localization/LocaleProvider';
+import { StorageBootstrapProvider } from '../storage/StorageBootstrapProvider';
 
 export function RootProviders({
   children,
 }: PropsWithChildren) {
   return (
-    <ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
       <LocaleProvider>
-        <LifecycleProvider>
-          {children}
-        </LifecycleProvider>
+        <StorageBootstrapProvider>
+          <LifecycleProvider>
+            {children}
+          </LifecycleProvider>
+        </StorageBootstrapProvider>
       </LocaleProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

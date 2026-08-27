@@ -1491,6 +1491,11 @@ asap@~2.0.3, asap@~2.0.6:
   resolved "https://registry.yarnpkg.com/asap/-/asap-2.0.6.tgz#e50347611d7e690943208bbdafebcbc2fb866d46"
   integrity sha512-BSHWgDSAiKs50o2Re8ppvp3seVHXSRM44cdSsT9FfNEUUZLOGWVCsiWaRPWM1Znn+mqZ1OfVZ3z3DWEzSp7hRA==
 
+await-lock@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/await-lock/-/await-lock-2.2.2.tgz#a95a9b269bfd2f69d22b17a321686f551152bcef"
+  integrity sha512-aDczADvlvTGajTDjcjpJMqRkOF6Qdz3YbPZm/PyW6tKPkx2hlYBzxMhEywM/tU72HrVZjgl5VCdRuMlA7pZ8Gw==
+
 babel-plugin-polyfill-corejs2@^0.4.14:
   version "0.4.17"
   resolved "https://registry.yarnpkg.com/babel-plugin-polyfill-corejs2/-/babel-plugin-polyfill-corejs2-0.4.17.tgz#198f970f1c99a856b466d1187e88ce30bd199d91"
@@ -2157,6 +2162,13 @@ expo-splash-screen@~57.0.8:
     "@expo/config-plugins" "~57.0.9"
     "@expo/image-utils" "^0.11.5"
     xml2js "0.6.0"
+
+expo-sqlite@~57.0.2:
+  version "57.0.2"
+  resolved "https://registry.yarnpkg.com/expo-sqlite/-/expo-sqlite-57.0.2.tgz#82bd3466edf5a61efbf6ef9a9d5ba0aa5797cdd4"
+  integrity sha512-5KVbT7BQFZlIcQBXKWvwBERK3ODF6PSqct27GQKukZzAjsx2B97R+mwtYqrTUtUbw71VJrQrdr9Yl2OWYC7UpA==
+  dependencies:
+    await-lock "^2.2.2"
 
 expo-status-bar@~57.0.1:
   version "57.0.1"

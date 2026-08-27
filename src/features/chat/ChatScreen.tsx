@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StyleSheet,
   View,
 } from 'react-native';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { MessageTransport } from '../../contracts/MessageTransport';
