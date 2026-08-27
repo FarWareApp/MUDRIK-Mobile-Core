@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -13,32 +13,30 @@ import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
 
 type Props = {
+  value: string;
   sending: boolean;
+  onChangeText: (text: string) => void;
   onSend: (text: string) => Promise<void>;
   onStop: () => void;
 };
 
 export function MessageComposer({
+  value,
   sending,
+  onChangeText,
   onSend,
   onStop,
 }: Props) {
-  const [text, setText] = useState('');
-
   const { colors } = useTheme();
   const { isRTL, t } = useLocale();
 
   const canSend =
-    text.trim().length > 0 && !sending;
+    value.trim().length > 0 && !sending;
 
   const submit = async () => {
     if (!canSend) {
       return;
     }
-
-    const value = text;
-
-    setText('');
 
     await onSend(value);
   };
@@ -65,6 +63,7 @@ export function MessageComposer({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Attachments"
+          disabled={sending}
           style={styles.sideButton}
         >
           <Text
@@ -72,6 +71,7 @@ export function MessageComposer({
               styles.sideButtonText,
               {
                 color: colors.textSecondary,
+                opacity: sending ? 0.4 : 1,
               },
             ]}
           >
@@ -80,8 +80,8 @@ export function MessageComposer({
         </Pressable>
 
         <TextInput
-          value={text}
-          onChangeText={setText}
+          value={value}
+          onChangeText={onChangeText}
           editable={!sending}
           multiline
           maxLength={12000}

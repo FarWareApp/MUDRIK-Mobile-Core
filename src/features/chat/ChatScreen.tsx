@@ -5,12 +5,17 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import {
+  SafeAreaView,
+} from 'react-native-safe-area-context';
 
+import { ConversationRepository } from '../../contracts/ConversationRepository';
+import { DraftRepository } from '../../contracts/DraftRepository';
+import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { ChatBootstrapState } from './components/ChatBootstrapState';
 import { ChatErrorBanner } from './components/ChatErrorBanner';
 import { ChatHeader } from './components/ChatHeader';
 import { MessageComposer } from './components/MessageComposer';
@@ -22,26 +27,47 @@ import { useConversationController } from './hooks/useConversationController';
 
 type Props = {
   transport: MessageTransport;
+  conversationRepository: ConversationRepository;
+  messageRepository: MessageRepository;
+  draftRepository: DraftRepository;
 };
 
 export function ChatScreen({
   transport,
+  conversationRepository,
+  messageRepository,
+  draftRepository,
 }: Props) {
   const { colors } = useTheme();
 
-  const [quickActionsOpen, setQuickActionsOpen] =
-    useState(false);
+  const [
+    quickActionsOpen,
+    setQuickActionsOpen,
+  ] = useState(false);
 
   const {
     messages,
+    draft,
     sending,
     error,
+    initializing,
+    initializationFailed,
+
+    setDraft,
+
     send,
     retry,
     stop,
     dismissError,
-    clear,
-  } = useConversationController(transport);
+
+    newConversation,
+    retryInitialization,
+  } = useConversationController({
+    transport,
+    conversationRepository,
+    messageRepository,
+    draftRepository,
+  });
 
   const navigate = (
     route:
@@ -72,55 +98,75 @@ export function ChatScreen({
         }
       >
         <ChatHeader
-          onNewConversation={clear}
+          onNewConversation={() => {
+            void newConversation();
+          }}
         />
 
-        <View style={styles.content}>
-          <MessageList messages={messages} />
-
-          {sending && <SendingIndicator />}
-
-          <QuickActionMenu
-            visible={quickActionsOpen}
-            onConversations={() =>
-              navigate('/conversations')
-            }
-            onProjects={() =>
-              navigate('/projects')
-            }
-            onCompanion={() =>
-              navigate('/companion')
-            }
-            onSettings={() =>
-              navigate('/settings')
-            }
-          />
-
-          <QuickActionButton
-            expanded={quickActionsOpen}
-            onPress={() => {
-              setQuickActionsOpen(
-                (value) => !value,
-              );
-            }}
-          />
-        </View>
-
-        {error && (
-          <ChatErrorBanner
-            message={error.message}
+        {initializing ||
+        initializationFailed ? (
+          <ChatBootstrapState
+            failed={initializationFailed}
             onRetry={() => {
-              void retry();
+              void retryInitialization();
             }}
-            onDismiss={dismissError}
           />
-        )}
+        ) : (
+          <>
+            <View style={styles.content}>
+              <MessageList
+                messages={messages}
+              />
 
-        <MessageComposer
-          sending={sending}
-          onSend={send}
-          onStop={stop}
-        />
+              {sending && (
+                <SendingIndicator />
+              )}
+
+              <QuickActionMenu
+                visible={quickActionsOpen}
+                onConversations={() =>
+                  navigate('/conversations')
+                }
+                onProjects={() =>
+                  navigate('/projects')
+                }
+                onCompanion={() =>
+                  navigate('/companion')
+                }
+                onSettings={() =>
+                  navigate('/settings')
+                }
+              />
+
+              <QuickActionButton
+                expanded={quickActionsOpen}
+                onPress={() => {
+                  setQuickActionsOpen(
+                    (value) => !value,
+                  );
+                }}
+              />
+            </View>
+
+            {error && (
+              <ChatErrorBanner
+                message={error.message}
+                onRetry={() => {
+                  void retry();
+                }}
+                onDismiss={dismissError}
+              />
+            )}
+
+            <MessageComposer
+              value={draft}
+              sending={sending}
+              onChangeText={setDraft}
+              onSend={send}
+              onStop={stop}
+            />
+          </>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

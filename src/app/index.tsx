@@ -6,7 +6,18 @@ import { ChatScreen } from '../features/chat/ChatScreen';
 export default function HomeRoute() {
   return (
     <ChatScreen
-      transport={appServices.messageTransport}
+      transport={
+        appServices.messageTransport
+      }
+      conversationRepository={
+        appServices.conversationRepository
+      }
+      messageRepository={
+        appServices.messageRepository
+      }
+      draftRepository={
+        appServices.draftRepository
+      }
     />
   );
 }
