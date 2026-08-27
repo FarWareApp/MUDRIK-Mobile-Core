@@ -18,6 +18,8 @@ type Props = {
   onChangeText: (text: string) => void;
   onSend: (text: string) => Promise<void>;
   onStop: () => void;
+  onAttachmentsPress?: () => void;
+  attachmentCount?: number;
 };
 
 export function MessageComposer({
@@ -26,12 +28,18 @@ export function MessageComposer({
   onChangeText,
   onSend,
   onStop,
+  onAttachmentsPress,
+  attachmentCount = 0,
 }: Props) {
   const { colors } = useTheme();
   const { isRTL, t } = useLocale();
 
   const canSend =
-    value.trim().length > 0 && !sending;
+    (
+      value.trim().length > 0 ||
+      attachmentCount > 0
+    ) &&
+    !sending;
 
   const submit = async () => {
     if (!canSend) {
@@ -64,6 +72,7 @@ export function MessageComposer({
           accessibilityRole="button"
           accessibilityLabel="Attachments"
           disabled={sending}
+          onPress={onAttachmentsPress}
           style={styles.sideButton}
         >
           <Text
