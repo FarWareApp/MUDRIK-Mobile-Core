@@ -1,10 +1,12 @@
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type {
+  SQLiteDatabase,
+} from 'expo-sqlite';
 
 type SchemaVersionRow = {
   user_version: number;
 };
 
-const LATEST_SCHEMA_VERSION = 1;
+const LATEST_SCHEMA_VERSION = 2;
 
 const migrationV1 = `
   CREATE TABLE IF NOT EXISTS conversations (
@@ -26,7 +28,13 @@ const migrationV1 = `
     id TEXT PRIMARY KEY NOT NULL,
     conversation_id TEXT NOT NULL,
     role TEXT NOT NULL
-      CHECK (role IN ('user', 'assistant', 'system')),
+      CHECK (
+        role IN (
+          'user',
+          'assistant',
+          'system'
+        )
+      ),
     kind TEXT NOT NULL DEFAULT 'text',
     text TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL,
@@ -38,10 +46,15 @@ const migrationV1 = `
 
   CREATE INDEX IF NOT EXISTS
     idx_messages_conversation_created
-  ON messages(conversation_id, created_at ASC);
+  ON messages(
+    conversation_id,
+    created_at ASC
+  );
 
   CREATE TABLE IF NOT EXISTS drafts (
-    conversation_id TEXT PRIMARY KEY NOT NULL,
+    conversation_id TEXT
+      PRIMARY KEY NOT NULL,
+
     text TEXT NOT NULL DEFAULT '',
     updated_at INTEGER NOT NULL,
 
@@ -51,13 +64,105 @@ const migrationV1 = `
   );
 `;
 
+const migrationV2 = `
+  CREATE TABLE IF NOT EXISTS attachments (
+    id TEXT PRIMARY KEY NOT NULL,
+
+    kind TEXT NOT NULL
+      CHECK (
+        kind IN (
+          'image',
+          'video',
+          'document'
+        )
+      ),
+
+    source TEXT NOT NULL
+      CHECK (
+        source IN (
+          'library',
+          'camera',
+          'document'
+        )
+      ),
+
+    name TEXT NOT NULL,
+
+    mime_type TEXT,
+    size_bytes INTEGER,
+
+    local_uri TEXT NOT NULL UNIQUE,
+
+    width INTEGER,
+    height INTEGER,
+    duration_ms INTEGER,
+
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS
+    message_attachments (
+      message_id TEXT NOT NULL,
+      attachment_id TEXT NOT NULL,
+      position INTEGER NOT NULL,
+
+      PRIMARY KEY (
+        message_id,
+        attachment_id
+      ),
+
+      FOREIGN KEY (message_id)
+        REFERENCES messages(id)
+        ON DELETE CASCADE,
+
+      FOREIGN KEY (attachment_id)
+        REFERENCES attachments(id)
+        ON DELETE CASCADE
+    );
+
+  CREATE INDEX IF NOT EXISTS
+    idx_message_attachments_position
+  ON message_attachments(
+    message_id,
+    position ASC
+  );
+
+  CREATE TABLE IF NOT EXISTS
+    draft_attachments (
+      conversation_id TEXT NOT NULL,
+      attachment_id TEXT NOT NULL,
+      position INTEGER NOT NULL,
+
+      PRIMARY KEY (
+        conversation_id,
+        attachment_id
+      ),
+
+      FOREIGN KEY (conversation_id)
+        REFERENCES conversations(id)
+        ON DELETE CASCADE,
+
+      FOREIGN KEY (attachment_id)
+        REFERENCES attachments(id)
+        ON DELETE CASCADE
+    );
+
+  CREATE INDEX IF NOT EXISTS
+    idx_draft_attachments_position
+  ON draft_attachments(
+    conversation_id,
+    position ASC
+  );
+`;
+
 async function getSchemaVersion(
   database: SQLiteDatabase,
 ): Promise<number> {
   const row =
-    await database.getFirstAsync<SchemaVersionRow>(
-      'PRAGMA user_version;',
-    );
+    await database
+      .getFirstAsync<SchemaVersionRow>(
+        'PRAGMA user_version;',
+      );
 
   return row?.user_version ?? 0;
 }
@@ -65,22 +170,47 @@ async function getSchemaVersion(
 async function migrateToV1(
   database: SQLiteDatabase,
 ): Promise<void> {
-  await database.withExclusiveTransactionAsync(
-    async (transaction) => {
-      await transaction.execAsync(migrationV1);
-      await transaction.execAsync(
-        'PRAGMA user_version = 1;',
-      );
-    },
-  );
+  await database
+    .withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(
+          migrationV1,
+        );
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 1;',
+        );
+      },
+    );
+}
+
+async function migrateToV2(
+  database: SQLiteDatabase,
+): Promise<void> {
+  await database
+    .withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(
+          migrationV2,
+        );
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 2;',
+        );
+      },
+    );
 }
 
 export async function runMigrations(
   database: SQLiteDatabase,
 ): Promise<void> {
-  let version = await getSchemaVersion(database);
+  let version =
+    await getSchemaVersion(database);
 
-  if (version > LATEST_SCHEMA_VERSION) {
+  if (
+    version >
+    LATEST_SCHEMA_VERSION
+  ) {
     throw new Error(
       `Database schema ${version} is newer than supported version ${LATEST_SCHEMA_VERSION}`,
     );
@@ -91,7 +221,15 @@ export async function runMigrations(
     version = 1;
   }
 
-  if (version !== LATEST_SCHEMA_VERSION) {
+  if (version < 2) {
+    await migrateToV2(database);
+    version = 2;
+  }
+
+  if (
+    version !==
+    LATEST_SCHEMA_VERSION
+  ) {
     throw new Error(
       `Database migration incomplete: ${version}`,
     );
