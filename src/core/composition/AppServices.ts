@@ -1,29 +1,84 @@
-import { MessageTransport } from '../../contracts/MessageTransport';
+import { AttachmentPicker } from '../../contracts/AttachmentPicker';
+import { AttachmentRepository } from '../../contracts/AttachmentRepository';
 import { ConversationRepository } from '../../contracts/ConversationRepository';
 import { DraftRepository } from '../../contracts/DraftRepository';
 import { MessageRepository } from '../../contracts/MessageRepository';
+import { MessageTransport } from '../../contracts/MessageTransport';
+
+import { AttachmentImportService } from '../../features/attachments/AttachmentImportService';
+import { NativeAttachmentPicker } from '../../features/attachments/pickers/NativeAttachmentPicker';
+import { AttachmentFileStore } from '../../features/attachments/storage/AttachmentFileStore';
+import { SQLiteAttachmentRepository } from '../../features/attachments/storage/SQLiteAttachmentRepository';
+
 import { SQLiteDraftRepository } from '../../features/chat/storage/SQLiteDraftRepository';
 import { SQLiteMessageRepository } from '../../features/chat/storage/SQLiteMessageRepository';
 import { SQLiteConversationRepository } from '../../features/conversations/storage/SQLiteConversationRepository';
+
 import { MockMessageTransport } from '../../mocks/MockMessageTransport';
 import { getDatabase } from '../storage/Database';
 
+const attachmentRepository =
+  new SQLiteAttachmentRepository(
+    getDatabase,
+  );
+
+const attachmentFileStore =
+  new AttachmentFileStore();
+
 export type AppServices = {
   messageTransport: MessageTransport;
-  conversationRepository: ConversationRepository;
-  messageRepository: MessageRepository;
-  draftRepository: DraftRepository;
+
+  conversationRepository:
+    ConversationRepository;
+
+  messageRepository:
+    MessageRepository;
+
+  draftRepository:
+    DraftRepository;
+
+  attachmentRepository:
+    AttachmentRepository;
+
+  attachmentPicker:
+    AttachmentPicker;
+
+  attachmentImportService:
+    AttachmentImportService;
+
+  attachmentFileStore:
+    AttachmentFileStore;
 };
 
 export const appServices: AppServices = {
-  messageTransport: new MockMessageTransport(),
+  messageTransport:
+    new MockMessageTransport(),
 
   conversationRepository:
-    new SQLiteConversationRepository(getDatabase),
+    new SQLiteConversationRepository(
+      getDatabase,
+    ),
 
   messageRepository:
-    new SQLiteMessageRepository(getDatabase),
+    new SQLiteMessageRepository(
+      getDatabase,
+    ),
 
   draftRepository:
-    new SQLiteDraftRepository(getDatabase),
+    new SQLiteDraftRepository(
+      getDatabase,
+    ),
+
+  attachmentRepository,
+
+  attachmentPicker:
+    new NativeAttachmentPicker(),
+
+  attachmentImportService:
+    new AttachmentImportService(
+      attachmentRepository,
+      attachmentFileStore,
+    ),
+
+  attachmentFileStore,
 };
