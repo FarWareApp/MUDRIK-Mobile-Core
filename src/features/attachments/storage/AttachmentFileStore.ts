@@ -21,16 +21,11 @@ function ensureDirectory(): void {
 function safeExtension(
   originalName: string,
 ): string {
-  const match =
-    originalName
-      .trim()
-      .match(/(\.[a-zA-Z0-9]{1,12})$/);
+  const match = originalName
+    .trim()
+    .match(/(\.[a-zA-Z0-9]{1,12})$/);
 
-  if (!match) {
-    return '';
-  }
-
-  return match[1].toLowerCase();
+  return match?.[1]?.toLowerCase() ?? '';
 }
 
 export class AttachmentFileStore {
@@ -61,6 +56,19 @@ export class AttachmentFileStore {
     );
 
     return destination.uri;
+  }
+
+  getSize(
+    localUri: string,
+  ): number | null {
+    const file =
+      new File(localUri);
+
+    if (!file.exists) {
+      return null;
+    }
+
+    return file.size;
   }
 
   delete(
