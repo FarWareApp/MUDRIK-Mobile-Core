@@ -1,14 +1,349 @@
-import React from 'react';
+import React, {
+  useCallback,
+  useState,
+} from 'react';
 
-import { useLocale } from '../../core/localization/LocaleProvider';
-import { FeaturePlaceholderScreen } from '../../shared/components/FeaturePlaceholderScreen';
+import {
+  Alert,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
-export function ProjectsScreen() {
-  const { t } = useLocale();
+import {
+  router,
+  useFocusEffect,
+} from 'expo-router';
+
+import {
+  SafeAreaView,
+} from 'react-native-safe-area-context';
+
+import {
+  ProjectRecord,
+  ProjectRepository,
+} from '../../contracts/ProjectRepository';
+
+import {
+  useTheme,
+} from '../../design-system/theme/ThemeProvider';
+
+import {
+  ProjectEditorModal,
+} from './components/ProjectEditorModal';
+
+import {
+  ProjectListItem,
+} from './components/ProjectListItem';
+
+import {
+  ProjectViewTabs,
+} from './components/ProjectViewTabs';
+
+import {
+  useProjectsController,
+} from './hooks/useProjectsController';
+
+type Props = {
+  repository:
+    ProjectRepository;
+
+  onProjectDeleted?:
+    () => Promise<void>;
+};
+
+export function ProjectsScreen({
+  repository,
+  onProjectDeleted,
+}: Props) {
+  const { colors } =
+    useTheme();
+
+  const [createOpen, setCreateOpen] =
+    useState(false);
+
+  const controller =
+    useProjectsController({
+      repository,
+      onProjectDeleted,
+    });
+
+  useFocusEffect(
+    useCallback(() => {
+      void controller.load();
+    }, [controller.load]),
+  );
+
+  const openProject = (
+    project: ProjectRecord,
+  ) => {
+    router.push({
+      pathname:
+        '/project/[id]',
+      params: {
+        id: project.id,
+      },
+    });
+  };
+
+  const confirmDelete = (
+    project: ProjectRecord,
+  ) => {
+    Alert.alert(
+      'Delete project',
+      `Delete "${project.name}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void controller
+              .deleteProject(
+                project.id,
+              );
+          },
+        },
+      ],
+    );
+  };
 
   return (
-    <FeaturePlaceholderScreen
-      title={t('projects')}
-    />
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor:
+            colors.background,
+        },
+      ]}
+    >
+      <View style={styles.header}>
+        <Pressable
+          onPress={() =>
+            router.back()
+          }
+          style={[
+            styles.circle,
+            {
+              backgroundColor:
+                colors.surfaceElevated,
+            },
+          ]}
+        >
+          <Text
+            style={{
+              color:
+                colors.textPrimary,
+              fontSize: 24,
+            }}
+          >
+            ‹
+          </Text>
+        </Pressable>
+
+        <Text
+          style={[
+            styles.title,
+            {
+              color:
+                colors.textPrimary,
+            },
+          ]}
+        >
+          Projects
+        </Text>
+
+        <Pressable
+          onPress={() =>
+            setCreateOpen(true)
+          }
+          style={[
+            styles.circle,
+            {
+              backgroundColor:
+                colors.accent,
+            },
+          ]}
+        >
+          <Text
+            style={{
+              color:
+                colors.accentText,
+              fontSize: 24,
+            }}
+          >
+            +
+          </Text>
+        </Pressable>
+      </View>
+
+      <TextInput
+        value={controller.query}
+        onChangeText={
+          controller.setQuery
+        }
+        placeholder="Search projects"
+        placeholderTextColor={
+          colors.textSecondary
+        }
+        style={[
+          styles.search,
+          {
+            backgroundColor:
+              colors.surfaceElevated,
+            color:
+              colors.textPrimary,
+          },
+        ]}
+      />
+
+      <ProjectViewTabs
+        value={
+          controller.viewMode
+        }
+        onChange={
+          controller.setViewMode
+        }
+      />
+
+      {controller.loading ? (
+        <View style={styles.center}>
+          <Text
+            style={{
+              color:
+                colors.textSecondary,
+            }}
+          >
+            Loading projects…
+          </Text>
+        </View>
+      ) : controller.projects
+          .length === 0 ? (
+        <View style={styles.center}>
+          <Text
+            style={{
+              color:
+                colors.textSecondary,
+            }}
+          >
+            No projects.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={
+            controller.projects
+          }
+          keyExtractor={
+            (item) => item.id
+          }
+          renderItem={({
+            item,
+          }) => (
+            <ProjectListItem
+              project={item}
+              onOpen={() =>
+                openProject(item)
+              }
+              onArchive={() => {
+                void controller
+                  .toggleArchived(
+                    item,
+                  );
+              }}
+              onDelete={() =>
+                confirmDelete(item)
+              }
+            />
+          )}
+        />
+      )}
+
+      <ProjectEditorModal
+        visible={createOpen}
+        title="New project"
+        onCancel={() =>
+          setCreateOpen(false)
+        }
+        onSave={(
+          name,
+          description,
+        ) => {
+          void (async () => {
+            const id =
+              await controller
+                .create(
+                  name,
+                  description,
+                );
+
+            if (!id) {
+              return;
+            }
+
+            setCreateOpen(false);
+
+            router.push({
+              pathname:
+                '/project/[id]',
+              params: { id },
+            });
+          })();
+        }}
+      />
+    </SafeAreaView>
   );
 }
+
+const styles =
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+    },
+
+    header: {
+      minHeight: 62,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+    },
+
+    circle: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+    },
+
+    title: {
+      flex: 1,
+      textAlign: 'center',
+      fontSize: 18,
+      fontWeight: '700',
+    },
+
+    search: {
+      minHeight: 46,
+      borderRadius: 15,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      paddingHorizontal: 14,
+      fontSize: 15,
+    },
+
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+    },
+  });

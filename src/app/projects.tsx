@@ -1,7 +1,24 @@
 import React from 'react';
 
-import { ProjectsScreen } from '../features/projects/ProjectsScreen';
+import {
+  appServices,
+} from '../core/composition/AppServices';
+
+import {
+  ProjectsScreen,
+} from '../features/projects/ProjectsScreen';
 
 export default function ProjectsRoute() {
-  return <ProjectsScreen />;
+  return (
+    <ProjectsScreen
+      repository={
+        appServices.projectRepository
+      }
+      onProjectDeleted={async () => {
+        await appServices
+          .attachmentCleanupService
+          .cleanupOrphans();
+      }}
+    />
+  );
 }
