@@ -1,6 +1,7 @@
 import { AttachmentPicker } from '../../contracts/AttachmentPicker';
 import { AttachmentRepository } from '../../contracts/AttachmentRepository';
 import { CompanionRepository } from '../../contracts/CompanionRepository';
+import { ConnectivityService } from '../../contracts/ConnectivityService';
 import { ConversationRepository } from '../../contracts/ConversationRepository';
 import { DraftRepository } from '../../contracts/DraftRepository';
 import { MessageRepository } from '../../contracts/MessageRepository';
@@ -25,6 +26,7 @@ import { SQLiteConversationRepository } from '../../features/conversations/stora
 import { NativePermissionService } from '../../features/permissions/services/NativePermissionService';
 import { SQLiteSettingsRepository } from '../../features/settings/storage/SQLiteSettingsRepository';
 import { SQLiteCompanionRepository } from '../../features/companion/storage/SQLiteCompanionRepository';
+import { NativeConnectivityService } from '../../features/connectivity/services/NativeConnectivityService';
 import { SQLiteProjectRepository } from '../../features/projects/storage/SQLiteProjectRepository';
 import { SQLiteProjectConversationRepository } from '../../features/projects/storage/SQLiteProjectConversationRepository';
 import { SQLiteProjectAttachmentRepository } from '../../features/projects/storage/SQLiteProjectAttachmentRepository';
@@ -92,6 +94,9 @@ export type AppServices = {
 
   companionRepository:
     CompanionRepository;
+
+  connectivityService:
+    ConnectivityService;
 };
 
 export const appServices: AppServices = {
@@ -160,4 +165,7 @@ export const appServices: AppServices = {
     new SQLiteCompanionRepository(
       getDatabase,
     ),
+
+  connectivityService:
+    new NativeConnectivityService(),
 };
