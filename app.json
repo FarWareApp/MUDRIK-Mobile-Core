@@ -38,7 +38,8 @@
       "expo-audio",
       "expo-asset",
       "expo-font",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
