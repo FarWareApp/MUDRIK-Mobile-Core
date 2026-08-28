@@ -4,6 +4,8 @@ import { ConversationRepository } from '../../contracts/ConversationRepository';
 import { DraftRepository } from '../../contracts/DraftRepository';
 import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
+import { PermissionService } from '../../contracts/PermissionService';
+import { SettingsRepository } from '../../contracts/SettingsRepository';
 
 import { AttachmentCleanupService } from '../../features/attachments/AttachmentCleanupService';
 import { AttachmentImportService } from '../../features/attachments/AttachmentImportService';
@@ -16,6 +18,8 @@ import { SQLiteDraftRepository } from '../../features/chat/storage/SQLiteDraftRe
 import { SQLiteMessageRepository } from '../../features/chat/storage/SQLiteMessageRepository';
 import { SQLiteConversationRepository } from '../../features/conversations/storage/SQLiteConversationRepository';
 
+import { NativePermissionService } from '../../features/permissions/services/NativePermissionService';
+import { SQLiteSettingsRepository } from '../../features/settings/storage/SQLiteSettingsRepository';
 import { MockMessageTransport } from '../../mocks/MockMessageTransport';
 import { getDatabase } from '../storage/Database';
 
@@ -62,6 +66,12 @@ export type AppServices = {
 
   attachmentMaintenanceService:
     AttachmentMaintenanceService;
+
+  settingsRepository:
+    SettingsRepository;
+
+  permissionService:
+    PermissionService;
 };
 
 export const appServices: AppServices = {
@@ -102,4 +112,12 @@ export const appServices: AppServices = {
     new AttachmentMaintenanceService(
       attachmentCleanupService,
     ),
+
+  settingsRepository:
+    new SQLiteSettingsRepository(
+      getDatabase,
+    ),
+
+  permissionService:
+    new NativePermissionService(),
 };

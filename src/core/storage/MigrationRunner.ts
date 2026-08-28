@@ -6,7 +6,7 @@ type SchemaVersionRow = {
   user_version: number;
 };
 
-const LATEST_SCHEMA_VERSION = 2;
+const LATEST_SCHEMA_VERSION = 3;
 
 const migrationV1 = `
   CREATE TABLE IF NOT EXISTS conversations (
@@ -155,6 +155,14 @@ const migrationV2 = `
   );
 `;
 
+const migrationV3 = `
+  CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`;
+
 async function getSchemaVersion(
   database: SQLiteDatabase,
 ): Promise<number> {
@@ -201,6 +209,23 @@ async function migrateToV2(
     );
 }
 
+async function migrateToV3(
+  database: SQLiteDatabase,
+): Promise<void> {
+  await database
+    .withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(
+          migrationV3,
+        );
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 3;',
+        );
+      },
+    );
+}
+
 export async function runMigrations(
   database: SQLiteDatabase,
 ): Promise<void> {
@@ -224,6 +249,11 @@ export async function runMigrations(
   if (version < 2) {
     await migrateToV2(database);
     version = 2;
+  }
+
+  if (version < 3) {
+    await migrateToV3(database);
+    version = 3;
   }
 
   if (
