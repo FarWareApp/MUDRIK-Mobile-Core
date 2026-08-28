@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -10,8 +11,14 @@ import {
   SafeAreaView,
 } from 'react-native-safe-area-context';
 
+import { AttachmentPicker } from '../../contracts/AttachmentPicker';
+import { AttachmentRepository } from '../../contracts/AttachmentRepository';
 import { ConversationRepository } from '../../contracts/ConversationRepository';
 import { DraftRepository } from '../../contracts/DraftRepository';
+import { AttachmentImportService } from '../attachments/AttachmentImportService';
+import { AttachmentDraftTray } from '../attachments/components/AttachmentDraftTray';
+import { useAttachmentDraftController } from '../attachments/hooks/useAttachmentDraftController';
+import { AttachmentFileStore } from '../attachments/storage/AttachmentFileStore';
 import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
@@ -31,6 +38,10 @@ type Props = {
   conversationRepository: ConversationRepository;
   messageRepository: MessageRepository;
   draftRepository: DraftRepository;
+  attachmentRepository: AttachmentRepository;
+  attachmentPicker: AttachmentPicker;
+  attachmentImportService: AttachmentImportService;
+  attachmentFileStore: AttachmentFileStore;
 };
 
 export function ChatScreen({
@@ -38,6 +49,10 @@ export function ChatScreen({
   conversationRepository,
   messageRepository,
   draftRepository,
+  attachmentRepository,
+  attachmentPicker,
+  attachmentImportService,
+  attachmentFileStore,
 }: Props) {
   const { colors } = useTheme();
 
@@ -52,6 +67,7 @@ export function ChatScreen({
   ] = useState(false);
 
   const {
+    conversationId,
     messages,
     draft,
     sending,
@@ -73,11 +89,52 @@ export function ChatScreen({
     conversationRepository,
     messageRepository,
     draftRepository,
+    attachmentRepository,
     selectedConversationId:
       activeConversationId,
     onConversationActivated:
       activateConversation,
   });
+
+  const attachmentDraft =
+    useAttachmentDraftController({
+      conversationId,
+      picker: attachmentPicker,
+      repository: attachmentRepository,
+      importer: attachmentImportService,
+      fileStore: attachmentFileStore,
+    });
+
+  const openAttachmentMenu = () => {
+    Alert.alert(
+      'Add attachment',
+      undefined,
+      [
+        {
+          text: 'Camera',
+          onPress: () => {
+            void attachmentDraft.takePhoto();
+          },
+        },
+        {
+          text: 'Photos & Videos',
+          onPress: () => {
+            void attachmentDraft.pickMedia();
+          },
+        },
+        {
+          text: 'Files',
+          onPress: () => {
+            void attachmentDraft.pickDocuments();
+          },
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+    );
+  };
 
   const navigate = (
     route:
@@ -168,12 +225,31 @@ export function ChatScreen({
               />
             )}
 
+            <AttachmentDraftTray
+              attachments={attachmentDraft.attachments}
+              busy={attachmentDraft.busy}
+              onRemove={(attachment) => {
+                void attachmentDraft.remove(attachment);
+              }}
+            />
+
             <MessageComposer
               value={draft}
               sending={sending}
               onChangeText={setDraft}
-              onSend={send}
+              onSend={async (text) => {
+                await send(
+                  text,
+                  attachmentDraft.attachments,
+                );
+
+                await attachmentDraft.reload();
+              }}
               onStop={stop}
+              onAttachmentsPress={openAttachmentMenu}
+              attachmentCount={
+                attachmentDraft.attachments.length
+              }
             />
           </>
         )}

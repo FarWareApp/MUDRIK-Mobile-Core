@@ -176,9 +176,19 @@ export function useAttachmentDraftController({
           await picker.pickDocuments();
 
         await importPicked(picked);
-      } catch {
+      } catch (caught) {
+        const detail =
+          caught instanceof Error
+            ? caught.message
+            : 'Unknown error';
+
+        console.error(
+          'DOCUMENT_PICKER_ERROR',
+          caught,
+        );
+
         setError(
-          'Unable to open files.',
+          `Unable to open files: ${detail}`,
         );
       }
     }, [

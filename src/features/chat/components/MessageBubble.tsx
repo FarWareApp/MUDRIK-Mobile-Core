@@ -9,6 +9,7 @@ import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { ChatMessage } from '../types';
+import { MessageAttachmentList } from './MessageAttachmentList';
 
 type Props = {
   message: ChatMessage;
@@ -36,6 +37,13 @@ export function MessageBubble({
         },
       ]}
     >
+      <MessageAttachmentList
+        attachments={
+          message.attachments ?? []
+        }
+      />
+
+      {message.text.length > 0 && (
       <Text
         selectable
         style={[
@@ -49,6 +57,7 @@ export function MessageBubble({
       >
         {message.text}
       </Text>
+      )}
     </View>
   );
 }

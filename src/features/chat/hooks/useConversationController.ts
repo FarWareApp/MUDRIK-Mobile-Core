@@ -5,6 +5,8 @@ import {
   useState,
 } from 'react';
 
+import { AttachmentRecord } from '../../../contracts/Attachment';
+import { AttachmentRepository } from '../../../contracts/AttachmentRepository';
 import {
   ConversationRepository,
 } from '../../../contracts/ConversationRepository';
@@ -34,6 +36,7 @@ type Dependencies = {
   conversationRepository: ConversationRepository;
   messageRepository: MessageRepository;
   draftRepository: DraftRepository;
+  attachmentRepository: AttachmentRepository;
   selectedConversationId: string | null;
   onConversationActivated: (id: string) => void;
 };
@@ -44,6 +47,7 @@ export function useConversationController({
   conversationRepository,
   messageRepository,
   draftRepository,
+  attachmentRepository,
   selectedConversationId,
   onConversationActivated,
 }: Dependencies) {
@@ -159,20 +163,25 @@ export function useConversationController({
         }
 
         const restoredMessages: ChatMessage[] =
-          storedMessages
-            .filter(
-              (message) =>
-                message.role === 'user' ||
-                message.role === 'assistant',
-            )
-            .map((message) => ({
-              id: message.id,
-              role: message.role as
-                | 'user'
-                | 'assistant',
-              text: message.text,
-              createdAt: message.createdAt,
-            }));
+          await Promise.all(
+            storedMessages
+              .filter(
+                (message) =>
+                  message.role === 'user' ||
+                  message.role === 'assistant',
+              )
+              .map(async (message) => ({
+                id: message.id,
+                role: message.role as
+                  | 'user'
+                  | 'assistant',
+                text: message.text,
+                createdAt: message.createdAt,
+                attachments:
+                  await attachmentRepository
+                    .listForMessage(message.id),
+              })),
+          );
 
         setConversationId(conversation.id);
         setConversationTitle(
@@ -209,6 +218,7 @@ export function useConversationController({
         }
       }
     }, [
+      attachmentRepository,
       conversationRepository,
       createFreshConversation,
       draftRepository,
@@ -285,11 +295,12 @@ export function useConversationController({
     async (
       rawText: string,
       appendUserMessage: boolean,
+      attachments: AttachmentRecord[] = [],
     ) => {
       const text = rawText.trim();
 
       if (
-        !text ||
+        (!text && attachments.length === 0) ||
         sending ||
         !conversationId
       ) {
@@ -308,6 +319,7 @@ export function useConversationController({
         role: 'user',
         text,
         createdAt: now,
+        attachments,
       };
 
       try {
@@ -321,9 +333,19 @@ export function useConversationController({
             createdAt: userMessage.createdAt,
           });
 
+          await attachmentRepository
+            .moveDraftAttachmentsToMessage(
+              conversationId,
+              userMessage.id,
+            );
+
           if (!conversationTitle.trim()) {
             const title =
-              deriveConversationTitle(text);
+              deriveConversationTitle(
+                text ||
+                attachments[0]?.name ||
+                'Attachment',
+              );
 
             await conversationRepository.rename(
               conversationId,
@@ -451,6 +473,7 @@ export function useConversationController({
       }
     },
     [
+      attachmentRepository,
       conversationId,
       conversationRepository,
       conversationTitle,
@@ -462,8 +485,15 @@ export function useConversationController({
   );
 
   const send = useCallback(
-    async (text: string) => {
-      await performSend(text, true);
+    async (
+      text: string,
+      attachments: AttachmentRecord[] = [],
+    ) => {
+      await performSend(
+        text,
+        true,
+        attachments,
+      );
     },
     [performSend],
   );
@@ -574,6 +604,7 @@ export function useConversationController({
     ]);
 
   return {
+    conversationId,
     messages,
     draft,
     sending,

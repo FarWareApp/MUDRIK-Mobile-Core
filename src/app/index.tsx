@@ -18,6 +18,18 @@ export default function HomeRoute() {
       draftRepository={
         appServices.draftRepository
       }
+      attachmentRepository={
+        appServices.attachmentRepository
+      }
+      attachmentPicker={
+        appServices.attachmentPicker
+      }
+      attachmentImportService={
+        appServices.attachmentImportService
+      }
+      attachmentFileStore={
+        appServices.attachmentFileStore
+      }
     />
   );
 }
