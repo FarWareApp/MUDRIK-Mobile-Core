@@ -23,8 +23,24 @@ import {
 } from '../../features/notifications/NotificationProvider';
 
 import {
+  AccessibilityProvider,
+} from '../accessibility/AccessibilityProvider';
+
+import {
+  DiagnosticsProvider,
+} from '../diagnostics/DiagnosticsProvider';
+
+import {
+  CoreHealthProvider,
+} from '../health/CoreHealthProvider';
+
+import {
   LifecycleProvider,
 } from '../lifecycle/LifecycleProvider';
+
+import {
+  AppDirectionBoundary,
+} from '../localization/AppDirectionBoundary';
 
 import {
   LocaleProvider,
@@ -33,6 +49,10 @@ import {
 import {
   RuntimeProvider,
 } from '../runtime/RuntimeProvider';
+
+import {
+  AppSettingsProvider,
+} from '../settings/AppSettingsProvider';
 
 import {
   StorageBootstrapProvider,
@@ -47,33 +67,53 @@ export function RootProviders({
 }: PropsWithChildren) {
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <LocaleProvider>
-          <StorageBootstrapProvider>
-            <ActiveConversationProvider>
-              <LifecycleProvider>
-                <ConnectivityProvider
-                  service={
-                    appServices
-                      .connectivityService
-                  }
-                >
-                  <RuntimeProvider>
-                    <NotificationProvider
-                      service={
-                        appServices
-                          .notificationService
-                      }
-                    >
-                      {children}
-                    </NotificationProvider>
-                  </RuntimeProvider>
-                </ConnectivityProvider>
-              </LifecycleProvider>
-            </ActiveConversationProvider>
-          </StorageBootstrapProvider>
-        </LocaleProvider>
-      </ThemeProvider>
+      <StorageBootstrapProvider>
+        <AppSettingsProvider
+          repository={
+            appServices
+              .settingsRepository
+          }
+        >
+          <DiagnosticsProvider
+            repository={
+              appServices
+                .diagnosticRepository
+            }
+          >
+            <ThemeProvider>
+              <LocaleProvider>
+              <AccessibilityProvider>
+                <AppDirectionBoundary>
+                  <ActiveConversationProvider>
+                    <LifecycleProvider>
+                      <ConnectivityProvider
+                        service={
+                          appServices
+                            .connectivityService
+                        }
+                      >
+                        <RuntimeProvider>
+                          <NotificationProvider
+                            service={
+                              appServices
+                                .notificationService
+                            }
+                          >
+                            <CoreHealthProvider>
+                              {children}
+                            </CoreHealthProvider>
+                          </NotificationProvider>
+                        </RuntimeProvider>
+                      </ConnectivityProvider>
+                    </LifecycleProvider>
+                  </ActiveConversationProvider>
+                </AppDirectionBoundary>
+              </AccessibilityProvider>
+              </LocaleProvider>
+            </ThemeProvider>
+          </DiagnosticsProvider>
+        </AppSettingsProvider>
+      </StorageBootstrapProvider>
     </SafeAreaProvider>
   );
 }

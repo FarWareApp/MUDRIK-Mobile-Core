@@ -6,7 +6,7 @@ type SchemaVersionRow = {
   user_version: number;
 };
 
-const LATEST_SCHEMA_VERSION = 5;
+const LATEST_SCHEMA_VERSION = 6;
 
 const migrationV1 = `
   CREATE TABLE IF NOT EXISTS conversations (
@@ -276,6 +276,32 @@ const migrationV5 = `
   );
 `;
 
+const migrationV6 = `
+  CREATE TABLE IF NOT EXISTS diagnostic_events (
+    id TEXT PRIMARY KEY NOT NULL,
+
+    timestamp INTEGER NOT NULL,
+
+    module TEXT NOT NULL,
+    event TEXT NOT NULL,
+
+    level TEXT NOT NULL
+      CHECK (
+        level IN (
+          'info',
+          'warning',
+          'error'
+        )
+      )
+  );
+
+  CREATE INDEX IF NOT EXISTS
+    idx_diagnostic_events_timestamp
+  ON diagnostic_events(
+    timestamp DESC
+  );
+`;
+
 async function getSchemaVersion(
   database: SQLiteDatabase,
 ): Promise<number> {
@@ -373,6 +399,23 @@ async function migrateToV5(
     );
 }
 
+async function migrateToV6(
+  database: SQLiteDatabase,
+): Promise<void> {
+  await database
+    .withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(
+          migrationV6,
+        );
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 6;',
+        );
+      },
+    );
+}
+
 export async function runMigrations(
   database: SQLiteDatabase,
 ): Promise<void> {
@@ -411,6 +454,11 @@ export async function runMigrations(
   if (version < 5) {
     await migrateToV5(database);
     version = 5;
+  }
+
+  if (version < 6) {
+    await migrateToV6(database);
+    version = 6;
   }
 
   if (

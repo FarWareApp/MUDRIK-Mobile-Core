@@ -1,21 +1,55 @@
-import {
+import React, {
+  createContext,
+  PropsWithChildren,
   useCallback,
+  useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
 import {
   AppSettings,
   DEFAULT_APP_SETTINGS,
-} from '../../../contracts/AppSettings';
+} from '../../contracts/AppSettings';
 
 import {
   SettingsRepository,
-} from '../../../contracts/SettingsRepository';
+} from '../../contracts/SettingsRepository';
 
-export function useSettingsController(
-  repository: SettingsRepository,
-) {
+type AppSettingsContextValue = {
+  settings: AppSettings;
+
+  loading: boolean;
+  error: string | null;
+
+  update:
+    <K extends keyof AppSettings>(
+      key: K,
+      value: AppSettings[K],
+    ) => Promise<void>;
+
+  reset: () => Promise<void>;
+  reload: () => Promise<void>;
+
+  dismissError: () => void;
+};
+
+const AppSettingsContext =
+  createContext<
+    AppSettingsContextValue | null
+  >(null);
+
+type Props =
+  PropsWithChildren<{
+    repository:
+      SettingsRepository;
+  }>;
+
+export function AppSettingsProvider({
+  repository,
+  children,
+}: Props) {
   const [settings, setSettings] =
     useState<AppSettings>(
       DEFAULT_APP_SETTINGS,
@@ -43,7 +77,7 @@ export function useSettingsController(
         setError(null);
       } catch {
         setError(
-          'Unable to load settings.',
+          'Unable to load application settings.',
         );
       } finally {
         setLoading(false);
@@ -77,6 +111,8 @@ export function useSettingsController(
             key,
             value,
           );
+
+          setError(null);
         } catch {
           setSettings(
             (current) => ({
@@ -86,7 +122,7 @@ export function useSettingsController(
           );
 
           setError(
-            'Unable to save setting.',
+            'Unable to save application setting.',
           );
         }
       },
@@ -108,21 +144,61 @@ export function useSettingsController(
         setError(null);
       } catch {
         setError(
-          'Unable to reset settings.',
+          'Unable to reset application settings.',
         );
       }
     }, [repository]);
 
-  return {
-    settings,
-    loading,
-    error,
+  const dismissError =
+    useCallback(() => {
+      setError(null);
+    }, []);
 
-    update,
-    reset,
-    reload: load,
+  const value =
+    useMemo<
+      AppSettingsContextValue
+    >(
+      () => ({
+        settings,
+        loading,
+        error,
+        update,
+        reset,
+        reload: load,
+        dismissError,
+      }),
+      [
+        dismissError,
+        error,
+        load,
+        loading,
+        reset,
+        settings,
+        update,
+      ],
+    );
 
-    dismissError: () =>
-      setError(null),
-  };
+  return (
+    <AppSettingsContext.Provider
+      value={value}
+    >
+      {children}
+    </AppSettingsContext.Provider>
+  );
+}
+
+export function useAppSettings():
+  AppSettingsContextValue {
+  const value =
+    useContext(
+      AppSettingsContext,
+    );
+
+  if (!value) {
+    throw new Error(
+      'useAppSettings must be used inside AppSettingsProvider',
+    );
+  }
+
+  return value;
 }

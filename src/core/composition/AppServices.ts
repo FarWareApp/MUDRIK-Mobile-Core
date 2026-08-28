@@ -3,6 +3,7 @@ import { AttachmentRepository } from '../../contracts/AttachmentRepository';
 import { CompanionRepository } from '../../contracts/CompanionRepository';
 import { ConnectivityService } from '../../contracts/ConnectivityService';
 import { ConversationRepository } from '../../contracts/ConversationRepository';
+import { DiagnosticRepository } from '../../contracts/DiagnosticRepository';
 import { DraftRepository } from '../../contracts/DraftRepository';
 import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
@@ -27,6 +28,7 @@ import { SQLiteConversationRepository } from '../../features/conversations/stora
 import { NativePermissionService } from '../../features/permissions/services/NativePermissionService';
 import { SQLiteSettingsRepository } from '../../features/settings/storage/SQLiteSettingsRepository';
 import { SQLiteCompanionRepository } from '../../features/companion/storage/SQLiteCompanionRepository';
+import { SQLiteDiagnosticRepository } from '../../features/diagnostics/storage/SQLiteDiagnosticRepository';
 import { NativeConnectivityService } from '../../features/connectivity/services/NativeConnectivityService';
 import { ExpoNotificationService } from '../../features/notifications/services/ExpoNotificationService';
 import { SQLiteProjectRepository } from '../../features/projects/storage/SQLiteProjectRepository';
@@ -102,6 +104,9 @@ export type AppServices = {
 
   notificationService:
     NotificationService;
+
+  diagnosticRepository:
+    DiagnosticRepository;
 };
 
 export const appServices: AppServices = {
@@ -176,4 +181,9 @@ export const appServices: AppServices = {
 
   notificationService:
     new ExpoNotificationService(),
+
+  diagnosticRepository:
+    new SQLiteDiagnosticRepository(
+      getDatabase,
+    ),
 };

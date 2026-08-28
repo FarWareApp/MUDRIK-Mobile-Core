@@ -22,12 +22,17 @@ import {
 } from '../../contracts/PermissionService';
 
 import {
-  SettingsRepository,
-} from '../../contracts/SettingsRepository';
-
-import {
   useTheme,
 } from '../../design-system/theme/ThemeProvider';
+
+import {
+  useAppSettings,
+} from '../../core/settings/AppSettingsProvider';
+
+import {
+  LanguagePreference,
+  ThemePreference,
+} from '../../contracts/AppSettings';
 
 import {
   usePermissionController,
@@ -42,27 +47,21 @@ import {
 } from './components/SettingToggleRow';
 
 import {
-  useSettingsController,
-} from './hooks/useSettingsController';
+  SettingOptionGroup,
+} from './components/SettingOptionGroup';
 
 type Props = {
-  settingsRepository:
-    SettingsRepository;
-
   permissionService:
     PermissionService;
 };
 
 export function SettingsScreen({
-  settingsRepository,
   permissionService,
 }: Props) {
   const { colors } = useTheme();
 
   const settings =
-    useSettingsController(
-      settingsRepository,
-    );
+    useAppSettings();
 
   const permissions =
     usePermissionController(
@@ -141,6 +140,64 @@ export function SettingsScreen({
       <ScrollView>
         <SectionTitle
           title="App"
+        />
+
+        <SettingOptionGroup
+          label="Theme"
+          value={
+            settings.settings.theme
+          }
+          options={[
+            {
+              value: 'system',
+              label: 'System',
+            },
+            {
+              value: 'light',
+              label: 'Light',
+            },
+            {
+              value: 'dark',
+              label: 'Dark',
+            },
+          ]}
+          onChange={(value) => {
+            void settings.update(
+              'theme',
+              value as ThemePreference,
+            );
+          }}
+        />
+
+        <SettingOptionGroup
+          label="Language"
+          value={
+            settings.settings.language
+          }
+          options={[
+            {
+              value: 'system',
+              label: 'System',
+            },
+            {
+              value: 'ar',
+              label: 'العربية',
+            },
+            {
+              value: 'de',
+              label: 'Deutsch',
+            },
+            {
+              value: 'en',
+              label: 'English',
+            },
+          ]}
+          onChange={(value) => {
+            void settings.update(
+              'language',
+              value as LanguagePreference,
+            );
+          }}
         />
 
         <SettingToggleRow
