@@ -6,7 +6,7 @@ type SchemaVersionRow = {
   user_version: number;
 };
 
-const LATEST_SCHEMA_VERSION = 3;
+const LATEST_SCHEMA_VERSION = 4;
 
 const migrationV1 = `
   CREATE TABLE IF NOT EXISTS conversations (
@@ -163,6 +163,75 @@ const migrationV3 = `
   );
 `;
 
+const migrationV4 = `
+  CREATE TABLE IF NOT EXISTS projects (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    is_archived INTEGER NOT NULL DEFAULT 0
+      CHECK (is_archived IN (0, 1))
+  );
+
+  CREATE INDEX IF NOT EXISTS
+    idx_projects_updated_at
+  ON projects(
+    is_archived ASC,
+    updated_at DESC
+  );
+
+  CREATE TABLE IF NOT EXISTS project_conversations (
+    project_id TEXT NOT NULL,
+    conversation_id TEXT NOT NULL UNIQUE,
+    linked_at INTEGER NOT NULL,
+
+    PRIMARY KEY (
+      project_id,
+      conversation_id
+    ),
+
+    FOREIGN KEY (project_id)
+      REFERENCES projects(id)
+      ON DELETE CASCADE,
+
+    FOREIGN KEY (conversation_id)
+      REFERENCES conversations(id)
+      ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS
+    idx_project_conversations_project
+  ON project_conversations(project_id);
+
+  CREATE TABLE IF NOT EXISTS project_attachments (
+    project_id TEXT NOT NULL,
+    attachment_id TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    linked_at INTEGER NOT NULL,
+
+    PRIMARY KEY (
+      project_id,
+      attachment_id
+    ),
+
+    FOREIGN KEY (project_id)
+      REFERENCES projects(id)
+      ON DELETE CASCADE,
+
+    FOREIGN KEY (attachment_id)
+      REFERENCES attachments(id)
+      ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS
+    idx_project_attachments_project
+  ON project_attachments(
+    project_id,
+    position ASC
+  );
+`;
+
 async function getSchemaVersion(
   database: SQLiteDatabase,
 ): Promise<number> {
@@ -226,6 +295,23 @@ async function migrateToV3(
     );
 }
 
+async function migrateToV4(
+  database: SQLiteDatabase,
+): Promise<void> {
+  await database
+    .withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(
+          migrationV4,
+        );
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 4;',
+        );
+      },
+    );
+}
+
 export async function runMigrations(
   database: SQLiteDatabase,
 ): Promise<void> {
@@ -254,6 +340,11 @@ export async function runMigrations(
   if (version < 3) {
     await migrateToV3(database);
     version = 3;
+  }
+
+  if (version < 4) {
+    await migrateToV4(database);
+    version = 4;
   }
 
   if (

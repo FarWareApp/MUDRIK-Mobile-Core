@@ -6,6 +6,9 @@ import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
 import { PermissionService } from '../../contracts/PermissionService';
 import { SettingsRepository } from '../../contracts/SettingsRepository';
+import { ProjectRepository } from '../../contracts/ProjectRepository';
+import { ProjectConversationRepository } from '../../contracts/ProjectConversationRepository';
+import { ProjectAttachmentRepository } from '../../contracts/ProjectAttachmentRepository';
 
 import { AttachmentCleanupService } from '../../features/attachments/AttachmentCleanupService';
 import { AttachmentImportService } from '../../features/attachments/AttachmentImportService';
@@ -20,6 +23,9 @@ import { SQLiteConversationRepository } from '../../features/conversations/stora
 
 import { NativePermissionService } from '../../features/permissions/services/NativePermissionService';
 import { SQLiteSettingsRepository } from '../../features/settings/storage/SQLiteSettingsRepository';
+import { SQLiteProjectRepository } from '../../features/projects/storage/SQLiteProjectRepository';
+import { SQLiteProjectConversationRepository } from '../../features/projects/storage/SQLiteProjectConversationRepository';
+import { SQLiteProjectAttachmentRepository } from '../../features/projects/storage/SQLiteProjectAttachmentRepository';
 import { MockMessageTransport } from '../../mocks/MockMessageTransport';
 import { getDatabase } from '../storage/Database';
 
@@ -72,6 +78,15 @@ export type AppServices = {
 
   permissionService:
     PermissionService;
+
+  projectRepository:
+    ProjectRepository;
+
+  projectConversationRepository:
+    ProjectConversationRepository;
+
+  projectAttachmentRepository:
+    ProjectAttachmentRepository;
 };
 
 export const appServices: AppServices = {
@@ -120,4 +135,19 @@ export const appServices: AppServices = {
 
   permissionService:
     new NativePermissionService(),
+
+  projectRepository:
+    new SQLiteProjectRepository(
+      getDatabase,
+    ),
+
+  projectConversationRepository:
+    new SQLiteProjectConversationRepository(
+      getDatabase,
+    ),
+
+  projectAttachmentRepository:
+    new SQLiteProjectAttachmentRepository(
+      getDatabase,
+    ),
 };
