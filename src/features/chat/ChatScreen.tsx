@@ -250,6 +250,9 @@ export function ChatScreen({
               attachmentCount={
                 attachmentDraft.attachments.length
               }
+              onVoicePress={() => {
+                router.push('/voice');
+              }}
             />
           </>
         )}

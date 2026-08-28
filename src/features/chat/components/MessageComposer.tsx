@@ -20,6 +20,7 @@ type Props = {
   onStop: () => void;
   onAttachmentsPress?: () => void;
   attachmentCount?: number;
+  onVoicePress?: () => void;
 };
 
 export function MessageComposer({
@@ -30,6 +31,7 @@ export function MessageComposer({
   onStop,
   onAttachmentsPress,
   attachmentCount = 0,
+  onVoicePress,
 }: Props) {
   const { colors } = useTheme();
   const { isRTL, t } = useLocale();
@@ -109,6 +111,7 @@ export function MessageComposer({
           accessibilityRole="button"
           accessibilityLabel="Voice"
           disabled={sending}
+          onPress={onVoicePress}
           style={styles.sideButton}
         >
           <Text
