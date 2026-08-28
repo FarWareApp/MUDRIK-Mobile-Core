@@ -19,6 +19,10 @@ import {
 } from '../../features/conversations/ActiveConversationProvider';
 
 import {
+  NotificationProvider,
+} from '../../features/notifications/NotificationProvider';
+
+import {
   LifecycleProvider,
 } from '../lifecycle/LifecycleProvider';
 
@@ -55,7 +59,14 @@ export function RootProviders({
                   }
                 >
                   <RuntimeProvider>
-                    {children}
+                    <NotificationProvider
+                      service={
+                        appServices
+                          .notificationService
+                      }
+                    >
+                      {children}
+                    </NotificationProvider>
                   </RuntimeProvider>
                 </ConnectivityProvider>
               </LifecycleProvider>

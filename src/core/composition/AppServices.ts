@@ -6,6 +6,7 @@ import { ConversationRepository } from '../../contracts/ConversationRepository';
 import { DraftRepository } from '../../contracts/DraftRepository';
 import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
+import { NotificationService } from '../../contracts/NotificationService';
 import { PermissionService } from '../../contracts/PermissionService';
 import { SettingsRepository } from '../../contracts/SettingsRepository';
 import { ProjectRepository } from '../../contracts/ProjectRepository';
@@ -27,6 +28,7 @@ import { NativePermissionService } from '../../features/permissions/services/Nat
 import { SQLiteSettingsRepository } from '../../features/settings/storage/SQLiteSettingsRepository';
 import { SQLiteCompanionRepository } from '../../features/companion/storage/SQLiteCompanionRepository';
 import { NativeConnectivityService } from '../../features/connectivity/services/NativeConnectivityService';
+import { ExpoNotificationService } from '../../features/notifications/services/ExpoNotificationService';
 import { SQLiteProjectRepository } from '../../features/projects/storage/SQLiteProjectRepository';
 import { SQLiteProjectConversationRepository } from '../../features/projects/storage/SQLiteProjectConversationRepository';
 import { SQLiteProjectAttachmentRepository } from '../../features/projects/storage/SQLiteProjectAttachmentRepository';
@@ -97,6 +99,9 @@ export type AppServices = {
 
   connectivityService:
     ConnectivityService;
+
+  notificationService:
+    NotificationService;
 };
 
 export const appServices: AppServices = {
@@ -168,4 +173,7 @@ export const appServices: AppServices = {
 
   connectivityService:
     new NativeConnectivityService(),
+
+  notificationService:
+    new ExpoNotificationService(),
 };

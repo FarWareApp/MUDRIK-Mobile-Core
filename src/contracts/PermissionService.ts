@@ -1,7 +1,8 @@
 export type AppPermissionId =
   | 'microphone'
   | 'camera'
-  | 'media-library';
+  | 'media-library'
+  | 'notifications';
 
 export type AppPermissionStatus =
   | 'unknown'

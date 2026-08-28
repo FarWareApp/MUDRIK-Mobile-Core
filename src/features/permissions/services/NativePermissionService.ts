@@ -3,6 +3,7 @@ import {
 } from 'expo-audio';
 
 import * as ImagePicker from 'expo-image-picker';
+import * as Notifications from 'expo-notifications';
 
 import {
   AppPermissionId,
@@ -42,6 +43,7 @@ export class NativePermissionService
       microphone,
       camera,
       mediaLibrary,
+      notifications,
     ] = await Promise.all([
       AudioModule
         .getRecordingPermissionsAsync(),
@@ -51,6 +53,9 @@ export class NativePermissionService
 
       ImagePicker
         .getMediaLibraryPermissionsAsync(),
+
+      Notifications
+        .getPermissionsAsync(),
     ]);
 
     return [
@@ -67,6 +72,11 @@ export class NativePermissionService
       mapPermission(
         'media-library',
         mediaLibrary,
+      ),
+
+      mapPermission(
+        'notifications',
+        notifications,
       ),
     ];
   }
@@ -90,10 +100,20 @@ export class NativePermissionService
       );
     }
 
+    if (
+      id === 'media-library'
+    ) {
+      return mapPermission(
+        id,
+        await ImagePicker
+          .requestMediaLibraryPermissionsAsync(),
+      );
+    }
+
     return mapPermission(
       id,
-      await ImagePicker
-        .requestMediaLibraryPermissionsAsync(),
+      await Notifications
+        .requestPermissionsAsync(),
     );
   }
 }

@@ -104,7 +104,13 @@ function labelFor(
     return 'Camera';
   }
 
-  return 'Photos & videos';
+  if (
+    id === 'media-library'
+  ) {
+    return 'Photos & videos';
+  }
+
+  return 'Notifications';
 }
 
 const styles = StyleSheet.create({
