@@ -5,7 +5,9 @@ import { DraftRepository } from '../../contracts/DraftRepository';
 import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
 
+import { AttachmentCleanupService } from '../../features/attachments/AttachmentCleanupService';
 import { AttachmentImportService } from '../../features/attachments/AttachmentImportService';
+import { AttachmentMaintenanceService } from '../../features/attachments/AttachmentMaintenanceService';
 import { NativeAttachmentPicker } from '../../features/attachments/pickers/NativeAttachmentPicker';
 import { AttachmentFileStore } from '../../features/attachments/storage/AttachmentFileStore';
 import { SQLiteAttachmentRepository } from '../../features/attachments/storage/SQLiteAttachmentRepository';
@@ -24,6 +26,12 @@ const attachmentRepository =
 
 const attachmentFileStore =
   new AttachmentFileStore();
+
+const attachmentCleanupService =
+  new AttachmentCleanupService(
+    attachmentRepository,
+    attachmentFileStore,
+  );
 
 export type AppServices = {
   messageTransport: MessageTransport;
@@ -48,6 +56,12 @@ export type AppServices = {
 
   attachmentFileStore:
     AttachmentFileStore;
+
+  attachmentCleanupService:
+    AttachmentCleanupService;
+
+  attachmentMaintenanceService:
+    AttachmentMaintenanceService;
 };
 
 export const appServices: AppServices = {
@@ -81,4 +95,11 @@ export const appServices: AppServices = {
     ),
 
   attachmentFileStore,
+
+  attachmentCleanupService,
+
+  attachmentMaintenanceService:
+    new AttachmentMaintenanceService(
+      attachmentCleanupService,
+    ),
 };

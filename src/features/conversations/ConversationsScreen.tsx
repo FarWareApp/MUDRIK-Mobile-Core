@@ -32,10 +32,12 @@ import { useConversationHistoryController } from './hooks/useConversationHistory
 
 type Props = {
   repository: ConversationRepository;
+  onConversationDeleted?: () => Promise<void>;
 };
 
 export function ConversationsScreen({
   repository,
+  onConversationDeleted,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -116,6 +118,8 @@ export function ConversationsScreen({
               await deleteConversation(
                 conversation.id,
               );
+
+              await onConversationDeleted?.();
 
               if (
                 activeConversationId ===

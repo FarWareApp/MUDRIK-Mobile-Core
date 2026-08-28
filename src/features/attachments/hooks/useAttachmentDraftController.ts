@@ -67,7 +67,29 @@ export function useAttachmentDraftController({
           conversationId,
         );
 
-      setAttachments(stored);
+      const available =
+        stored.filter((attachment) =>
+          fileStore.exists(
+            attachment.localUri,
+          ),
+        );
+
+      setAttachments(available);
+
+      if (
+        available.length !==
+        stored.length
+      ) {
+        await repository
+          .setDraftAttachments(
+            conversationId,
+            available.map(
+              (attachment) =>
+                attachment.id,
+            ),
+          );
+      }
+
       setError(null);
     } catch {
       setError(
@@ -76,6 +98,7 @@ export function useAttachmentDraftController({
     }
   }, [
     conversationId,
+    fileStore,
     repository,
   ]);
 

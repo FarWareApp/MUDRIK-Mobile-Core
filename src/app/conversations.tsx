@@ -9,6 +9,11 @@ export default function ConversationsRoute() {
       repository={
         appServices.conversationRepository
       }
+      onConversationDeleted={async () => {
+        await appServices
+          .attachmentCleanupService
+          .cleanupOrphans();
+      }}
     />
   );
 }

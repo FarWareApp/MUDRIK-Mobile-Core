@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { runAppMaintenance } from '../composition/runAppMaintenance';
 import { initializeStorage } from './initializeStorage';
 
 type BootstrapState =
@@ -33,6 +34,7 @@ export function StorageBootstrapProvider({
 
     try {
       await initializeStorage();
+      await runAppMaintenance();
       setState('ready');
     } catch {
       setState('error');
