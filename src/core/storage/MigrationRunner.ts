@@ -6,7 +6,7 @@ type SchemaVersionRow = {
   user_version: number;
 };
 
-const LATEST_SCHEMA_VERSION = 4;
+const LATEST_SCHEMA_VERSION = 5;
 
 const migrationV1 = `
   CREATE TABLE IF NOT EXISTS conversations (
@@ -232,6 +232,50 @@ const migrationV4 = `
   );
 `;
 
+const migrationV5 = `
+  CREATE TABLE IF NOT EXISTS companion_profile (
+    id INTEGER PRIMARY KEY NOT NULL
+      CHECK (id = 1),
+
+    display_name TEXT NOT NULL,
+
+    presentation TEXT NOT NULL
+      CHECK (
+        presentation IN (
+          'male',
+          'female'
+        )
+      ),
+
+    voice_preference TEXT NOT NULL
+      CHECK (
+        voice_preference IN (
+          'auto',
+          'male',
+          'female'
+        )
+      ),
+
+    interaction_style TEXT NOT NULL
+      CHECK (
+        interaction_style IN (
+          'balanced',
+          'warm',
+          'calm',
+          'direct'
+        )
+      ),
+
+    show_captions INTEGER NOT NULL
+      CHECK (
+        show_captions IN (0, 1)
+      ),
+
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`;
+
 async function getSchemaVersion(
   database: SQLiteDatabase,
 ): Promise<number> {
@@ -312,6 +356,23 @@ async function migrateToV4(
     );
 }
 
+async function migrateToV5(
+  database: SQLiteDatabase,
+): Promise<void> {
+  await database
+    .withExclusiveTransactionAsync(
+      async (transaction) => {
+        await transaction.execAsync(
+          migrationV5,
+        );
+
+        await transaction.execAsync(
+          'PRAGMA user_version = 5;',
+        );
+      },
+    );
+}
+
 export async function runMigrations(
   database: SQLiteDatabase,
 ): Promise<void> {
@@ -345,6 +406,11 @@ export async function runMigrations(
   if (version < 4) {
     await migrateToV4(database);
     version = 4;
+  }
+
+  if (version < 5) {
+    await migrateToV5(database);
+    version = 5;
   }
 
   if (
