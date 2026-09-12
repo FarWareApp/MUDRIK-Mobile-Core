@@ -16,12 +16,12 @@ const NOW = 9_000_000;
 const baseGrant = Object.freeze({
   grantId: 'grant-unscoped',
   subjectId: 'device-a',
-  capability: 'terminal.execute',
+  capability: 'media.control',
 });
 
 const baseRequest = Object.freeze({
   subjectId: 'device-a',
-  capability: 'terminal.execute',
+  capability: 'media.control',
   nowMs: NOW,
 });
 
