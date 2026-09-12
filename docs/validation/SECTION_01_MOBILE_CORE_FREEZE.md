@@ -8,6 +8,8 @@ Section 01 is the only active implementation section under `MUDRIK_20_SECTION_EX
 
 The section cannot close until all five validation layers pass and the physical-device evidence is complete.
 
+The mandatory Android execution procedure is defined in `docs/validation/SECTION_01_ANDROID_DEVICE_RUNBOOK.md`.
+
 ## Layer 1 — Specification and Static Correctness
 
 ### Required
@@ -23,6 +25,25 @@ The section cannot close until all five validation layers pass and the physical-
 - [ ] Dependency/configuration review passes against the exact final candidate commit.
 
 Layer 1 is not final until it is rerun on the exact commit that will be frozen.
+
+### Automated gate now present
+
+The branch CI currently enforces all of the following before the physical-device freeze gate:
+
+- frozen Yarn dependency installation;
+- package/lockfile reproducibility check;
+- pinned GitHub Actions commit SHAs;
+- pinned Expo Doctor version;
+- tracked `.env`/private-key file rejection;
+- full Git-history credential/private-key pattern scan;
+- dependency audit that blocks High/Critical advisories;
+- ESLint;
+- TypeScript;
+- Mobile Core regression tests;
+- Expo Doctor;
+- Computer Agent Phase 0 tests.
+
+The final candidate must still rerun the same gate after all physical-device defects are fixed.
 
 ## Layer 2 — Unit and Component Verification
 
@@ -45,22 +66,41 @@ Any defect discovered in later layers that can be reproduced automatically shoul
 ### Required
 
 - [ ] Permission-denied flows do not crash or silently escalate.
+  - Automated permission normalization now proves that native `denied` never maps to application `granted`; native OS denial/re-enable behavior remains a Layer 4 device test.
 - [ ] Invalid/deleted conversation and project IDs fail safely.
-- [ ] Missing/corrupt attachments cannot escape expected storage boundaries.
-- [ ] Notification/deep-link route inputs are rejected when invalid.
-- [ ] Diagnostics never expose secrets or raw sensitive values.
-- [ ] Settings reset does not delete conversations/projects/files unexpectedly.
-- [ ] Save Text Drafts off prevents text-draft persistence.
-- [ ] Repeated send/retry actions do not create unintended duplicate logical messages.
+  - Invalid project/notification route IDs are covered automatically; deleted-resource behavior remains part of device E2E.
+- [x] Missing/corrupt attachments cannot escape expected storage boundaries.
+- [x] Notification/deep-link route inputs are rejected when invalid.
+- [x] Diagnostics never expose known credential patterns or raw sensitive values covered by the sanitizer regression suite.
+- [x] Settings reset storage operation is scoped to application settings and does not delete conversations/projects/files.
+- [x] Save Text Drafts off prevents text-draft persistence.
+- [x] Retry preserves the logical user-message identity and message persistence uses ID-based upsert semantics.
 - [ ] Offline/online transitions do not silently corrupt pending UI state.
 - [ ] App restart does not create privilege/permission state inconsistent with OS state.
-- [ ] No production AI/provider key exists in repository or shipped configuration.
+- [x] No production AI/provider key is intentionally present in repository or shipped Mobile composition; CI scans tracked history for common provider/private-key patterns.
 
 Critical/High security or privacy defects block the section.
+
+### Dependency review
+
+The automated dependency gate blocks High/Critical production dependency advisories.
+
+Current reviewed transitive Moderate advisories are not hidden:
+
+- `uuid@7.0.3`, reached through Expo config tooling;
+- `decode-uri-component@0.2.2`, reached through `expo-router -> query-string`.
+
+They are tracked as non-blocking Moderate transitive findings while the project remains on the validated Expo 57 dependency graph. A forced override that breaks Expo compatibility is not accepted as a security fix.
+
+The lint toolchain is pinned to `eslint@9.39.5` with `eslint-config-expo@57.0.2`. ESLint 10 was tested and rejected for this baseline because the Expo-supplied React lint plugin is not compatible with ESLint 10. The lint toolchain is development-only and must be upgraded when the Expo/React plugin chain supports ESLint 10 without disabling rules.
 
 ## Layer 4 — Physical Device / E2E / Recovery Verification
 
 All applicable tests must be executed on a real supported Android device. Simulator-only evidence is insufficient for this layer.
+
+Expo Go may be used for preliminary smoke testing only. Final freeze evidence must come from an app-owned Android build traceable to the exact tested commit. See `SECTION_01_ANDROID_DEVICE_RUNBOOK.md`.
+
+The repository currently has no committed `eas.json` and no fixed `expo.android.package` application ID. A permanent Android package identifier must not be invented solely to make this gate pass; the owner-selected identity/build profile must be committed before final standalone-build evidence is accepted.
 
 ### Installation and Persistence
 
