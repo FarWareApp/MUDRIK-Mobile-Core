@@ -202,6 +202,36 @@ Mobile should be able to approve a task initiated from the Web Console, and the 
 - Agent update packages must be signed.
 - The agent should have an emergency local Pause/Disconnect control.
 
+## High-Assurance Real-Time Control Plane Requirement
+
+The production path between Mobile/Web and the Computer Agent must not be implemented as an ordinary best-effort backend.
+
+The normative server/transport requirements are defined in:
+
+`docs/architecture/MUDRIK_REALTIME_CONTROL_PLANE.md`
+
+The required architecture includes:
+
+- protected Internet edge with DDoS/WAF/abuse controls;
+- horizontally scalable regional real-time gateways;
+- persistent outbound authenticated agent sessions;
+- modern encrypted transport with no plaintext fallback;
+- short-lived device-bound sessions;
+- command authentication independent from TLS;
+- nonce/sequence/expiry replay protection;
+- durable task/event persistence outside gateway memory;
+- replay-safe reconnect/resume;
+- at-least-once durable delivery plus idempotent consumers rather than false network-level exactly-once claims;
+- high-priority revoke/cancel paths;
+- transactional durable state plus low-latency durable event routing;
+- backpressure, overload shedding and slow-consumer controls;
+- p50/p95/p99 latency measurement;
+- multi-instance/high-availability design and tested recovery;
+- privacy-safe observability and security audit trails;
+- explicit database/broker backup and restore exercises.
+
+The Control Plane is a secure coordination system. It does not execute local OS operations and does not bypass the Computer Agent capability/policy layer.
+
 ## Offline Behavior
 
 The agent may support local/offline tasks when the user is physically using the computer and the task is created locally. Remote Web/Mobile control requires an authenticated communication path.
