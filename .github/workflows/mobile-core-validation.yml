@@ -76,6 +76,7 @@ jobs:
           };
 
           const seen = new Set();
+          const advisories = [];
 
           for (const line of lines) {
             let record;
@@ -104,9 +105,21 @@ jobs:
             if (severity in counts) {
               counts[severity] += 1;
             }
+
+            advisories.push({
+              severity,
+              module: advisory.module_name ?? 'unknown',
+              title: advisory.title ?? 'untitled advisory',
+              url: advisory.url ?? '',
+            });
           }
 
           console.log('Dependency vulnerability counts:', counts);
+          for (const advisory of advisories) {
+            console.log(
+              `[${advisory.severity}] ${advisory.module}: ${advisory.title}${advisory.url ? ` (${advisory.url})` : ''}`,
+            );
+          }
 
           if (counts.critical > 0 || counts.high > 0) {
             console.error(
@@ -115,6 +128,9 @@ jobs:
             process.exit(1);
           }
           NODE
+
+      - name: Install pinned lint toolchain
+        run: yarn add --dev --ignore-scripts --non-interactive --exact eslint@9.39.5 eslint-config-expo@57.0.2
 
       - name: Lint
         run: yarn lint
