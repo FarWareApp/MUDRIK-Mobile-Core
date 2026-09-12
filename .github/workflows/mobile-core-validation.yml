@@ -47,6 +47,33 @@ jobs:
           }
           NODE
 
+      - name: Tracked sensitive file gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          sensitive=()
+
+          while IFS= read -r file; do
+            case "$file" in
+              .env.example|*/.env.example|.env.*.example|*/.env.*.example)
+                continue
+                ;;
+            esac
+
+            if [[ "$file" =~ (^|/)\.env($|\.) ]] || \
+               [[ "$file" =~ \.(jks|keystore|p8|p12|pfx|pem|key)$ ]]; then
+              sensitive+=("$file")
+            fi
+          done < <(git ls-files)
+
+          if (( ${#sensitive[@]} > 0 )); then
+            printf '::error::Sensitive files are tracked by Git:\n'
+            printf ' - %s\n' "${sensitive[@]}"
+            exit 1
+          fi
+
+          echo 'No tracked environment/private-key files detected.'
+
       - name: Full Git history secret scan
         shell: bash
         run: |
@@ -58,9 +85,10 @@ jobs:
           GOOGLE_PREFIX='AI''za'
           AWS_PREFIX='AK''IA'
           SLACK_PREFIX='xox''b-'
-          PRIVATE_KEY='BEGIN ''PRIVATE KEY'
+          GROQ_PREFIX='g''sk_'
+          PRIVATE_KEY='BEGIN ([A-Z0-9]+ )?PRIVATE KEY'
 
-          PATTERN="${SK_PREFIX}[A-Za-z0-9_-]{20,}|${GHP_PREFIX}[A-Za-z0-9]{20,}|${PAT_PREFIX}[A-Za-z0-9_]{20,}|${GOOGLE_PREFIX}[A-Za-z0-9_-]{20,}|${AWS_PREFIX}[A-Z0-9]{16}|${SLACK_PREFIX}[A-Za-z0-9-]{20,}|${PRIVATE_KEY}"
+          PATTERN="${SK_PREFIX}[A-Za-z0-9_-]{20,}|${GHP_PREFIX}[A-Za-z0-9]{20,}|${PAT_PREFIX}[A-Za-z0-9_]{20,}|${GOOGLE_PREFIX}[A-Za-z0-9_-]{20,}|${AWS_PREFIX}[A-Z0-9]{16}|${SLACK_PREFIX}[A-Za-z0-9-]{20,}|${GROQ_PREFIX}[A-Za-z0-9_-]{20,}|${PRIVATE_KEY}"
 
           while read -r commit; do
             if git grep -qI -E "$PATTERN" "$commit" -- .; then
