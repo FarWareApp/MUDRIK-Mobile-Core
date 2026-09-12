@@ -15,6 +15,9 @@ import {
 } from 'react-native';
 
 import {
+  useAccessibility,
+} from '../../../core/accessibility/AccessibilityProvider';
+import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
 
@@ -44,6 +47,8 @@ export function ProjectEditorModal({
 }: Props) {
   const { colors } =
     useTheme();
+  const { reducedMotion } =
+    useAccessibility();
 
   const [name, setName] =
     useState(initialName);
@@ -77,7 +82,11 @@ export function ProjectEditorModal({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType={
+        reducedMotion
+          ? 'none'
+          : 'fade'
+      }
       onRequestClose={
         onCancel
       }
@@ -91,6 +100,7 @@ export function ProjectEditorModal({
         style={styles.overlay}
       >
         <View
+          accessibilityViewIsModal
           style={[
             styles.card,
             {
@@ -100,6 +110,7 @@ export function ProjectEditorModal({
           ]}
         >
           <Text
+            accessibilityRole="header"
             style={[
               styles.title,
               {
@@ -112,6 +123,7 @@ export function ProjectEditorModal({
           </Text>
 
           <TextInput
+            accessibilityLabel="Project name"
             value={name}
             onChangeText={setName}
             placeholder="Project name"
@@ -131,6 +143,7 @@ export function ProjectEditorModal({
           />
 
           <TextInput
+            accessibilityLabel="Project description"
             value={description}
             onChangeText={
               setDescription
@@ -154,6 +167,8 @@ export function ProjectEditorModal({
 
           <View style={styles.actions}>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cancel project editing"
               onPress={onCancel}
               style={styles.action}
             >
@@ -168,6 +183,11 @@ export function ProjectEditorModal({
             </Pressable>
 
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Save project"
+              accessibilityState={{
+                disabled: !canSave,
+              }}
               disabled={!canSave}
               onPress={() =>
                 onSave(
@@ -254,15 +274,15 @@ const styles =
     },
 
     action: {
-      minHeight: 42,
+      minHeight: 44,
       justifyContent:
         'center',
       paddingHorizontal: 16,
     },
 
     save: {
-      minHeight: 42,
-      borderRadius: 21,
+      minHeight: 44,
+      borderRadius: 22,
       justifyContent:
         'center',
       paddingHorizontal: 20,

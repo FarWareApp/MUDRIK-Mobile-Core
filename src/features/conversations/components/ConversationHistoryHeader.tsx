@@ -52,6 +52,7 @@ export function ConversationHistoryHeader({
       </Pressable>
 
       <Text
+        accessibilityRole="header"
         style={[
           styles.title,
           {
@@ -88,7 +89,7 @@ export function ConversationHistoryHeader({
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 62,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth:
@@ -104,9 +105,9 @@ const styles = StyleSheet.create({
   },
 
   circleButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },

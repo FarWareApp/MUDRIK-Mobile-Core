@@ -17,6 +17,7 @@ import {
 
 type Props = {
   project: ProjectRecord;
+  disabled?: boolean;
 
   onOpen: () => void;
   onArchive: () => void;
@@ -25,6 +26,7 @@ type Props = {
 
 export function ProjectListItem({
   project,
+  disabled = false,
   onOpen,
   onArchive,
   onDelete,
@@ -39,10 +41,14 @@ export function ProjectListItem({
         {
           borderBottomColor:
             colors.border,
+          opacity: disabled ? 0.6 : 1,
         },
       ]}
     >
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open project: ${project.name}`}
+        disabled={disabled}
         onPress={onOpen}
         style={styles.main}
       >
@@ -93,6 +99,13 @@ export function ProjectListItem({
         style={styles.actions}
       >
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            project.isArchived
+              ? `Restore ${project.name}`
+              : `Archive ${project.name}`
+          }
+          disabled={disabled}
           onPress={onArchive}
           style={styles.action}
         >
@@ -109,6 +122,9 @@ export function ProjectListItem({
         </Pressable>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${project.name}`}
+          disabled={disabled}
           onPress={onDelete}
           style={styles.action}
         >
@@ -140,6 +156,8 @@ const styles =
 
     main: {
       flex: 1,
+      minHeight: 60,
+      justifyContent: 'center',
       paddingVertical: 12,
     },
 
@@ -164,8 +182,8 @@ const styles =
     },
 
     action: {
-      width: 38,
-      height: 46,
+      width: 44,
+      height: 44,
       alignItems: 'center',
       justifyContent:
         'center',

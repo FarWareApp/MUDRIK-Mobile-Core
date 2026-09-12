@@ -11,6 +11,7 @@ import { useTheme } from '../../../design-system/theme/ThemeProvider';
 
 type Props = {
   conversation: ConversationRecord;
+  disabled?: boolean;
   onOpen: () => void;
   onPin: () => void;
   onArchive: () => void;
@@ -19,6 +20,7 @@ type Props = {
 
 export function ConversationListItem({
   conversation,
+  disabled = false,
   onOpen,
   onPin,
   onArchive,
@@ -41,17 +43,22 @@ export function ConversationListItem({
         {
           borderBottomColor:
             colors.border,
+          opacity: disabled ? 0.6 : 1,
         },
       ]}
     >
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={`Open conversation: ${title}`}
+        disabled={disabled}
         onPress={onOpen}
         style={styles.main}
       >
         <View style={styles.titleRow}>
           {conversation.isPinned && (
             <Text
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
               style={{
                 color: colors.accent,
                 marginRight: 6,
@@ -88,8 +95,14 @@ export function ConversationListItem({
 
       <View style={styles.actions}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            conversation.isPinned
+              ? `Unpin ${title}`
+              : `Pin ${title}`
+          }
+          disabled={disabled}
           onPress={onPin}
-          hitSlop={6}
           style={styles.action}
         >
           <Text
@@ -104,8 +117,14 @@ export function ConversationListItem({
         </Pressable>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            conversation.isArchived
+              ? `Restore ${title}`
+              : `Archive ${title}`
+          }
+          disabled={disabled}
           onPress={onArchive}
-          hitSlop={6}
           style={styles.action}
         >
           <Text
@@ -120,13 +139,16 @@ export function ConversationListItem({
         </Pressable>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${title}`}
+          disabled={disabled}
           onPress={onDelete}
-          hitSlop={6}
           style={styles.action}
         >
           <Text
             style={{
               color: colors.error,
+              fontSize: 20,
             }}
           >
             ×
@@ -149,6 +171,8 @@ const styles = StyleSheet.create({
 
   main: {
     flex: 1,
+    minHeight: 56,
+    justifyContent: 'center',
     paddingVertical: 12,
   },
 
@@ -174,8 +198,8 @@ const styles = StyleSheet.create({
   },
 
   action: {
-    width: 34,
-    height: 42,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

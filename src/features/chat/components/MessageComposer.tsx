@@ -73,6 +73,9 @@ export function MessageComposer({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Attachments"
+          accessibilityState={{
+            disabled: sending,
+          }}
           disabled={sending}
           onPress={onAttachmentsPress}
           style={styles.sideButton}
@@ -91,6 +94,7 @@ export function MessageComposer({
         </Pressable>
 
         <TextInput
+          accessibilityLabel={t('composerPlaceholder')}
           value={value}
           onChangeText={onChangeText}
           editable={!sending}
@@ -110,6 +114,9 @@ export function MessageComposer({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Voice"
+          accessibilityState={{
+            disabled: sending,
+          }}
           disabled={sending}
           onPress={onVoicePress}
           style={styles.sideButton}
@@ -145,6 +152,9 @@ export function MessageComposer({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Send"
+            accessibilityState={{
+              disabled: !canSend,
+            }}
             disabled={!canSend}
             onPress={() => {
               void submit();
@@ -185,7 +195,7 @@ const styles = StyleSheet.create({
   },
 
   composer: {
-    minHeight: 54,
+    minHeight: 56,
     maxHeight: 160,
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -196,7 +206,7 @@ const styles = StyleSheet.create({
 
   input: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 44,
     maxHeight: 140,
     paddingHorizontal: 8,
     paddingTop: 10,
@@ -206,8 +216,8 @@ const styles = StyleSheet.create({
   },
 
   sideButton: {
-    width: 38,
-    height: 42,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -221,11 +231,11 @@ const styles = StyleSheet.create({
   },
 
   sendButton: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 21,
+    borderRadius: 22,
   },
 
   stopIcon: {

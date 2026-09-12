@@ -196,6 +196,7 @@ export function ConversationsScreen({
           renderItem={({ item }) => (
             <ConversationListItem
               conversation={item}
+              disabled={controller.busy}
               onOpen={() =>
                 openConversation(item)
               }
