@@ -122,6 +122,9 @@ jobs:
       - name: TypeScript
         run: yarn typecheck
 
+      - name: Mobile Core security regression tests
+        run: node --test test/mobile-core/*.test.mjs
+
       - name: Expo Doctor
         run: npx expo-doctor
 
