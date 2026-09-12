@@ -128,7 +128,7 @@ test('a later valid grant can authorize even when an earlier candidate is expire
   });
 });
 
-test('filesystem git and terminal capabilities require an explicit workspace prefix', () => {
+test('filesystem git and terminal capabilities require a non-root workspace prefix', () => {
   for (const capability of [
     'filesystem.read',
     'filesystem.write',
@@ -140,6 +140,14 @@ test('filesystem git and terminal capabilities require an explicit workspace pre
       authorizeCapability(
         request({ capability, resourcePath: '/workspace/project-a/file.txt' }),
         [grant({ capability })],
+      ).reason,
+      'grant_scope_required',
+    );
+
+    assert.equal(
+      authorizeCapability(
+        request({ capability, resourcePath: '/workspace/project-a/file.txt' }),
+        [grant({ capability, scope: { resourcePrefix: '/' } })],
       ).reason,
       'grant_scope_required',
     );
@@ -159,7 +167,7 @@ test('filesystem git and terminal capabilities require an explicit workspace pre
   }
 });
 
-test('network access requires an explicit non-empty domain allowlist', () => {
+test('network access requires an explicit exact-host allowlist', () => {
   assert.equal(
     authorizeCapability(
       request({ capability: 'network.request', domain: 'api.example.com' }),
@@ -174,7 +182,7 @@ test('network access requires an explicit non-empty domain allowlist', () => {
       [
         grant({
           capability: 'network.request',
-          scope: { allowedDomains: ['example.com'] },
+          scope: { allowedDomains: ['api.example.com'] },
         }),
       ],
     ).allowed,
@@ -255,7 +263,7 @@ test('resource prefixes reject traversal, encoded paths and ambiguous separators
   }
 });
 
-test('domain scopes allow exact domains and subdomains but not lookalike suffixes', () => {
+test('domain scopes are exact by default and reject implicit subdomains or lookalikes', () => {
   const networkGrant = grant({
     capability: 'network.request',
     scope: {
@@ -265,27 +273,25 @@ test('domain scopes allow exact domains and subdomains but not lookalike suffixe
 
   assert.equal(
     authorizeCapability(
-      request({ capability: 'network.request', domain: 'api.example.com' }),
+      request({ capability: 'network.request', domain: 'example.com' }),
       [networkGrant],
     ).allowed,
     true,
   );
 
-  assert.equal(
-    authorizeCapability(
-      request({ capability: 'network.request', domain: 'example.com.evil.test' }),
-      [networkGrant],
-    ).reason,
-    'domain_mismatch',
-  );
-
-  assert.equal(
-    authorizeCapability(
-      request({ capability: 'network.request', domain: 'evil-example.com' }),
-      [networkGrant],
-    ).reason,
-    'domain_mismatch',
-  );
+  for (const deniedDomain of [
+    'api.example.com',
+    'example.com.evil.test',
+    'evil-example.com',
+  ]) {
+    assert.equal(
+      authorizeCapability(
+        request({ capability: 'network.request', domain: deniedDomain }),
+        [networkGrant],
+      ).reason,
+      'domain_mismatch',
+    );
+  }
 });
 
 test('background execution and privilege elevation require explicit scope', () => {
