@@ -30,6 +30,24 @@ const {
   'src/features/chat/DraftPersistencePolicy.ts',
 );
 
+const {
+  resolveNotificationRoute,
+} = loadTypeScriptModule(
+  'src/features/notifications/resolveNotificationRoute.ts',
+);
+
+const {
+  MockMessageTransport,
+} = loadTypeScriptModule(
+  'src/mocks/MockMessageTransport.ts',
+);
+
+const {
+  TransportCancelledError,
+} = loadTypeScriptModule(
+  'src/contracts/TransportCancelledError.ts',
+);
+
 test(
   'diagnostics redact common credentials and sensitive context',
   () => {
@@ -121,6 +139,58 @@ test(
     ]) {
       assert.equal(
         normalizeProjectId(invalid),
+        null,
+      );
+    }
+  },
+);
+
+test(
+  'notification navigation accepts only known routes and validated project IDs',
+  () => {
+    assert.deepEqual(
+      resolveNotificationRoute({
+        target: 'settings',
+      }),
+      {
+        kind: 'path',
+        target: 'settings',
+        path: '/settings',
+      },
+    );
+
+    assert.deepEqual(
+      resolveNotificationRoute({
+        target: 'project',
+        projectId:
+          'project-1760000000000-ab12cd34',
+      }),
+      {
+        kind: 'project',
+        target: 'project',
+        projectId:
+          'project-1760000000000-ab12cd34',
+      },
+    );
+
+    for (const invalid of [
+      null,
+      [],
+      {},
+      { target: '../settings' },
+      { target: 'admin' },
+      {
+        target: 'project',
+        projectId: '../settings',
+      },
+      {
+        target: 'project',
+        projectId:
+          'project-1760000000000-../../db',
+      },
+    ]) {
+      assert.equal(
+        resolveNotificationRoute(invalid),
         null,
       );
     }
@@ -238,5 +308,73 @@ test(
       enabled,
       repository,
     );
+  },
+);
+
+test(
+  'mock transport supports attachment-only messages',
+  async () => {
+    const transport =
+      new MockMessageTransport();
+
+    const task = transport.send({
+      id: 'user-1',
+      conversationId: 'conversation-1',
+      kind: 'message',
+      text: '   ',
+      attachments: [
+        {
+          id: 'attachment-1760000000000-ab12cd34',
+          kind: 'image',
+          name: 'photo.jpg',
+          mimeType: 'image/jpeg',
+          sizeBytes: 100,
+          localUri: 'file:///managed/photo.jpg',
+          width: 10,
+          height: 10,
+          durationMs: null,
+        },
+      ],
+      createdAt: 1,
+    });
+
+    const output = await task.result;
+
+    assert.equal(
+      output.conversationId,
+      'conversation-1',
+    );
+    assert.match(
+      output.text,
+      /Received \(1 attachment\)/,
+    );
+  },
+);
+
+test(
+  'mock transport cancellation rejects with the dedicated cancellation error',
+  async () => {
+    const transport =
+      new MockMessageTransport();
+
+    const task = transport.send({
+      id: 'user-2',
+      conversationId: 'conversation-2',
+      kind: 'message',
+      text: 'cancel me',
+      attachments: [],
+      createdAt: 2,
+    });
+
+    task.cancel();
+
+    await assert.rejects(
+      task.result,
+      (error) =>
+        error instanceof
+        TransportCancelledError,
+    );
+
+    task.cancel();
   },
 );
