@@ -2,6 +2,7 @@ import React from 'react';
 
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -83,6 +84,17 @@ export function SettingsScreen({
           <ActivityIndicator
             color={colors.accent}
           />
+          <Text
+            style={[
+              styles.loadingText,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
+            Loading settings…
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -100,6 +112,8 @@ export function SettingsScreen({
     >
       <View style={styles.header}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
           onPress={() =>
             router.back()
           }
@@ -136,6 +150,69 @@ export function SettingsScreen({
 
         <View style={styles.spacer} />
       </View>
+
+      {settings.error && (
+        <View
+          accessibilityRole="alert"
+          style={[
+            styles.errorBanner,
+            {
+              backgroundColor:
+                colors.surface,
+              borderColor:
+                colors.error,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.errorText,
+              {
+                color: colors.textPrimary,
+              },
+            ]}
+          >
+            {settings.error}
+          </Text>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reload settings"
+            onPress={() => {
+              void settings.reload();
+            }}
+            style={styles.errorAction}
+          >
+            <Text
+              style={{
+                color: colors.accent,
+                fontWeight: '700',
+              }}
+            >
+              Retry
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss settings error"
+            onPress={
+              settings.dismissError
+            }
+            style={styles.errorAction}
+          >
+            <Text
+              style={{
+                color:
+                  colors.textSecondary,
+                fontSize: 18,
+              }}
+            >
+              ×
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       <ScrollView>
         <SectionTitle
@@ -295,6 +372,58 @@ export function SettingsScreen({
           }}
         />
 
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open core health and diagnostics"
+          onPress={() => {
+            router.push(
+              '/diagnostics',
+            );
+          }}
+          style={[
+            styles.navigationRow,
+            {
+              borderBottomColor:
+                colors.border,
+            },
+          ]}
+        >
+          <View style={styles.navigationText}>
+            <Text
+              style={[
+                styles.navigationTitle,
+                {
+                  color:
+                    colors.textPrimary,
+                },
+              ]}
+            >
+              Core health & diagnostics
+            </Text>
+            <Text
+              style={[
+                styles.navigationDescription,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
+              Review core status, local logs and safe storage maintenance.
+            </Text>
+          </View>
+
+          <Text
+            style={{
+              color:
+                colors.textSecondary,
+              fontSize: 22,
+            }}
+          >
+            ›
+          </Text>
+        </Pressable>
+
         <SectionTitle
           title="Permissions"
         />
@@ -324,8 +453,26 @@ export function SettingsScreen({
         )}
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Reset application settings"
           onPress={() => {
-            void settings.reset();
+            Alert.alert(
+              'Reset settings?',
+              'This restores application preferences to their defaults. Conversations, projects and files are not deleted.',
+              [
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                },
+                {
+                  text: 'Reset',
+                  style: 'destructive',
+                  onPress: () => {
+                    void settings.reset();
+                  },
+                },
+              ],
+            );
           }}
           style={[
             styles.reset,
@@ -408,6 +555,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  loadingText: {
+    marginTop: 10,
+    fontSize: 13,
+  },
+
+  errorBanner: {
+    marginHorizontal: 14,
+    marginBottom: 6,
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+  },
+
+  errorAction: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+
   sectionTitle: {
     marginTop: 24,
     marginBottom: 7,
@@ -419,6 +595,31 @@ const styles = StyleSheet.create({
 
   loader: {
     margin: 24,
+  },
+
+  navigationRow: {
+    minHeight: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+
+  navigationText: {
+    flex: 1,
+    paddingRight: 12,
+  },
+
+  navigationTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  navigationDescription: {
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   reset: {
