@@ -134,11 +134,35 @@ jobs:
 
           PATTERN="${SK_PREFIX}[A-Za-z0-9_-]{20,}|${GHP_PREFIX}[A-Za-z0-9]{20,}|${PAT_PREFIX}[A-Za-z0-9_]{20,}|${GOOGLE_PREFIX}[A-Za-z0-9_-]{20,}|${AWS_PREFIX}[A-Z0-9]{16}|${SLACK_PREFIX}[A-Za-z0-9-]{20,}|${GROQ_PREFIX}[A-Za-z0-9_-]{20,}|${PRIVATE_KEY}"
 
+          # These are deliberately synthetic credential-shaped strings used only
+          # to prove telemetry redaction. Keep the allowlist exact and path-bound;
+          # never exempt an entire test file from secret scanning.
+          SYNTHETIC_ONE="${SK_PREFIX}1234567890abcdefghijklmnop"
+          SYNTHETIC_TWO="${SK_PREFIX}plaintext-secret-value"
+          SYNTHETIC_PATH='test/mobile-core/security-foundation.test.mjs'
+
           while read -r commit; do
-            if git grep -qI -E "$PATTERN" "$commit" -- .; then
-              echo "::error::Potential credential/private-key pattern detected in Git history at commit $commit"
-              exit 1
-            fi
+            matches="$(git grep -nI -E "$PATTERN" "$commit" -- . || true)"
+            [[ -z "$matches" ]] && continue
+
+            while IFS= read -r hit; do
+              rest="${hit#${commit}:}"
+              path="${rest%%:*}"
+              rest="${rest#*:}"
+              line_no="${rest%%:*}"
+              content="${rest#*:}"
+
+              sanitized="$content"
+              if [[ "$path" == "$SYNTHETIC_PATH" ]]; then
+                sanitized="${sanitized//$SYNTHETIC_ONE/}"
+                sanitized="${sanitized//$SYNTHETIC_TWO/}"
+              fi
+
+              if printf '%s\n' "$sanitized" | grep -qE "$PATTERN"; then
+                echo "::error::Potential credential/private-key pattern detected in Git history at commit $commit, path $path, line $line_no"
+                exit 1
+              fi
+            done <<< "$matches"
           done < <(git rev-list --all)
 
           echo "Full Git history secret scan passed."
