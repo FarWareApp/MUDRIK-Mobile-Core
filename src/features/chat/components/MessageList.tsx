@@ -4,6 +4,7 @@ import {
   StyleSheet,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { ChatMessage } from '../types';
 import { EmptyChatState } from './EmptyChatState';
@@ -17,6 +18,7 @@ export function MessageList({
   messages,
 }: Props) {
   const listRef = useRef<FlatList<ChatMessage>>(null);
+  const { reducedMotion } = useAccessibility();
 
   return (
     <FlatList
@@ -35,7 +37,7 @@ export function MessageList({
       onContentSizeChange={() => {
         if (messages.length > 0) {
           listRef.current?.scrollToEnd({
-            animated: true,
+            animated: !reducedMotion,
           });
         }
       }}

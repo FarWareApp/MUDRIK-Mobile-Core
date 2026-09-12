@@ -1,8 +1,26 @@
+import type {
+  AttachmentKind,
+} from './Attachment';
+
+export type MessageTransportAttachment = {
+  id: string;
+  kind: AttachmentKind;
+  name: string;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  localUri: string;
+  width: number | null;
+  height: number | null;
+  durationMs: number | null;
+};
+
 export type MessageTransportInput = {
   id: string;
   conversationId: string;
-  kind: 'text';
+  kind: 'message';
   text: string;
+  attachments:
+    readonly MessageTransportAttachment[];
   createdAt: number;
 };
 

@@ -29,6 +29,8 @@ import { ChatMessage } from '../types';
 export type ChatSendError = {
   message: string;
   failedText: string;
+  failedAttachments: AttachmentRecord[];
+  retryAppendUserMessage: boolean;
 };
 
 type Dependencies = {
@@ -40,7 +42,6 @@ type Dependencies = {
   selectedConversationId: string | null;
   onConversationActivated: (id: string) => void;
 };
-
 
 export function useConversationController({
   transport,
@@ -339,28 +340,6 @@ export function useConversationController({
               userMessage.id,
             );
 
-          if (!conversationTitle.trim()) {
-            const title =
-              deriveConversationTitle(
-                text ||
-                attachments[0]?.name ||
-                'Attachment',
-              );
-
-            await conversationRepository.rename(
-              conversationId,
-              title,
-              now,
-            );
-
-            setConversationTitle(title);
-          } else {
-            await conversationRepository.touch(
-              conversationId,
-              now,
-            );
-          }
-
           setMessages((current) => [
             ...current,
             userMessage,
@@ -368,9 +347,51 @@ export function useConversationController({
 
           setDraft('');
 
-          await draftRepository.clear(
-            conversationId,
-          );
+          try {
+            await draftRepository.clear(
+              conversationId,
+            );
+          } catch (caught) {
+            diagnosticsService.record(
+              'chat',
+              caught instanceof Error
+                ? `draft-clear-after-send-failed:${caught.message}`
+                : 'draft-clear-after-send-failed:unknown',
+              'warning',
+            );
+          }
+
+          try {
+            if (!conversationTitle.trim()) {
+              const title =
+                deriveConversationTitle(
+                  text ||
+                  attachments[0]?.name ||
+                  'Attachment',
+                );
+
+              await conversationRepository.rename(
+                conversationId,
+                title,
+                now,
+              );
+
+              setConversationTitle(title);
+            } else {
+              await conversationRepository.touch(
+                conversationId,
+                now,
+              );
+            }
+          } catch (caught) {
+            diagnosticsService.record(
+              'chat',
+              caught instanceof Error
+                ? `conversation-metadata-after-send-failed:${caught.message}`
+                : 'conversation-metadata-after-send-failed:unknown',
+              'warning',
+            );
+          }
         }
 
         diagnosticsService.record(
@@ -381,8 +402,21 @@ export function useConversationController({
         const task = transport.send({
           id: userMessage.id,
           conversationId,
-          kind: 'text',
+          kind: 'message',
           text,
+          attachments: attachments.map(
+            (attachment) => ({
+              id: attachment.id,
+              kind: attachment.kind,
+              name: attachment.name,
+              mimeType: attachment.mimeType,
+              sizeBytes: attachment.sizeBytes,
+              localUri: attachment.localUri,
+              width: attachment.width,
+              height: attachment.height,
+              durationMs: attachment.durationMs,
+            }),
+          ),
           createdAt: userMessage.createdAt,
         });
 
@@ -439,11 +473,15 @@ export function useConversationController({
             message:
               'Unable to complete the message.',
             failedText: text,
+            failedAttachments: attachments,
+            retryAppendUserMessage: false,
           });
 
           diagnosticsService.record(
             'chat',
-            'message-send-failed',
+            caught instanceof Error
+              ? `message-send-failed:${caught.message}`
+              : 'message-send-failed:unknown',
             'error',
           );
         } finally {
@@ -461,6 +499,8 @@ export function useConversationController({
           message:
             'Unable to save the message locally.',
           failedText: text,
+          failedAttachments: attachments,
+          retryAppendUserMessage: true,
         });
 
         diagnosticsService.record(
@@ -505,7 +545,8 @@ export function useConversationController({
 
     await performSend(
       error.failedText,
-      false,
+      error.retryAppendUserMessage,
+      error.failedAttachments,
     );
   }, [error, performSend]);
 

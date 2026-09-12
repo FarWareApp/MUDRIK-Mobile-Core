@@ -25,11 +25,25 @@ export class MockMessageTransport implements MessageTransport {
           settled = true;
           timer = null;
 
+          const trimmedText =
+            input.text.trim();
+
+          const attachmentSummary =
+            input.attachments.length > 0
+              ? ` (${input.attachments.length} attachment${
+                  input.attachments.length === 1
+                    ? ''
+                    : 's'
+                })`
+              : '';
+
           resolve({
             id: `mock-${Date.now()}`,
             conversationId: input.conversationId,
             kind: 'text',
-            text: `[MOCK] ${input.text}`,
+            text: trimmedText
+              ? `[MOCK] ${trimmedText}${attachmentSummary}`
+              : `[MOCK] Received${attachmentSummary}.`,
             createdAt: Date.now(),
           });
         }, 1200);

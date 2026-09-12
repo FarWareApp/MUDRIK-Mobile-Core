@@ -5,6 +5,8 @@ import {
   View,
 } from 'react-native';
 
+import { useLocale } from '../../../core/localization/LocaleProvider';
+import { resolveTextDirection } from '../../../core/localization/TextDirectionResolver';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
@@ -19,8 +21,15 @@ export function MessageBubble({
   message,
 }: Props) {
   const { colors } = useTheme();
+  const { isRTL } = useLocale();
 
   const isUser = message.role === 'user';
+
+  const direction =
+    resolveTextDirection(
+      message.text,
+      isRTL ? 'rtl' : 'ltr',
+    );
 
   return (
     <View
@@ -44,19 +53,24 @@ export function MessageBubble({
       />
 
       {message.text.length > 0 && (
-      <Text
-        selectable
-        style={[
-          styles.text,
-          {
-            color: isUser
-              ? colors.accentText
-              : colors.textPrimary,
-          },
-        ]}
-      >
-        {message.text}
-      </Text>
+        <Text
+          selectable
+          style={[
+            styles.text,
+            {
+              color: isUser
+                ? colors.accentText
+                : colors.textPrimary,
+              writingDirection: direction,
+              textAlign:
+                direction === 'rtl'
+                  ? 'right'
+                  : 'left',
+            },
+          ]}
+        >
+          {message.text}
+        </Text>
       )}
     </View>
   );
@@ -74,6 +88,5 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     lineHeight: 23,
-    writingDirection: 'auto',
   },
 });
