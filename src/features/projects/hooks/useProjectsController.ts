@@ -8,6 +8,9 @@ import {
   ProjectRecord,
   ProjectRepository,
 } from '../../../contracts/ProjectRepository';
+import {
+  diagnosticsService,
+} from '../../../core/diagnostics/DiagnosticsService';
 
 import {
   createProjectId,
@@ -25,6 +28,19 @@ type Dependencies = {
     () => Promise<void>;
 };
 
+function recordProjectListError(
+  event: string,
+  caught: unknown,
+): void {
+  diagnosticsService.record(
+    'projects',
+    caught instanceof Error
+      ? `${event}:${caught.message}`
+      : `${event}:unknown`,
+    'error',
+  );
+}
+
 export function useProjectsController({
   repository,
   onProjectDeleted,
@@ -34,6 +50,9 @@ export function useProjectsController({
 
   const [loading, setLoading] =
     useState(true);
+
+  const [busy, setBusy] =
+    useState(false);
 
   const [error, setError] =
     useState<string | null>(null);
@@ -56,7 +75,12 @@ export function useProjectsController({
         );
 
         setError(null);
-      } catch {
+      } catch (caught) {
+        recordProjectListError(
+          'load-failed',
+          caught,
+        );
+
         setError(
           'Unable to load projects.',
         );
@@ -71,10 +95,17 @@ export function useProjectsController({
         name: string,
         description: string,
       ) => {
+        if (busy) {
+          return null;
+        }
+
         const cleanName =
           name.trim();
 
         if (!cleanName) {
+          setError(
+            'Project name cannot be empty.',
+          );
           return null;
         }
 
@@ -84,19 +115,37 @@ export function useProjectsController({
         const now =
           Date.now();
 
-        await repository.create({
-          id,
-          name: cleanName,
-          description:
-            description.trim(),
-          createdAt: now,
-        });
+        setBusy(true);
+        setError(null);
 
-        await load();
+        try {
+          await repository.create({
+            id,
+            name: cleanName,
+            description:
+              description.trim(),
+            createdAt: now,
+          });
 
-        return id;
+          await load();
+
+          return id;
+        } catch (caught) {
+          recordProjectListError(
+            'create-failed',
+            caught,
+          );
+
+          setError(
+            'Unable to create project.',
+          );
+          return null;
+        } finally {
+          setBusy(false);
+        }
       },
       [
+        busy,
         load,
         repository,
       ],
@@ -108,15 +157,36 @@ export function useProjectsController({
         project:
           ProjectRecord,
       ) => {
-        await repository.setArchived(
-          project.id,
-          !project.isArchived,
-          Date.now(),
-        );
+        if (busy) {
+          return;
+        }
 
-        await load();
+        setBusy(true);
+        setError(null);
+
+        try {
+          await repository.setArchived(
+            project.id,
+            !project.isArchived,
+            Date.now(),
+          );
+
+          await load();
+        } catch (caught) {
+          recordProjectListError(
+            'archive-failed',
+            caught,
+          );
+
+          setError(
+            'Unable to update project.',
+          );
+        } finally {
+          setBusy(false);
+        }
       },
       [
+        busy,
         load,
         repository,
       ],
@@ -125,13 +195,46 @@ export function useProjectsController({
   const deleteProject =
     useCallback(
       async (id: string) => {
-        await repository.delete(id);
+        if (busy) {
+          return false;
+        }
 
-        await onProjectDeleted?.();
+        setBusy(true);
+        setError(null);
 
-        await load();
+        try {
+          await repository.delete(id);
+
+          try {
+            await onProjectDeleted?.();
+          } catch (cleanupError) {
+            diagnosticsService.record(
+              'projects',
+              cleanupError instanceof Error
+                ? `cleanup-after-delete-failed:${cleanupError.message}`
+                : 'cleanup-after-delete-failed:unknown',
+              'warning',
+            );
+          }
+
+          await load();
+          return true;
+        } catch (caught) {
+          recordProjectListError(
+            'delete-failed',
+            caught,
+          );
+
+          setError(
+            'Unable to delete project.',
+          );
+          return false;
+        } finally {
+          setBusy(false);
+        }
       },
       [
+        busy,
         load,
         onProjectDeleted,
         repository,
@@ -182,6 +285,7 @@ export function useProjectsController({
       visibleProjects,
 
     loading,
+    busy,
     error,
 
     query,

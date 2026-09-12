@@ -19,15 +19,20 @@ import {
   ConversationRecord,
   ConversationRepository,
 } from '../../contracts/ConversationRepository';
+import {
+  diagnosticsService,
+} from '../../core/diagnostics/DiagnosticsService';
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import {
+  InlineErrorBanner,
+} from '../../shared/components/InlineErrorBanner';
 import { useActiveConversation } from './ActiveConversationProvider';
 import { ConversationHistoryHeader } from './components/ConversationHistoryHeader';
 import { ConversationHistoryState } from './components/ConversationHistoryState';
 import { ConversationListItem } from './components/ConversationListItem';
 import { ConversationSearchBar } from './components/ConversationSearchBar';
 import { ConversationViewTabs } from './components/ConversationViewTabs';
-import { createConversationId } from './createConversationId';
 import { useConversationHistoryController } from './hooks/useConversationHistoryController';
 
 type Props = {
@@ -48,29 +53,15 @@ export function ConversationsScreen({
     clearActiveConversation,
   } = useActiveConversation();
 
-  const {
-    conversations,
-    loading,
-    failed,
-
-    query,
-    setQuery,
-
-    viewMode,
-    setViewMode,
-
-    load,
-    togglePinned,
-    toggleArchived,
-    deleteConversation,
-  } = useConversationHistoryController(
-    repository,
-  );
+  const controller =
+    useConversationHistoryController(
+      repository,
+    );
 
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load]),
+      void controller.load();
+    }, [controller.load]),
   );
 
   const openConversation = (
@@ -82,18 +73,14 @@ export function ConversationsScreen({
 
   const createNewConversation =
     async () => {
-      const now = Date.now();
+      const id =
+        await controller.create();
 
-      const id = createConversationId();
-
-      await repository.create({
-        id,
-        title: '',
-        createdAt: now,
-      });
+      if (!id) {
+        return;
+      }
 
       activateConversation(id);
-
       router.back();
     };
 
@@ -115,11 +102,27 @@ export function ConversationsScreen({
 
           onPress: () => {
             void (async () => {
-              await deleteConversation(
-                conversation.id,
-              );
+              const deleted =
+                await controller
+                  .deleteConversation(
+                    conversation.id,
+                  );
 
-              await onConversationDeleted?.();
+              if (!deleted) {
+                return;
+              }
+
+              try {
+                await onConversationDeleted?.();
+              } catch (caught) {
+                diagnosticsService.record(
+                  'conversation-history',
+                  caught instanceof Error
+                    ? `cleanup-after-delete-failed:${caught.message}`
+                    : 'cleanup-after-delete-failed:unknown',
+                  'warning',
+                );
+              }
 
               if (
                 activeConversationId ===
@@ -149,36 +152,45 @@ export function ConversationsScreen({
         }}
       />
 
+      {controller.error && (
+        <InlineErrorBanner
+          message={controller.error}
+          onDismiss={
+            controller.dismissError
+          }
+        />
+      )}
+
       <View style={styles.controls}>
         <ConversationSearchBar
-          value={query}
-          onChangeText={setQuery}
+          value={controller.query}
+          onChangeText={controller.setQuery}
         />
 
         <ConversationViewTabs
-          value={viewMode}
-          onChange={setViewMode}
+          value={controller.viewMode}
+          onChange={controller.setViewMode}
         />
       </View>
 
-      {loading ? (
+      {controller.loading ? (
         <ConversationHistoryState
           mode="loading"
         />
-      ) : failed ? (
+      ) : controller.failed ? (
         <ConversationHistoryState
           mode="error"
           onRetry={() => {
-            void load();
+            void controller.load();
           }}
         />
-      ) : conversations.length === 0 ? (
+      ) : controller.conversations.length === 0 ? (
         <ConversationHistoryState
           mode="empty"
         />
       ) : (
         <FlatList
-          data={conversations}
+          data={controller.conversations}
           keyExtractor={(item) => item.id}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
@@ -188,10 +200,10 @@ export function ConversationsScreen({
                 openConversation(item)
               }
               onPin={() => {
-                void togglePinned(item);
+                void controller.togglePinned(item);
               }}
               onArchive={() => {
-                void toggleArchived(item);
+                void controller.toggleArchived(item);
               }}
               onDelete={() => {
                 confirmDelete(item);

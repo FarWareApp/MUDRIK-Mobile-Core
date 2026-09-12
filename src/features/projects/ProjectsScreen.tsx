@@ -30,6 +30,9 @@ import {
 import {
   useTheme,
 } from '../../design-system/theme/ThemeProvider';
+import {
+  InlineErrorBanner,
+} from '../../shared/components/InlineErrorBanner';
 
 import {
   ProjectEditorModal,
@@ -126,6 +129,8 @@ export function ProjectsScreen({
     >
       <View style={styles.header}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
           onPress={() =>
             router.back()
           }
@@ -161,6 +166,9 @@ export function ProjectsScreen({
         </Text>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Create project"
+          disabled={controller.busy}
           onPress={() =>
             setCreateOpen(true)
           }
@@ -169,6 +177,10 @@ export function ProjectsScreen({
             {
               backgroundColor:
                 colors.accent,
+              opacity:
+                controller.busy
+                  ? 0.5
+                  : 1,
             },
           ]}
         >
@@ -184,7 +196,24 @@ export function ProjectsScreen({
         </Pressable>
       </View>
 
+      {controller.error && (
+        <InlineErrorBanner
+          message={controller.error}
+          onRetry={
+            controller.projects.length === 0
+              ? () => {
+                  void controller.load();
+                }
+              : undefined
+          }
+          onDismiss={
+            controller.dismissError
+          }
+        />
+      )}
+
       <TextInput
+        accessibilityLabel="Search projects"
         value={controller.query}
         onChangeText={
           controller.setQuery
@@ -213,7 +242,8 @@ export function ProjectsScreen({
         }
       />
 
-      {controller.loading ? (
+      {controller.loading &&
+      controller.projects.length === 0 ? (
         <View style={styles.center}>
           <Text
             style={{
@@ -230,10 +260,14 @@ export function ProjectsScreen({
           <Text
             style={{
               color:
-                colors.textSecondary,
+                controller.error
+                  ? colors.error
+                  : colors.textSecondary,
             }}
           >
-            No projects.
+            {controller.error
+              ? 'Projects could not be loaded.'
+              : 'No projects.'}
           </Text>
         </View>
       ) : (
@@ -345,5 +379,6 @@ const styles =
       alignItems: 'center',
       justifyContent:
         'center',
+      paddingHorizontal: 20,
     },
   });

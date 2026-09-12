@@ -8,10 +8,29 @@ import {
   ConversationRecord,
   ConversationRepository,
 } from '../../../contracts/ConversationRepository';
+import {
+  diagnosticsService,
+} from '../../../core/diagnostics/DiagnosticsService';
+import {
+  createConversationId,
+} from '../createConversationId';
 
 type ViewMode =
   | 'active'
   | 'archived';
+
+function recordConversationError(
+  event: string,
+  caught: unknown,
+): void {
+  diagnosticsService.record(
+    'conversation-history',
+    caught instanceof Error
+      ? `${event}:${caught.message}`
+      : `${event}:unknown`,
+    'error',
+  );
+}
 
 export function useConversationHistoryController(
   repository: ConversationRepository,
@@ -22,8 +41,14 @@ export function useConversationHistoryController(
   const [loading, setLoading] =
     useState(true);
 
-  const [failed, setFailed] =
+  const [loadFailed, setLoadFailed] =
     useState(false);
+
+  const [busy, setBusy] =
+    useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
 
   const [query, setQuery] =
     useState('');
@@ -33,19 +58,177 @@ export function useConversationHistoryController(
 
   const load = useCallback(async () => {
     setLoading(true);
-    setFailed(false);
+    setLoadFailed(false);
 
     try {
       const records =
         await repository.list(500);
 
       setConversations(records);
-    } catch {
-      setFailed(true);
+    } catch (caught) {
+      recordConversationError(
+        'load-failed',
+        caught,
+      );
+
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
   }, [repository]);
+
+  const create =
+    useCallback(async () => {
+      if (busy) {
+        return null;
+      }
+
+      setBusy(true);
+      setError(null);
+
+      try {
+        const now = Date.now();
+        const id = createConversationId();
+
+        await repository.create({
+          id,
+          title: '',
+          createdAt: now,
+        });
+
+        return id;
+      } catch (caught) {
+        recordConversationError(
+          'create-failed',
+          caught,
+        );
+
+        setError(
+          'Unable to create conversation.',
+        );
+        return null;
+      } finally {
+        setBusy(false);
+      }
+    }, [
+      busy,
+      repository,
+    ]);
+
+  const togglePinned =
+    useCallback(
+      async (
+        conversation: ConversationRecord,
+      ) => {
+        if (busy) {
+          return;
+        }
+
+        setBusy(true);
+        setError(null);
+
+        try {
+          await repository.setPinned(
+            conversation.id,
+            !conversation.isPinned,
+            Date.now(),
+          );
+
+          await load();
+        } catch (caught) {
+          recordConversationError(
+            'pin-failed',
+            caught,
+          );
+
+          setError(
+            'Unable to update pinned state.',
+          );
+        } finally {
+          setBusy(false);
+        }
+      },
+      [
+        busy,
+        load,
+        repository,
+      ],
+    );
+
+  const toggleArchived =
+    useCallback(
+      async (
+        conversation: ConversationRecord,
+      ) => {
+        if (busy) {
+          return;
+        }
+
+        setBusy(true);
+        setError(null);
+
+        try {
+          await repository.setArchived(
+            conversation.id,
+            !conversation.isArchived,
+            Date.now(),
+          );
+
+          await load();
+        } catch (caught) {
+          recordConversationError(
+            'archive-failed',
+            caught,
+          );
+
+          setError(
+            'Unable to update archived state.',
+          );
+        } finally {
+          setBusy(false);
+        }
+      },
+      [
+        busy,
+        load,
+        repository,
+      ],
+    );
+
+  const deleteConversation =
+    useCallback(
+      async (id: string) => {
+        if (busy) {
+          return false;
+        }
+
+        setBusy(true);
+        setError(null);
+
+        try {
+          await repository.delete(id);
+          await load();
+          return true;
+        } catch (caught) {
+          recordConversationError(
+            'delete-failed',
+            caught,
+          );
+
+          setError(
+            'Unable to delete conversation.',
+          );
+          return false;
+        } finally {
+          setBusy(false);
+        }
+      },
+      [
+        busy,
+        load,
+        repository,
+      ],
+    );
 
   const visibleConversations =
     useMemo(() => {
@@ -78,53 +261,14 @@ export function useConversationHistoryController(
       viewMode,
     ]);
 
-  const togglePinned =
-    useCallback(
-      async (
-        conversation: ConversationRecord,
-      ) => {
-        await repository.setPinned(
-          conversation.id,
-          !conversation.isPinned,
-          Date.now(),
-        );
-
-        await load();
-      },
-      [load, repository],
-    );
-
-  const toggleArchived =
-    useCallback(
-      async (
-        conversation: ConversationRecord,
-      ) => {
-        await repository.setArchived(
-          conversation.id,
-          !conversation.isArchived,
-          Date.now(),
-        );
-
-        await load();
-      },
-      [load, repository],
-    );
-
-  const deleteConversation =
-    useCallback(
-      async (id: string) => {
-        await repository.delete(id);
-        await load();
-      },
-      [load, repository],
-    );
-
   return {
     conversations:
       visibleConversations,
 
     loading,
-    failed,
+    failed: loadFailed,
+    busy,
+    error,
 
     query,
     setQuery,
@@ -133,8 +277,12 @@ export function useConversationHistoryController(
     setViewMode,
 
     load,
+    create,
     togglePinned,
     toggleArchived,
     deleteConversation,
+
+    dismissError: () =>
+      setError(null),
   };
 }
