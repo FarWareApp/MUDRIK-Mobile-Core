@@ -18,12 +18,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -54,8 +54,67 @@ jobs:
 
           echo "Full Git history secret scan passed."
 
-      - name: Dependency audit - critical vulnerabilities
-        run: yarn audit --groups dependencies --level critical
+      - name: Dependency audit - High/Critical gate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          yarn audit --groups dependencies --json > /tmp/yarn-audit.jsonl || true
+
+          node <<'NODE'
+          const fs = require('fs');
+          const lines = fs.readFileSync('/tmp/yarn-audit.jsonl', 'utf8')
+            .split(/\r?\n/)
+            .filter(Boolean);
+
+          const counts = {
+            info: 0,
+            low: 0,
+            moderate: 0,
+            high: 0,
+            critical: 0,
+          };
+
+          const seen = new Set();
+
+          for (const line of lines) {
+            let record;
+            try {
+              record = JSON.parse(line);
+            } catch {
+              continue;
+            }
+
+            if (record.type !== 'auditAdvisory') {
+              continue;
+            }
+
+            const advisory = record.data?.advisory;
+            if (!advisory) {
+              continue;
+            }
+
+            const key = String(advisory.id ?? advisory.url ?? JSON.stringify(advisory));
+            if (seen.has(key)) {
+              continue;
+            }
+            seen.add(key);
+
+            const severity = String(advisory.severity ?? '').toLowerCase();
+            if (severity in counts) {
+              counts[severity] += 1;
+            }
+          }
+
+          console.log('Dependency vulnerability counts:', counts);
+
+          if (counts.critical > 0 || counts.high > 0) {
+            console.error(
+              `Blocking dependency vulnerabilities detected: ${counts.critical} critical, ${counts.high} high.`,
+            );
+            process.exit(1);
+          }
+          NODE
 
       - name: Lint
         run: yarn lint
