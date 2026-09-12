@@ -11,6 +11,9 @@ import {
 import {
   ProjectDetailScreen,
 } from '../../features/projects/ProjectDetailScreen';
+import {
+  normalizeProjectId,
+} from '../../features/projects/ProjectId';
 
 export default function ProjectDetailRoute() {
   const params =
@@ -21,10 +24,11 @@ export default function ProjectDetailRoute() {
   const rawId = params.id;
 
   const projectId =
-    (Array.isArray(rawId)
-      ? rawId[0]
-      : rawId
-    )?.trim() ?? '';
+    normalizeProjectId(
+      Array.isArray(rawId)
+        ? rawId[0]
+        : rawId,
+    ) ?? '';
 
   return (
     <ProjectDetailScreen
