@@ -27,6 +27,7 @@ import { AttachmentDraftTray } from '../attachments/components/AttachmentDraftTr
 import { useAttachmentDraftController } from '../attachments/hooks/useAttachmentDraftController';
 import { AttachmentFileStore } from '../attachments/storage/AttachmentFileStore';
 import { useActiveConversation } from '../conversations/ActiveConversationProvider';
+import { createDraftPersistenceRepository } from './DraftPersistencePolicy';
 import { ChatBootstrapState } from './components/ChatBootstrapState';
 import { ChatErrorBanner } from './components/ChatErrorBanner';
 import { ChatHeader } from './components/ChatHeader';
@@ -72,34 +73,17 @@ export function ChatScreen({
   ] = useState(false);
 
   const effectiveDraftRepository =
-    useMemo<DraftRepository>(() => {
-      if (settings.saveDrafts) {
-        return draftRepository;
-      }
-
-      return {
-        get: async (conversationId) => {
-          await draftRepository.clear(
-            conversationId,
-          );
-
-          return null;
-        },
-
-        save: async () => {
-          // Draft persistence is intentionally disabled.
-        },
-
-        clear: async (conversationId) => {
-          await draftRepository.clear(
-            conversationId,
-          );
-        },
-      };
-    }, [
-      draftRepository,
-      settings.saveDrafts,
-    ]);
+    useMemo<DraftRepository>(
+      () =>
+        createDraftPersistenceRepository(
+          settings.saveDrafts,
+          draftRepository,
+        ),
+      [
+        draftRepository,
+        settings.saveDrafts,
+      ],
+    );
 
   const {
     conversationId,
