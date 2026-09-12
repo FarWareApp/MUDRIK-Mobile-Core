@@ -8,6 +8,9 @@ import {
 import {
   diagnosticsService,
 } from '../../../core/diagnostics/DiagnosticsService';
+import {
+  normalizeProjectId,
+} from '../../projects/ProjectId';
 
 import {
   useNotifications,
@@ -23,25 +26,6 @@ const TARGETS =
     'companion',
     'voice',
   ]);
-
-function validProjectId(
-  value: unknown,
-): string | null {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const normalized = value.trim();
-
-  if (
-    normalized.length === 0 ||
-    normalized.length > 128
-  ) {
-    return null;
-  }
-
-  return normalized;
-}
 
 export function NotificationNavigationBridge() {
   const notifications =
@@ -122,7 +106,7 @@ export function NotificationNavigationBridge() {
         target === 'project'
       ) {
         const projectId =
-          validProjectId(
+          normalizeProjectId(
             data.projectId,
           );
 
