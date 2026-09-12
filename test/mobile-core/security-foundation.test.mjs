@@ -37,7 +37,7 @@ function grant(overrides = {}) {
   return {
     grantId: 'grant-1',
     subjectId: 'device-a',
-    capability: 'filesystem.read',
+    capability: 'media.control',
     ...overrides,
   };
 }
@@ -45,7 +45,7 @@ function grant(overrides = {}) {
 function request(overrides = {}) {
   return {
     subjectId: 'device-a',
-    capability: 'filesystem.read',
+    capability: 'media.control',
     nowMs: NOW,
     ...overrides,
   };
@@ -128,6 +128,78 @@ test('a later valid grant can authorize even when an earlier candidate is expire
   });
 });
 
+test('filesystem git and terminal capabilities require an explicit workspace prefix', () => {
+  for (const capability of [
+    'filesystem.read',
+    'filesystem.write',
+    'git.read',
+    'git.write',
+    'terminal.execute',
+  ]) {
+    assert.equal(
+      authorizeCapability(
+        request({ capability, resourcePath: '/workspace/project-a/file.txt' }),
+        [grant({ capability })],
+      ).reason,
+      'grant_scope_required',
+    );
+
+    assert.equal(
+      authorizeCapability(
+        request({ capability, resourcePath: '/workspace/project-a/file.txt' }),
+        [
+          grant({
+            capability,
+            scope: { resourcePrefix: '/workspace/project-a' },
+          }),
+        ],
+      ).allowed,
+      true,
+    );
+  }
+});
+
+test('network access requires an explicit non-empty domain allowlist', () => {
+  assert.equal(
+    authorizeCapability(
+      request({ capability: 'network.request', domain: 'api.example.com' }),
+      [grant({ capability: 'network.request' })],
+    ).reason,
+    'grant_scope_required',
+  );
+
+  assert.equal(
+    authorizeCapability(
+      request({ capability: 'network.request', domain: 'api.example.com' }),
+      [
+        grant({
+          capability: 'network.request',
+          scope: { allowedDomains: ['example.com'] },
+        }),
+      ],
+    ).allowed,
+    true,
+  );
+});
+
+test('malformed grants fail closed instead of throwing or widening authority', () => {
+  assert.equal(
+    authorizeCapability(
+      request(),
+      [{ ...grant(), grantId: '' }],
+    ).reason,
+    'grant_invalid',
+  );
+
+  assert.equal(
+    authorizeCapability(
+      request(),
+      [{ ...grant(), scope: { unexpectedAuthority: true } }],
+    ).reason,
+    'grant_invalid',
+  );
+});
+
 test('resource ids are exact and cannot cross scope', () => {
   const scopedGrant = grant({
     scope: {
@@ -152,7 +224,7 @@ test('resource ids are exact and cannot cross scope', () => {
   );
 });
 
-test('resource prefixes reject plain and percent encoded traversal', () => {
+test('resource prefixes reject traversal, encoded paths and ambiguous separators', () => {
   const scopedGrant = grant({
     scope: {
       resourcePrefix: '/workspace/project-a',
@@ -167,31 +239,29 @@ test('resource prefixes reject plain and percent encoded traversal', () => {
     true,
   );
 
-  assert.equal(
-    authorizeCapability(
-      request({ resourcePath: '/workspace/project-a/../project-b/secret.txt' }),
-      [scopedGrant],
-    ).reason,
-    'resource_mismatch',
-  );
-
-  assert.equal(
-    authorizeCapability(
-      request({ resourcePath: '/workspace/project-a/%2e%2e/project-b/secret.txt' }),
-      [scopedGrant],
-    ).reason,
-    'resource_mismatch',
-  );
+  for (const unsafePath of [
+    '/workspace/project-a/../project-b/secret.txt',
+    '/workspace/project-a/%2e%2e/project-b/secret.txt',
+    '/workspace/project-a\\..\\project-b\\secret.txt',
+    '/workspace/project-a//nested/file.txt',
+  ]) {
+    assert.equal(
+      authorizeCapability(
+        request({ resourcePath: unsafePath }),
+        [scopedGrant],
+      ).reason,
+      'resource_mismatch',
+    );
+  }
 });
 
 test('domain scopes allow exact domains and subdomains but not lookalike suffixes', () => {
-  const networkGrant = {
-    ...grant(),
+  const networkGrant = grant({
     capability: 'network.request',
     scope: {
       allowedDomains: ['example.com'],
     },
-  };
+  });
 
   assert.equal(
     authorizeCapability(
@@ -270,11 +340,12 @@ test('invalid request identity and timestamp fail closed', () => {
 });
 
 test('security metadata redacts sensitive keys and common credential shapes', () => {
+  const syntheticApiKey = ['s', 'k-', '1234567890abcdefghijklmnop'].join('');
   const sanitized = sanitizeSecurityMetadata({
     reason: 'denied',
     authorization: 'Bearer abc.def.ghi',
     password: 'do-not-log-me',
-    note: 'token here: sk-1234567890abcdefghijklmnop',
+    note: `token here: ${syntheticApiKey}`,
     jwt: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijklmnopqrstuvwxyz',
     nested: { private: 'content' },
   });
@@ -315,8 +386,10 @@ test('security event creation rejects invalid identity and preserves sanitized m
 });
 
 test('secret handling accepts scoped references and rejects plaintext material', () => {
+  const syntheticPlaintext = ['s', 'k-', 'plaintext-secret-value'].join('');
+
   assert.equal(isSecretReference('secret://openai/primary-api-key'), true);
-  assert.equal(isSecretReference('sk-plaintext-secret-value'), false);
+  assert.equal(isSecretReference(syntheticPlaintext), false);
   assert.equal(isSecretReference('secret://OpenAI/key'), false);
   assert.equal(isSecretReference('secret://openai/../key'), false);
 
