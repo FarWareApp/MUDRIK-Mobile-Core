@@ -307,9 +307,12 @@ export class SQLiteAttachmentRepository
             ON ma.attachment_id = a.id
           LEFT JOIN draft_attachments da
             ON da.attachment_id = a.id
+          LEFT JOIN project_attachments pa
+            ON pa.attachment_id = a.id
           WHERE
             ma.attachment_id IS NULL
             AND da.attachment_id IS NULL
+            AND pa.attachment_id IS NULL
         `,
       );
 
