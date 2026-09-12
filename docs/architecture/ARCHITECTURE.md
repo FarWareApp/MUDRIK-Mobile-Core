@@ -75,6 +75,16 @@ Future systems:
 
 The app communicates with this world only through contracts.
 
+## Future Server / Control Plane Boundary
+
+The future MUDRIK server is not an ordinary best-effort backend. Its accepted target is a high-assurance, low-latency, durable Control Plane defined in:
+
+- `MUDRIK_REALTIME_CONTROL_PLANE.md`
+- `MUDRIK_COMPUTER_AUTONOMY.md`
+- `MUDRIK_SECURITY_BASELINE.md`
+
+The future Control Plane must preserve this Mobile Core boundary. It may implement stable transport/application contracts after the Mobile Core freeze, but no presentation or core module may become directly coupled to gateway, broker, database, cloud vendor, or AI-provider implementation details.
+
 ## Dependency Direction
 
 Presentation
