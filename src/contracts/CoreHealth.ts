@@ -15,6 +15,4 @@ export type CoreHealthSnapshot = {
 
   issues:
     CoreHealthIssue[];
-
-  evaluatedAt: number;
 };
