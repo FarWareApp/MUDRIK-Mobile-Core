@@ -2,17 +2,22 @@
 
 ## Current Phase
 
-Final Mobile Core Device Validation / Freeze Gate
+Two tracks are active and intentionally separated:
+
+1. **Final Mobile Core Device Validation / Freeze Gate**
+2. **Computer Autonomy Phase 0 — Web Console + Local Computer Agent foundation**
 
 The code-level Final Mobile Core Hardening pass is complete. The Mobile Core is not frozen yet because physical-device / end-to-end validation is still required.
+
+The Computer Agent foundation is isolated from the Mobile Core runtime and does not change the mobile UI architecture before freeze.
 
 ## Current Branch
 
 `mudrik-core-v1`
 
-## Hardened Baseline
+## Latest Validated Code Baseline
 
-`744bedee84e87ca1ea2ad482ecab415d7dbbb37b` — finish accessibility and reduced motion hardening
+`953a7afba5ee8f6eb5580fa938099bc086f33704` — add local computer agent cli and event protocol
 
 ## Repository
 
@@ -26,7 +31,173 @@ Repository visibility verified on 2026-09-12: **public**.
 
 - Mobile Core implementation + code hardening: approximately 97–98%
 - Remaining Mobile Core gate: physical-device / end-to-end validation and any defects discovered there
-- Full MUDRIK Mobile platform: approximately 65–75%
+- Computer Autonomy: Phase 0 foundation started
+- Full MUDRIK platform: still under active construction
+
+## Accepted Computer Product Direction — 2026-09-12
+
+MUDRIK will **not** use a traditional full desktop application as the primary computer interface.
+
+The target architecture is:
+
+1. **MUDRIK Mobile App** — native mobile control surface.
+2. **MUDRIK Web Console** — browser interface for desktop use.
+3. **MUDRIK Computer Agent** — small local service installed on the user's computer and responsible for terminal/files/process/browser/system work after permission checks.
+4. **MUDRIK Control Plane** — authenticated backend that coordinates users, paired devices, tasks, approvals and events.
+5. **MUDRIK Intelligence Router** — produces plans/tool calls but never receives implicit unrestricted computer authority.
+
+The browser itself does not receive direct operating-system control. The local Computer Agent owns local capabilities. This preserves browser sandboxing as a security boundary.
+
+### Computer Autonomy Principle
+
+The Web Console or Mobile App may request work. The paired local agent executes only when the task envelope and permission policy allow it.
+
+Default policy: **deny unless explicitly granted**.
+
+Examples of independently scoped capabilities:
+
+- `terminal.execute`
+- `filesystem.read`
+- `filesystem.write`
+- `filesystem.delete`
+- `git.read`
+- `git.write`
+- `process.start`
+- `process.stop`
+- `browser.control`
+- `screen.capture`
+- `network.outbound`
+- `secrets.use`
+- `system.settings`
+- `system.admin`
+
+Permission grants may also restrict filesystem roots, repositories, executables, domains, duration, background execution and elevation.
+
+### Risk Policy
+
+- Low: normal read-only inspection may run automatically inside an active grant.
+- Medium: project modification/build/test work may run inside explicit scoped grants.
+- High: destructive/external/sensitive actions require task approval unless a narrowly scoped persistent policy explicitly covers them.
+- Critical: administrative/security/credential/destructive system actions always require a fresh one-shot approval and OS elevation where applicable.
+
+### Connection Direction
+
+Production Web Console must not expose or depend on an unauthenticated local HTTP/remote-shell port.
+
+Preferred path:
+
+`Web / Mobile <-> MUDRIK Control Plane <-> outbound Computer Agent`
+
+The Computer Agent initiates the outbound authenticated connection. Device private keys remain local.
+
+## Computer Autonomy Phase 0 Completed So Far
+
+- Architecture specification: `docs/architecture/MUDRIK_COMPUTER_AUTONOMY.md`
+- Web Console product specification: `web-console/README.md`
+- Local Computer Agent specification: `computer-agent/README.md`
+- Versioned task-envelope JSON schema
+- Versioned permission-grant JSON schema
+- Versioned agent-event JSON schema
+- Capability registry
+- Default-deny policy engine
+- Filesystem-root scope evaluation
+- Executable scope evaluation
+- Expiration / revocation checks
+- Medium/high/critical risk policy
+- Fresh one-shot approval requirement for critical tasks
+- Per-step permission re-evaluation to prevent later task steps from escaping the approved workspace
+- Linux-first terminal adapter using direct process spawn with `shell: false`
+- Limited inherited environment rather than automatically forwarding the full process environment
+- Terminal timeout
+- Output-size limits
+- cancellation support
+- Task runner with structured progress events
+- Local CLI for executing task envelopes against permission grants
+- Automated Phase 0 policy/terminal/task-runner tests
+- GitHub Actions now validates Computer Agent Phase 0 in addition to Mobile TypeScript and Expo Doctor
+
+## Next Computer Autonomy Work
+
+### Phase 1 — Secure Device Identity / Pairing
+
+- Local device key pair
+- Device ID
+- One-time pairing code / QR
+- Device registration
+- Revocation
+- Signed task envelopes
+- Replay protection
+- task/event sequence numbers
+
+### Phase 2 — Control Plane
+
+- Authenticated user sessions
+- paired-device registry
+- outbound Agent session channel
+- task routing
+- approval records
+- encrypted transport
+- task lifecycle persistence
+- audit metadata
+- reconnect/replay-safe event delivery
+
+### Phase 3 — Web Console MVP
+
+- Sign-in
+- paired computers
+- device online/offline state
+- workspace/project selector
+- task/chat composer
+- task plan
+- live terminal output
+- approval panel
+- Stop / Pause / Resume
+- final result
+- file/git diff view
+- permission manager
+- activity history
+
+### Phase 4 — Local Tools
+
+- filesystem adapter
+- git adapter
+- process adapter
+- build/test adapters
+- browser-control adapter
+- screenshot adapter
+- secret-reference injection without unnecessary plaintext exposure
+
+### Phase 5 — Autonomous Work Runner
+
+Target workflow example:
+
+1. inspect repository;
+2. understand failure;
+3. edit files;
+4. run tests;
+5. inspect failures;
+6. revise implementation;
+7. commit changes;
+8. report result.
+
+The agent may continue autonomously while it remains inside the approved task scope. Crossing a permission/risk boundary pauses the task and requests approval.
+
+### Phase 6 — Mobile Remote Control
+
+- Start computer task from phone
+- approve/reject escalation from phone
+- progress notifications
+- Stop/Pause from phone
+- concise result/diff review
+- revoke computer/session remotely
+
+### Platform Order
+
+1. Linux first
+2. Windows
+3. macOS
+
+All platforms must reuse the same versioned task/capability protocol.
 
 ## Completed Mobile Core
 
@@ -38,7 +209,7 @@ Repository visibility verified on 2026-09-12: **public**.
 - Conversation lifecycle
 - Persistent conversations
 - Persistent messages
-- Persistent drafts
+- Text-draft persistence with working Save Text Drafts setting
 - Conversation history
 - Search conversations
 - Pin / archive / delete conversations
@@ -84,6 +255,7 @@ Repository visibility verified on 2026-09-12: **public**.
 - Error Boundary and recovery
 - SQLite migrations through V6
 - GitHub Actions validation gate
+- secret-file ignore hardening for `.env`, key and signing-file patterns
 
 ## Final Mobile Core Hardening Completed — 2026-09-12
 
@@ -120,20 +292,21 @@ The hardening pass completed the following code-level work:
 
 ## Last Validation
 
-Validated on GitHub Actions against hardened baseline `744bedee84e87ca1ea2ad482ecab415d7dbbb37b`:
+Validated on GitHub Actions against `953a7afba5ee8f6eb5580fa938099bc086f33704`:
 
 - Workflow: `Mobile Core Validation`
-- Run: `#4`
+- Run: `#9`
 - Dependency install using `yarn.lock`: PASS
 - TypeScript (`tsc --noEmit`): PASS
 - Expo Doctor: PASS
+- Computer Agent Phase 0 tests: PASS
 - Overall CI result: PASS
 
-## Current Work
+## Current Mobile Work
 
 Device / end-to-end validation before freezing Mobile Core.
 
-No production AI model or production server transport should be coupled into the UI during this gate.
+No production AI model or production server transport should be coupled into the Mobile UI during this gate.
 
 ## Remaining Mobile Core Work
 
@@ -156,7 +329,7 @@ No production AI model or production server transport should be coupled into the
 - Text + attachment message test
 - Send / Stop / retry test
 - Conversation create/open/search/pin/archive/delete test
-- Draft restoration test
+- Draft restoration / Save Text Drafts off test
 - Project create/edit/archive/delete test
 - Project file add/remove test
 - Project-conversation link/unlink test
@@ -176,14 +349,13 @@ Only after the device/E2E gate passes:
 
 1. Run TypeScript again.
 2. Run Expo Doctor again.
-3. Commit any final device-test fixes.
-4. Confirm the final GitHub Actions validation is green.
-5. Create the `MOBILE-CORE-FROZEN` Git tag.
-6. Start production AI/server integration only after the frozen baseline exists.
+3. Run Computer Agent protocol tests again.
+4. Commit any final device-test fixes.
+5. Confirm the final GitHub Actions validation is green.
+6. Create the `MOBILE-CORE-FROZEN` Git tag for the mobile baseline.
+7. Continue Web/Agent/Control Plane work as independently deployable components.
 
 ## Mobile Core Completion Gate
-
-Do not begin full AI integration until:
 
 1. Final hardening is complete. ✅
 2. TypeScript passes. ✅
@@ -196,7 +368,7 @@ Do not begin full AI integration until:
 
 ### Intelligence Router
 
-Central routing layer responsible for selecting the correct model and capabilities.
+Central routing layer responsible for selecting the correct model, tools and capabilities.
 
 ### General Model
 
@@ -217,6 +389,9 @@ Responsibilities include:
 - Linux
 - Databases
 - Software engineering
+- Structured Computer Agent task planning
+
+The coding model proposes work. The Computer Agent permission layer remains independent and authoritative for local execution.
 
 ### Vision Model
 
@@ -299,6 +474,8 @@ Dedicated models/services for knowledge retrieval and ranking.
 
 MUDRIK capabilities should be exposed through independent tools rather than hard-coded into one model.
 
+Local computer tools must be mediated by the Computer Agent policy engine.
+
 ### Evaluation
 
 Create a MUDRIK-specific evaluation dataset covering:
@@ -318,6 +495,11 @@ Create a MUDRIK-specific evaluation dataset covering:
 - Languages
 - Dialects
 - Code-switching
+- Computer task planning
+- Permission boundaries
+- workspace escape attempts
+- cancellation/recovery
+- destructive-action approval
 
 ### Fine-tuning
 
@@ -377,7 +559,11 @@ Written and spoken responses should represent the same personality while adaptin
 ## Core Architecture Principles
 
 - Mobile-first
-- Application UI independent from AI providers
+- Web Console for the primary desktop interface
+- Local Computer Agent for operating-system capabilities
+- Web browser never receives implicit unrestricted computer authority
+- Default-deny local execution policy
+- Explicit scoped capabilities
 - AI/server layer separated from presentation
 - Single responsibility per module where practical
 - Models are replaceable
@@ -388,6 +574,7 @@ Written and spoken responses should represent the same personality while adaptin
 - Memory independent from model providers
 - Knowledge independent from model weights
 - Router decides which intelligence component to use
+- Computer Agent decides whether local execution is authorized
 - Offline and online operation remain separate runtime capabilities
 - Do not couple MUDRIK identity to any single AI model
 
