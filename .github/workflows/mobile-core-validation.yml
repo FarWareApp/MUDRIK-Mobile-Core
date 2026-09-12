@@ -47,6 +47,50 @@ jobs:
           }
           NODE
 
+      - name: Android device build configuration gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+          const eas = JSON.parse(fs.readFileSync('eas.json', 'utf8'));
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+
+          if (eas?.cli?.requireCommit !== true) {
+            throw new Error('eas.json must require a committed working tree for device validation builds');
+          }
+
+          const profile = eas?.build?.['device-validation'];
+          if (!profile) {
+            throw new Error('Missing EAS device-validation build profile');
+          }
+          if (profile.distribution !== 'internal') {
+            throw new Error('device-validation must use internal distribution');
+          }
+          if (profile?.android?.buildType !== 'apk') {
+            throw new Error('device-validation must produce an Android APK');
+          }
+
+          if (pkg?.scripts?.['device:preflight'] !== 'node ./scripts/section01-device-preflight.mjs') {
+            throw new Error('Section 01 device preflight command is missing or changed unexpectedly');
+          }
+          if (!fs.existsSync('scripts/section01-device-preflight.mjs')) {
+            throw new Error('Section 01 device preflight script is missing');
+          }
+
+          const androidPackage = app?.expo?.android?.package;
+          if (androidPackage !== undefined) {
+            const pattern = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/;
+            if (typeof androidPackage !== 'string' || !pattern.test(androidPackage)) {
+              throw new Error(`Invalid expo.android.package: ${androidPackage}`);
+            }
+            console.log(`Android application ID configured: ${androidPackage}`);
+          } else {
+            console.log('Android application ID is intentionally not selected yet; final device preflight will block until it is committed.');
+          }
+          NODE
+
       - name: Tracked sensitive file gate
         shell: bash
         run: |
