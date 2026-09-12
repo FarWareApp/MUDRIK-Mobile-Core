@@ -22,15 +22,23 @@ import {
 } from '../../../contracts/MessageTransport';
 import { TransportCancelledError } from '../../../contracts/TransportCancelledError';
 import { diagnosticsService } from '../../../core/diagnostics/DiagnosticsService';
+import { AttachmentFileStore } from '../../attachments/storage/AttachmentFileStore';
 import { createConversationId } from '../../conversations/createConversationId';
 import { deriveConversationTitle } from '../../conversations/deriveConversationTitle';
 import { ChatMessage } from '../types';
+
+type MessageIdentity = {
+  id: string;
+  createdAt: number;
+};
 
 export type ChatSendError = {
   message: string;
   failedText: string;
   failedAttachments: AttachmentRecord[];
   retryAppendUserMessage: boolean;
+  failedMessageId: string;
+  failedCreatedAt: number;
 };
 
 type Dependencies = {
@@ -39,6 +47,7 @@ type Dependencies = {
   messageRepository: MessageRepository;
   draftRepository: DraftRepository;
   attachmentRepository: AttachmentRepository;
+  attachmentFileStore: AttachmentFileStore;
   selectedConversationId: string | null;
   onConversationActivated: (id: string) => void;
 };
@@ -49,6 +58,7 @@ export function useConversationController({
   messageRepository,
   draftRepository,
   attachmentRepository,
+  attachmentFileStore,
   selectedConversationId,
   onConversationActivated,
 }: Dependencies) {
@@ -171,17 +181,32 @@ export function useConversationController({
                   message.role === 'user' ||
                   message.role === 'assistant',
               )
-              .map(async (message) => ({
-                id: message.id,
-                role: message.role as
-                  | 'user'
-                  | 'assistant',
-                text: message.text,
-                createdAt: message.createdAt,
-                attachments:
+              .map(async (message) => {
+                const messageAttachments =
                   await attachmentRepository
-                    .listForMessage(message.id),
-              })),
+                    .listForMessage(message.id);
+
+                return {
+                  id: message.id,
+                  role: message.role as
+                    | 'user'
+                    | 'assistant',
+                  text: message.text,
+                  createdAt: message.createdAt,
+                  attachments:
+                    messageAttachments.map(
+                      (attachment) => ({
+                        ...attachment,
+                        availability:
+                          attachmentFileStore.exists(
+                            attachment.localUri,
+                          )
+                            ? 'available' as const
+                            : 'missing' as const,
+                      }),
+                    ),
+                };
+              }),
           );
 
         setConversationId(conversation.id);
@@ -219,6 +244,7 @@ export function useConversationController({
         }
       }
     }, [
+      attachmentFileStore,
       attachmentRepository,
       conversationRepository,
       createFreshConversation,
@@ -297,6 +323,7 @@ export function useConversationController({
       rawText: string,
       appendUserMessage: boolean,
       attachments: AttachmentRecord[] = [],
+      identity?: MessageIdentity,
     ) => {
       const text = rawText.trim();
 
@@ -311,16 +338,26 @@ export function useConversationController({
       setError(null);
       setSending(true);
 
-      const now = Date.now();
+      const createdAt =
+        identity?.createdAt ?? Date.now();
 
       const userMessage: ChatMessage = {
-        id: `user-${now}-${Math.random()
-          .toString(36)
-          .slice(2, 10)}`,
+        id:
+          identity?.id ??
+          `user-${createdAt}-${Math.random()
+            .toString(36)
+            .slice(2, 10)}`,
         role: 'user',
         text,
-        createdAt: now,
-        attachments,
+        createdAt,
+        attachments:
+          attachments.map(
+            (attachment) => ({
+              ...attachment,
+              availability:
+                'available' as const,
+            }),
+          ),
       };
 
       try {
@@ -340,10 +377,18 @@ export function useConversationController({
               userMessage.id,
             );
 
-          setMessages((current) => [
-            ...current,
-            userMessage,
-          ]);
+          setMessages((current) => {
+            const withoutExisting =
+              current.filter(
+                (message) =>
+                  message.id !== userMessage.id,
+              );
+
+            return [
+              ...withoutExisting,
+              userMessage,
+            ];
+          });
 
           setDraft('');
 
@@ -373,14 +418,14 @@ export function useConversationController({
               await conversationRepository.rename(
                 conversationId,
                 title,
-                now,
+                createdAt,
               );
 
               setConversationTitle(title);
             } else {
               await conversationRepository.touch(
                 conversationId,
-                now,
+                createdAt,
               );
             }
           } catch (caught) {
@@ -475,6 +520,9 @@ export function useConversationController({
             failedText: text,
             failedAttachments: attachments,
             retryAppendUserMessage: false,
+            failedMessageId: userMessage.id,
+            failedCreatedAt:
+              userMessage.createdAt,
           });
 
           diagnosticsService.record(
@@ -501,6 +549,9 @@ export function useConversationController({
           failedText: text,
           failedAttachments: attachments,
           retryAppendUserMessage: true,
+          failedMessageId: userMessage.id,
+          failedCreatedAt:
+            userMessage.createdAt,
         });
 
         diagnosticsService.record(
@@ -547,6 +598,11 @@ export function useConversationController({
       error.failedText,
       error.retryAppendUserMessage,
       error.failedAttachments,
+      {
+        id: error.failedMessageId,
+        createdAt:
+          error.failedCreatedAt,
+      },
     );
   }, [error, performSend]);
 

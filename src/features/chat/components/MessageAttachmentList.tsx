@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Image,
   StyleSheet,
@@ -6,99 +6,178 @@ import {
   View,
 } from 'react-native';
 
-import {
-  AttachmentRecord,
-} from '../../../contracts/Attachment';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { ChatAttachment } from '../types';
 
 type Props = {
   attachments:
-    readonly AttachmentRecord[];
+    readonly ChatAttachment[];
 };
+
+type ItemProps = {
+  attachment: ChatAttachment;
+};
+
+function AttachmentItem({
+  attachment,
+}: ItemProps) {
+  const { colors } = useTheme();
+  const [imageFailed, setImageFailed] =
+    useState(false);
+
+  const unavailable =
+    attachment.availability === 'missing'
+    || imageFailed;
+
+  if (unavailable) {
+    return (
+      <View
+        accessibilityLabel={`Attachment unavailable: ${attachment.name}`}
+        style={[
+          styles.file,
+          {
+            backgroundColor:
+              colors.surface,
+            borderColor:
+              colors.border,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.icon,
+            {
+              color:
+                colors.textSecondary,
+            },
+          ]}
+        >
+          !
+        </Text>
+
+        <View style={styles.fileText}>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.name,
+              {
+                color:
+                  colors.textPrimary,
+              },
+            ]}
+          >
+            {attachment.name}
+          </Text>
+
+          <Text
+            style={[
+              styles.size,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
+            Unavailable on this device
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (attachment.kind === 'image') {
+    return (
+      <Image
+        accessibilityLabel={
+          attachment.name
+        }
+        source={{
+          uri: attachment.localUri,
+        }}
+        onError={() => {
+          setImageFailed(true);
+        }}
+        resizeMode="cover"
+        style={styles.image}
+      />
+    );
+  }
+
+  return (
+    <View
+      style={[
+        styles.file,
+        {
+          backgroundColor:
+            colors.surface,
+          borderColor:
+            colors.border,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.icon,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
+        {attachment.kind === 'video'
+          ? '▶'
+          : '▤'}
+      </Text>
+
+      <View style={styles.fileText}>
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.name,
+            {
+              color:
+                colors.textPrimary,
+            },
+          ]}
+        >
+          {attachment.name}
+        </Text>
+
+        {attachment.sizeBytes !== null && (
+          <Text
+            style={[
+              styles.size,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
+            {formatBytes(
+              attachment.sizeBytes,
+            )}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
 
 export function MessageAttachmentList({
   attachments,
 }: Props) {
-  const { colors } = useTheme();
-
   if (attachments.length === 0) {
     return null;
   }
 
   return (
     <View style={styles.container}>
-      {attachments.map((attachment) => {
-        if (attachment.kind === 'image') {
-          return (
-            <Image
-              key={attachment.id}
-              source={{
-                uri: attachment.localUri,
-              }}
-              resizeMode="cover"
-              style={styles.image}
-            />
-          );
-        }
-
-        return (
-          <View
-            key={attachment.id}
-            style={[
-              styles.file,
-              {
-                backgroundColor:
-                  colors.surface,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.icon,
-                {
-                  color:
-                    colors.textSecondary,
-                },
-              ]}
-            >
-              {attachment.kind === 'video'
-                ? '▶'
-                : '▤'}
-            </Text>
-
-            <View style={styles.fileText}>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.name,
-                  {
-                    color:
-                      colors.textPrimary,
-                  },
-                ]}
-              >
-                {attachment.name}
-              </Text>
-
-              {attachment.sizeBytes !== null && (
-                <Text
-                  style={[
-                    styles.size,
-                    {
-                      color:
-                        colors.textSecondary,
-                    },
-                  ]}
-                >
-                  {formatBytes(
-                    attachment.sizeBytes,
-                  )}
-                </Text>
-              )}
-            </View>
-          </View>
-        );
-      })}
+      {attachments.map((attachment) => (
+        <AttachmentItem
+          key={attachment.id}
+          attachment={attachment}
+        />
+      ))}
     </View>
   );
 }
@@ -138,6 +217,7 @@ const styles = StyleSheet.create({
     minWidth: 210,
     maxWidth: 260,
     minHeight: 58,
+    borderWidth: 1,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',

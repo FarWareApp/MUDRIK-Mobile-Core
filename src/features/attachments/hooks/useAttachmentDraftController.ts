@@ -14,6 +14,9 @@ import {
 import {
   AttachmentRepository,
 } from '../../../contracts/AttachmentRepository';
+import {
+  diagnosticsService,
+} from '../../../core/diagnostics/DiagnosticsService';
 
 import {
   AttachmentImportService,
@@ -36,6 +39,19 @@ type Dependencies = {
   fileStore:
     AttachmentFileStore;
 };
+
+function recordAttachmentError(
+  event: string,
+  caught: unknown,
+): void {
+  diagnosticsService.record(
+    'attachment-draft',
+    caught instanceof Error
+      ? `${event}:${caught.message}`
+      : `${event}:unknown`,
+    'error',
+  );
+}
 
 export function useAttachmentDraftController({
   conversationId,
@@ -88,10 +104,21 @@ export function useAttachmentDraftController({
                 attachment.id,
             ),
           );
+
+        diagnosticsService.record(
+          'attachment-draft',
+          `removed-missing:${stored.length - available.length}`,
+          'warning',
+        );
       }
 
       setError(null);
-    } catch {
+    } catch (caught) {
+      recordAttachmentError(
+        'restore-failed',
+        caught,
+      );
+
       setError(
         'Unable to restore attachments.',
       );
@@ -142,7 +169,12 @@ export function useAttachmentDraftController({
             );
 
           setAttachments(next);
-        } catch {
+        } catch (caught) {
+          recordAttachmentError(
+            'import-failed',
+            caught,
+          );
+
           setError(
             'Unable to add attachment.',
           );
@@ -165,7 +197,12 @@ export function useAttachmentDraftController({
           await picker.pickMedia();
 
         await importPicked(picked);
-      } catch {
+      } catch (caught) {
+        recordAttachmentError(
+          'media-picker-failed',
+          caught,
+        );
+
         setError(
           'Unable to open photos.',
         );
@@ -182,7 +219,12 @@ export function useAttachmentDraftController({
           await picker.takePhoto();
 
         await importPicked(picked);
-      } catch {
+      } catch (caught) {
+        recordAttachmentError(
+          'camera-failed',
+          caught,
+        );
+
         setError(
           'Camera permission or capture failed.',
         );
@@ -200,18 +242,13 @@ export function useAttachmentDraftController({
 
         await importPicked(picked);
       } catch (caught) {
-        const detail =
-          caught instanceof Error
-            ? caught.message
-            : 'Unknown error';
-
-        console.error(
-          'DOCUMENT_PICKER_ERROR',
+        recordAttachmentError(
+          'document-picker-failed',
           caught,
         );
 
         setError(
-          `Unable to open files: ${detail}`,
+          'Unable to open files.',
         );
       }
     }, [
@@ -254,7 +291,12 @@ export function useAttachmentDraftController({
           );
 
           setAttachments(next);
-        } catch {
+        } catch (caught) {
+          recordAttachmentError(
+            'remove-failed',
+            caught,
+          );
+
           setError(
             'Unable to remove attachment.',
           );

@@ -90,6 +90,7 @@ export function ChatScreen({
     messageRepository,
     draftRepository,
     attachmentRepository,
+    attachmentFileStore,
     selectedConversationId:
       activeConversationId,
     onConversationActivated:
@@ -222,6 +223,17 @@ export function ChatScreen({
                   void retry();
                 }}
                 onDismiss={dismissError}
+              />
+            )}
+
+            {attachmentDraft.error && (
+              <ChatErrorBanner
+                message={
+                  attachmentDraft.error
+                }
+                onDismiss={
+                  attachmentDraft.dismissError
+                }
               />
             )}
 

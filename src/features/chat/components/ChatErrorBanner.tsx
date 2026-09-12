@@ -12,7 +12,7 @@ import { spacing } from '../../../design-system/tokens/spacing';
 
 type Props = {
   message: string;
-  onRetry: () => void;
+  onRetry?: () => void;
   onDismiss: () => void;
 };
 
@@ -45,21 +45,23 @@ export function ChatErrorBanner({
         {message}
       </Text>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Retry"
-        onPress={onRetry}
-        style={styles.action}
-      >
-        <Text
-          style={{
-            color: colors.accent,
-            fontWeight: '700',
-          }}
+      {onRetry && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Retry"
+          onPress={onRetry}
+          style={styles.action}
         >
-          Retry
-        </Text>
-      </Pressable>
+          <Text
+            style={{
+              color: colors.accent,
+              fontWeight: '700',
+            }}
+          >
+            Retry
+          </Text>
+        </Pressable>
+      )}
 
       <Pressable
         accessibilityRole="button"
