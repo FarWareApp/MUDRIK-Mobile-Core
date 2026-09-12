@@ -10,6 +10,8 @@ The section cannot close until all five validation layers pass and the physical-
 
 The mandatory Android execution procedure is defined in `docs/validation/SECTION_01_ANDROID_DEVICE_RUNBOOK.md`.
 
+Closed and open defects discovered during this gate are recorded in `docs/validation/SECTION_01_DEFECTS.md`.
+
 ## Layer 1 — Specification and Static Correctness
 
 ### Required
@@ -45,6 +47,25 @@ The branch CI currently enforces all of the following before the physical-device
 
 The final candidate must still rerun the same gate after all physical-device defects are fixed.
 
+### Latest validated pre-device code baseline
+
+Commit `fc9d407af881437196ace43cd858b356dfdc33df` passed GitHub Actions `Mobile Core Validation` run **#76** (run ID `34701696198`).
+
+Evidence on that exact commit:
+
+- frozen dependency install: PASS;
+- manifest/lockfile reproducibility: PASS;
+- tracked sensitive-file gate: PASS;
+- full Git-history secret scan: PASS;
+- dependency gate: **0 High / 0 Critical**;
+- ESLint: PASS;
+- TypeScript: PASS;
+- Mobile Core automated regressions: **27/27 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0 tests: **10/10 PASS**.
+
+This is pre-device evidence only. Documentation/status commits after this baseline must also pass CI, and the final freeze candidate must rerun the entire gate after physical testing.
+
 ## Layer 2 — Unit and Component Verification
 
 ### Required
@@ -54,8 +75,12 @@ The final candidate must still rerun the same gate after all physical-device def
 - [x] Retry preserves message identity and attachments.
 - [x] Missing attachment restoration paths are hardened.
 - [x] Conversation/project mutation errors are surfaced.
-- [x] Connectivity stale-snapshot handling is hardened.
-- [ ] Run all current automated tests on the exact candidate.
+- [x] Connectivity stale-snapshot handling is hardened and regression-tested.
+- [x] Database migration ordering/failure behavior has automated regression coverage.
+- [x] Arabic/German/English translation-key parity and mixed text-direction policies have automated coverage.
+- [x] Runtime online/offline resolution has automated coverage.
+- [x] Attachment orphan-maintenance behavior has automated coverage.
+- [ ] Run all current automated tests on the exact final candidate.
 - [ ] Add/fix targeted regression tests for every defect discovered during physical E2E.
 - [ ] Verify cancellation, retry, persistence and failure paths after any final code changes.
 
@@ -66,7 +91,7 @@ Any defect discovered in later layers that can be reproduced automatically shoul
 ### Required
 
 - [ ] Permission-denied flows do not crash or silently escalate.
-  - Automated permission normalization now proves that native `denied` never maps to application `granted`; native OS denial/re-enable behavior remains a Layer 4 device test.
+  - Automated permission normalization proves that native `denied` never maps to application `granted`; native OS denial/re-enable behavior remains a Layer 4 device test.
 - [ ] Invalid/deleted conversation and project IDs fail safely.
   - Invalid project/notification route IDs are covered automatically; deleted-resource behavior remains part of device E2E.
 - [x] Missing/corrupt attachments cannot escape expected storage boundaries.
@@ -75,11 +100,24 @@ Any defect discovered in later layers that can be reproduced automatically shoul
 - [x] Settings reset storage operation is scoped to application settings and does not delete conversations/projects/files.
 - [x] Save Text Drafts off prevents text-draft persistence.
 - [x] Retry preserves the logical user-message identity and message persistence uses ID-based upsert semantics.
+- [x] Orphan classification excludes attachments referenced by messages, drafts, or projects.
 - [ ] Offline/online transitions do not silently corrupt pending UI state.
 - [ ] App restart does not create privilege/permission state inconsistent with OS state.
 - [x] No production AI/provider key is intentionally present in repository or shipped Mobile composition; CI scans tracked history for common provider/private-key patterns.
 
 Critical/High security or privacy defects block the section.
+
+### Closed High defect
+
+`S01-DATA-001` identified that project-only attachments could previously be classified as orphaned because `project_attachments` was absent from the orphan SQL query. This could lead to valid project-file deletion during storage maintenance.
+
+- Severity: **High**
+- Fix: `8bbdb93dbf76c72485552a3a750547b850ea9bf9`
+- Regression: `fc9d407af881437196ace43cd858b356dfdc33df`
+- Automated retest: PASS in CI run #76
+- Full record: `docs/validation/SECTION_01_DEFECTS.md`
+
+The corresponding project-file maintenance cases remain mandatory in Layer 4 so the real Android storage path is also verified.
 
 ### Dependency review
 
@@ -160,6 +198,8 @@ The repository currently has no committed `eas.json` and no fixed `expo.android.
 - [ ] Delete project.
 - [ ] Add project file.
 - [ ] Remove project file.
+- [ ] Verify project-only files survive orphan cleanup.
+- [ ] Verify deleting/removing the last real owner makes the attachment eligible for orphan cleanup without affecting shared attachments.
 - [ ] Link conversation to project.
 - [ ] Unlink conversation from project.
 - [ ] Invalid/missing project route is handled safely.
