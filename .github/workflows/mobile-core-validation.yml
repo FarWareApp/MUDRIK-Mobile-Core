@@ -137,7 +137,7 @@ jobs:
           yarn why decode-uri-component || true
 
       - name: Install pinned lint toolchain
-        run: yarn add --dev --ignore-scripts --non-interactive --exact eslint@9.39.5 eslint-config-expo@57.0.2
+        run: yarn add --dev --ignore-scripts --non-interactive --exact eslint@10.10.0 eslint-config-expo@57.0.2
 
       - name: Export generated lint lockfiles
         uses: actions/upload-artifact@v4
