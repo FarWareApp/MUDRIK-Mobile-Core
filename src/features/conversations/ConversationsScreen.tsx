@@ -58,10 +58,13 @@ export function ConversationsScreen({
       repository,
     );
 
+  const loadConversations =
+    controller.load;
+
   useFocusEffect(
     useCallback(() => {
-      void controller.load();
-    }, [controller.load]),
+      void loadConversations();
+    }, [loadConversations]),
   );
 
   const openConversation = (
@@ -181,7 +184,7 @@ export function ConversationsScreen({
         <ConversationHistoryState
           mode="error"
           onRetry={() => {
-            void controller.load();
+            void loadConversations();
           }}
         />
       ) : controller.conversations.length === 0 ? (
