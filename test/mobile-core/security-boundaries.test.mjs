@@ -24,6 +24,12 @@ const {
   'src/features/attachments/ManagedAttachmentUri.ts',
 );
 
+const {
+  createDraftPersistenceRepository,
+} = loadTypeScriptModule(
+  'src/features/chat/DraftPersistencePolicy.ts',
+);
+
 test(
   'diagnostics redact common credentials and sensitive context',
   () => {
@@ -169,5 +175,68 @@ test(
         false,
       );
     }
+  },
+);
+
+test(
+  'Save Text Drafts off clears old text and refuses new persistence',
+  async () => {
+    const calls = [];
+    const stored = {
+      conversationId: 'conversation-1',
+      text: 'private draft',
+      updatedAt: 1,
+    };
+
+    const repository = {
+      get: async (conversationId) => {
+        calls.push(['get', conversationId]);
+        return stored;
+      },
+      save: async (draft) => {
+        calls.push(['save', draft]);
+      },
+      clear: async (conversationId) => {
+        calls.push(['clear', conversationId]);
+      },
+    };
+
+    const disabled =
+      createDraftPersistenceRepository(
+        false,
+        repository,
+      );
+
+    assert.equal(
+      await disabled.get('conversation-1'),
+      null,
+    );
+
+    await disabled.save({
+      conversationId: 'conversation-1',
+      text: 'must not persist',
+      updatedAt: 2,
+    });
+
+    await disabled.clear('conversation-1');
+
+    assert.deepEqual(
+      calls,
+      [
+        ['clear', 'conversation-1'],
+        ['clear', 'conversation-1'],
+      ],
+    );
+
+    const enabled =
+      createDraftPersistenceRepository(
+        true,
+        repository,
+      );
+
+    assert.equal(
+      enabled,
+      repository,
+    );
   },
 );
