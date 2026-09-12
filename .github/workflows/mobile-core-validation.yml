@@ -14,11 +14,13 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -27,6 +29,36 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile --non-interactive
+
+      - name: Full Git history secret scan
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SK_PREFIX='s''k-'
+          GHP_PREFIX='g''hp_'
+          PAT_PREFIX='github''_pat_'
+          GOOGLE_PREFIX='AI''za'
+          AWS_PREFIX='AK''IA'
+          SLACK_PREFIX='xox''b-'
+          PRIVATE_KEY='BEGIN ''PRIVATE KEY'
+
+          PATTERN="${SK_PREFIX}[A-Za-z0-9_-]{20,}|${GHP_PREFIX}[A-Za-z0-9]{20,}|${PAT_PREFIX}[A-Za-z0-9_]{20,}|${GOOGLE_PREFIX}[A-Za-z0-9_-]{20,}|${AWS_PREFIX}[A-Z0-9]{16}|${SLACK_PREFIX}[A-Za-z0-9-]{20,}|${PRIVATE_KEY}"
+
+          while read -r commit; do
+            if git grep -qI -E "$PATTERN" "$commit" -- .; then
+              echo "::error::Potential credential/private-key pattern detected in Git history at commit $commit"
+              exit 1
+            fi
+          done < <(git rev-list --all)
+
+          echo "Full Git history secret scan passed."
+
+      - name: Dependency audit - critical vulnerabilities
+        run: yarn audit --groups dependencies --level critical
+
+      - name: Lint
+        run: yarn lint
 
       - name: TypeScript
         run: yarn typecheck
