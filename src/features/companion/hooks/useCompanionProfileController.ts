@@ -34,6 +34,8 @@ export function useCompanionProfileController(
 
   const load =
     useCallback(async () => {
+      await Promise.resolve();
+
       setLoading(true);
 
       try {
