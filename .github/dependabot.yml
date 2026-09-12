@@ -1,0 +1,44 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
+    labels:
+      - dependencies
+      - security-review
+    commit-message:
+      prefix: deps
+    groups:
+      expo-runtime:
+        patterns:
+          - "expo*"
+          - "@expo/*"
+          - "react-native*"
+      react-runtime:
+        patterns:
+          - react
+          - react-dom
+      development-tooling:
+        dependency-type: development
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:30"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - security-review
+    commit-message:
+      prefix: ci-deps
