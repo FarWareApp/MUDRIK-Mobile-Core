@@ -1,8 +1,8 @@
-import {
+import type {
   AttachmentRepository,
 } from '../../contracts/AttachmentRepository';
 
-import {
+import type {
   AttachmentFileStore,
 } from './storage/AttachmentFileStore';
 
