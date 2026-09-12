@@ -151,14 +151,7 @@ function evaluateGrant(
     return { allowed: false, reason: 'grant_expired' };
   }
 
-  const scope = grant.scope;
-  if (!scope) {
-    return {
-      allowed: true,
-      reason: 'allowed',
-      grantId: grant.grantId,
-    };
-  }
+  const scope = grant.scope ?? {};
 
   if (
     scope.resourceId !== undefined &&
@@ -177,14 +170,14 @@ function evaluateGrant(
     return { allowed: false, reason: 'resource_mismatch' };
   }
 
-  if (
-    scope.allowedDomains !== undefined &&
-    (
-      request.domain === undefined ||
-      !scope.allowedDomains.some((domain) => domainMatches(request.domain!, domain))
-    )
-  ) {
-    return { allowed: false, reason: 'domain_mismatch' };
+  if (scope.allowedDomains !== undefined) {
+    const requestedDomain = request.domain;
+    if (
+      requestedDomain === undefined ||
+      !scope.allowedDomains.some((domain) => domainMatches(requestedDomain, domain))
+    ) {
+      return { allowed: false, reason: 'domain_mismatch' };
+    }
   }
 
   if (request.background === true && scope.allowBackground !== true) {
