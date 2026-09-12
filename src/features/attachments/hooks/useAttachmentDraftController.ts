@@ -72,6 +72,8 @@ export function useAttachmentDraftController({
     useState<string | null>(null);
 
   const load = useCallback(async () => {
+    await Promise.resolve();
+
     if (!conversationId) {
       setAttachments([]);
       return;
