@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mudrik.local/schemas/computer-agent-event.schema.json",
+  "title": "MUDRIK Computer Agent Event",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["taskId", "type", "timestamp"],
+  "properties": {
+    "taskId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "task.started",
+        "task.blocked",
+        "task.cancel-requested",
+        "task.cancelled",
+        "task.succeeded",
+        "task.failed",
+        "step.started",
+        "step.blocked",
+        "step.completed",
+        "step.failed"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stepId": {
+      "type": "string"
+    }
+  }
+}
