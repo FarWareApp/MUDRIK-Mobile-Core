@@ -63,6 +63,8 @@ export function AppSettingsProvider({
 
   const load =
     useCallback(async () => {
+      await Promise.resolve();
+
       setLoading(true);
 
       try {
