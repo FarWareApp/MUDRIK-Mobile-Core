@@ -53,6 +53,8 @@ export type CapabilityDecision = {
   grantId?: string;
 };
 
+const ELEVATION_VALUES: readonly ElevationLevel[] = ['none', 'user', 'admin'];
+
 const ELEVATION_RANK: Readonly<Record<ElevationLevel, number>> = {
   none: 0,
   user: 1,
@@ -73,6 +75,17 @@ const DOMAIN_ALLOWLIST_REQUIRED: ReadonlySet<CapabilityId> = new Set([
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasOnlyKeys(
+  value: Record<string, unknown>,
+  allowedKeys: ReadonlySet<string>,
+): boolean {
+  return Object.keys(value).every((key) => allowedKeys.has(key));
+}
+
+function isElevationLevel(value: unknown): value is ElevationLevel {
+  return typeof value === 'string' && ELEVATION_VALUES.includes(value as ElevationLevel);
 }
 
 function normalizeDomain(value: string): string | null {
@@ -113,9 +126,6 @@ function domainMatches(requestedDomain: string, allowedDomain: string): boolean 
     return false;
   }
 
-  // Exact host matching is the safe default. Subdomain authority must be
-  // represented explicitly by listing each permitted host or by a future,
-  // separately reviewed scope type.
   return requested === allowed;
 }
 
@@ -157,6 +167,80 @@ function resourcePrefixMatches(resourcePath: string, resourcePrefix: string): bo
   return path === prefix || path.startsWith(`${prefix}/`);
 }
 
+function parseRequest(value: unknown): CapabilityRequest | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const allowedKeys = new Set([
+    'subjectId',
+    'capability',
+    'nowMs',
+    'resourceId',
+    'resourcePath',
+    'domain',
+    'background',
+    'elevation',
+  ]);
+
+  if (!hasOnlyKeys(value, allowedKeys)) {
+    return null;
+  }
+
+  if (
+    typeof value.subjectId !== 'string' ||
+    value.subjectId.trim().length === 0 ||
+    value.subjectId.length > 256 ||
+    value.subjectId.includes('\0') ||
+    typeof value.capability !== 'string' ||
+    value.capability.length === 0 ||
+    value.capability.length > 128 ||
+    typeof value.nowMs !== 'number' ||
+    !Number.isFinite(value.nowMs)
+  ) {
+    return null;
+  }
+
+  if (
+    value.resourceId !== undefined &&
+    (
+      typeof value.resourceId !== 'string' ||
+      value.resourceId.trim().length === 0 ||
+      value.resourceId.length > 256 ||
+      value.resourceId.includes('\0')
+    )
+  ) {
+    return null;
+  }
+
+  if (
+    value.resourcePath !== undefined &&
+    (typeof value.resourcePath !== 'string' || value.resourcePath.length > 4096)
+  ) {
+    return null;
+  }
+
+  if (
+    value.domain !== undefined &&
+    (typeof value.domain !== 'string' || normalizeDomain(value.domain) === null)
+  ) {
+    return null;
+  }
+
+  if (
+    value.background !== undefined &&
+    typeof value.background !== 'boolean'
+  ) {
+    return null;
+  }
+
+  if (value.elevation !== undefined && !isElevationLevel(value.elevation)) {
+    return null;
+  }
+
+  return value as CapabilityRequest;
+}
+
 function parseScope(value: unknown): CapabilityScope | null {
   if (value === undefined) {
     return {};
@@ -174,7 +258,7 @@ function parseScope(value: unknown): CapabilityScope | null {
     'maxElevation',
   ]);
 
-  if (Object.keys(value).some((key) => !allowedKeys.has(key))) {
+  if (!hasOnlyKeys(value, allowedKeys)) {
     return null;
   }
 
@@ -220,10 +304,7 @@ function parseScope(value: unknown): CapabilityScope | null {
     return null;
   }
 
-  if (
-    value.maxElevation !== undefined &&
-    !['none', 'user', 'admin'].includes(String(value.maxElevation))
-  ) {
+  if (value.maxElevation !== undefined && !isElevationLevel(value.maxElevation)) {
     return null;
   }
 
@@ -246,7 +327,7 @@ function parseGrant(value: unknown):
     'revokedAtMs',
   ]);
 
-  if (Object.keys(value).some((key) => !allowedKeys.has(key))) {
+  if (!hasOnlyKeys(value, allowedKeys)) {
     return { grant: null, reason: 'grant_invalid' };
   }
 
@@ -254,9 +335,11 @@ function parseGrant(value: unknown):
     typeof value.grantId !== 'string' ||
     value.grantId.trim().length === 0 ||
     value.grantId.length > 256 ||
+    value.grantId.includes('\0') ||
     typeof value.subjectId !== 'string' ||
     value.subjectId.trim().length === 0 ||
     value.subjectId.length > 256 ||
+    value.subjectId.includes('\0') ||
     !isCapabilityId(value.capability)
   ) {
     return { grant: null, reason: 'grant_invalid' };
@@ -369,14 +452,11 @@ function evaluateGrant(
 }
 
 export function authorizeCapability(
-  request: CapabilityRequest,
+  requestInput: unknown,
   grants: readonly unknown[],
 ): CapabilityDecision {
-  if (
-    request.subjectId.trim().length === 0 ||
-    request.subjectId.length > 256 ||
-    !Number.isFinite(request.nowMs)
-  ) {
+  const request = parseRequest(requestInput);
+  if (!request) {
     return { allowed: false, reason: 'invalid_request' };
   }
 
