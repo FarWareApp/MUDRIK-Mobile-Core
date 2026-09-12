@@ -74,10 +74,13 @@ export function ProjectsScreen({
       onProjectDeleted,
     });
 
+  const loadProjects =
+    controller.load;
+
   useFocusEffect(
     useCallback(() => {
-      void controller.load();
-    }, [controller.load]),
+      void loadProjects();
+    }, [loadProjects]),
   );
 
   const openProject = (
@@ -202,7 +205,7 @@ export function ProjectsScreen({
           onRetry={
             controller.projects.length === 0
               ? () => {
-                  void controller.load();
+                  void loadProjects();
                 }
               : undefined
           }
