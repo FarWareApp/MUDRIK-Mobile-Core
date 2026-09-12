@@ -101,9 +101,6 @@ export function CoreHealthProvider({
           !settings.loading,
 
         issues,
-
-        evaluatedAt:
-          Date.now(),
       };
     }, [
       notifications.error,
