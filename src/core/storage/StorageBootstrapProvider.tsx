@@ -32,6 +32,8 @@ export function StorageBootstrapProvider({
 
   const initialize =
     useCallback(async () => {
+      await Promise.resolve();
+
       setState(
         'initializing',
       );
