@@ -4,6 +4,11 @@ import {
   Paths,
 } from 'expo-file-system';
 
+import {
+  isManagedAttachmentId,
+  isManagedAttachmentUri,
+} from '../ManagedAttachmentUri';
+
 const attachmentDirectory =
   new Directory(
     Paths.document,
@@ -28,12 +33,31 @@ function safeExtension(
   return match?.[1]?.toLowerCase() ?? '';
 }
 
+function managedUri(
+  localUri: string,
+): boolean {
+  return isManagedAttachmentUri(
+    localUri,
+    attachmentDirectory.uri,
+  );
+}
+
 export class AttachmentFileStore {
   async persist(
     sourceUri: string,
     attachmentId: string,
     originalName: string,
   ): Promise<string> {
+    if (
+      !isManagedAttachmentId(
+        attachmentId,
+      )
+    ) {
+      throw new Error(
+        'Invalid attachment ID',
+      );
+    }
+
     ensureDirectory();
 
     const extension =
@@ -61,6 +85,10 @@ export class AttachmentFileStore {
   getSize(
     localUri: string,
   ): number | null {
+    if (!managedUri(localUri)) {
+      return null;
+    }
+
     const file =
       new File(localUri);
 
@@ -74,6 +102,12 @@ export class AttachmentFileStore {
   delete(
     localUri: string,
   ): void {
+    if (!managedUri(localUri)) {
+      throw new Error(
+        'Refusing unmanaged attachment URI',
+      );
+    }
+
     const file =
       new File(localUri);
 
@@ -85,6 +119,10 @@ export class AttachmentFileStore {
   exists(
     localUri: string,
   ): boolean {
+    if (!managedUri(localUri)) {
+      return false;
+    }
+
     return new File(localUri).exists;
   }
 }
