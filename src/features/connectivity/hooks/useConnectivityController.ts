@@ -16,27 +16,10 @@ import {
 import {
   diagnosticsService,
 } from '../../../core/diagnostics/DiagnosticsService';
-
-function snapshotSignature(
-  snapshot: ConnectivitySnapshot,
-): string {
-  return [
-    snapshot.kind,
-    snapshot.isConnected
-      ? 'connected'
-      : 'disconnected',
-    snapshot.isInternetReachable === null
-      ? 'reachability-unknown'
-      : snapshot.isInternetReachable
-        ? 'reachable'
-        : 'unreachable',
-    snapshot.isExpensive === null
-      ? 'cost-unknown'
-      : snapshot.isExpensive
-        ? 'expensive'
-        : 'normal-cost',
-  ].join(':');
-}
+import {
+  connectivitySnapshotSignature,
+  shouldApplyConnectivitySnapshot,
+} from '../ConnectivitySnapshotPolicy';
 
 export function useConnectivityController(
   service: ConnectivityService,
@@ -85,8 +68,10 @@ export function useConnectivityController(
     ) => {
       if (
         !mountedRef.current ||
-        snapshot.changedAt <
-          latestChangedAtRef.current
+        !shouldApplyConnectivitySnapshot(
+          latestChangedAtRef.current,
+          snapshot.changedAt,
+        )
       ) {
         return;
       }
@@ -95,7 +80,9 @@ export function useConnectivityController(
         snapshot.changedAt;
 
       const signature =
-        snapshotSignature(snapshot);
+        connectivitySnapshotSignature(
+          snapshot,
+        );
 
       if (
         signature !==
