@@ -2,25 +2,30 @@
 
 ## Current Phase
 
-Final Mobile Core Hardening
+Final Mobile Core Device Validation / Freeze Gate
+
+The code-level Final Mobile Core Hardening pass is complete. The Mobile Core is not frozen yet because physical-device / end-to-end validation is still required.
 
 ## Current Branch
 
 `mudrik-core-v1`
 
-## Last Stable Commit
+## Hardened Baseline
 
-`b7b3f5f` — update native localization configuration
+`744bedee84e87ca1ea2ad482ecab415d7dbbb37b` — finish accessibility and reduced motion hardening
 
 ## Repository
 
-Private GitHub repository:
+GitHub repository:
 
 `FarWareApp/MUDRIK-Mobile-Core`
 
+Repository visibility verified on 2026-09-12: **public**.
+
 ## Current Overall Progress
 
-- Mobile Core: approximately 90%
+- Mobile Core implementation + code hardening: approximately 97–98%
+- Remaining Mobile Core gate: physical-device / end-to-end validation and any defects discovered there
 - Full MUDRIK Mobile platform: approximately 65–75%
 
 ## Completed Mobile Core
@@ -70,54 +75,122 @@ Private GitHub repository:
 - RTL / LTR application direction
 - Mixed-text direction resolver
 - Accessibility runtime
-- Reduced Motion support foundation
+- Reduced Motion support
 - Persistent diagnostics
 - Diagnostic privacy sanitization
 - Core Health layer
+- Core Health / Diagnostics UI
+- Safe orphan-attachment maintenance UI
 - Error Boundary and recovery
 - SQLite migrations through V6
+- GitHub Actions validation gate
+
+## Final Mobile Core Hardening Completed — 2026-09-12
+
+The hardening pass completed the following code-level work:
+
+- Final navigation / route hardening
+- Notification target and project-route validation
+- MessageTransport multimodal input contract
+- Attachment metadata passed through the transport boundary without coupling UI to an AI provider
+- Attachment-only send support in the mock transport
+- Retry preserves original message ID and creation timestamp for idempotency
+- Retry preserves attachment payloads
+- Local-persistence failures are separated from transport failures
+- Missing attachment files are detected during restore
+- Missing/corrupted image attachments show an explicit unavailable state instead of silently failing
+- Missing draft attachments are detached safely
+- Attachment picker/import/remove failures are surfaced with sanitized user-facing errors
+- Chat message mixed RTL/LTR direction hardening
+- Reduced Motion integrated into stack navigation, message auto-scroll and project editor modal transitions
+- Accessibility touch targets and screen-reader labels hardened across chat, conversations and projects
+- Conversation/project mutations are guarded against concurrent operations
+- Conversation history create/pin/archive/delete failures are caught and surfaced
+- Project list create/archive/delete failures are caught and surfaced
+- Project detail load/save/picker/import/remove/link failures are caught and surfaced
+- Project detail invalid/missing route IDs are handled safely
+- Core Health / Diagnostics screen added
+- Diagnostics refresh/clear controls added
+- Safe manual orphan-attachment cleanup added without deleting linked user data
+- Settings reset now requires confirmation and explicitly preserves conversations/projects/files
+- Connectivity refreshes again when the app returns to foreground
+- Stale connectivity snapshots are ignored
+- Connectivity changes are recorded in diagnostics
+- GitHub Actions validation added using the repository's Yarn lockfile
 
 ## Last Validation
 
-- TypeScript: PASS
-- Expo Doctor: 21/21 PASS
+Validated on GitHub Actions against hardened baseline `744bedee84e87ca1ea2ad482ecab415d7dbbb37b`:
+
+- Workflow: `Mobile Core Validation`
+- Run: `#4`
+- Dependency install using `yarn.lock`: PASS
+- TypeScript (`tsc --noEmit`): PASS
+- Expo Doctor: PASS
+- Overall CI result: PASS
 
 ## Current Work
 
-Final Mobile Core Hardening.
+Device / end-to-end validation before freezing Mobile Core.
 
-This phase must be completed before connecting production AI models or server infrastructure.
+No production AI model or production server transport should be coupled into the UI during this gate.
 
 ## Remaining Mobile Core Work
 
-- Final navigation and route audit
-- Core Health / Diagnostics UI
-- Safe local data management
-- Missing/corrupted attachment handling
-- Chat message RTL/LTR hardening
-- Reduced Motion navigation integration
-- Accessibility final audit
-- Loading / Empty / Error state normalization
-- Lifecycle final audit
-- Connectivity transition audit
-- Notification navigation audit
-- MessageTransport multimodal contract
-- Remove UI assumptions specific to mock transport
-- Final application shell audit
-- Full end-to-end application test
-- Fix all remaining defects
-- Freeze Mobile Core
+### Mandatory Device / E2E Gate
+
+- Launch from a clean install
+- Launch after database already contains existing user data
+- Restart persistence test
+- Background → foreground lifecycle test
+- Wi-Fi → cellular transition test
+- Cellular → Wi-Fi transition test
+- Online → offline → online transition test
+- Real mobile-data test outside the home Wi-Fi network
+- Permission allow / deny / retry flows
+- Camera attachment flow
+- Image/video picker attachment flow
+- Document attachment flow
+- Missing attachment recovery test
+- Attachment-only message test
+- Text + attachment message test
+- Send / Stop / retry test
+- Conversation create/open/search/pin/archive/delete test
+- Draft restoration test
+- Project create/edit/archive/delete test
+- Project file add/remove test
+- Project-conversation link/unlink test
+- Notification navigation / deep-link test
+- Settings persistence test
+- Reduced Motion test
+- RTL / LTR and mixed Arabic/German/English text test
+- Core Health / Diagnostics screen test
+- Safe storage cleanup test
+- Voice recording / player core test
+- Accessibility manual pass on primary screens
+- Fix every critical defect discovered during device testing
+
+### Freeze
+
+Only after the device/E2E gate passes:
+
+1. Run TypeScript again.
+2. Run Expo Doctor again.
+3. Commit any final device-test fixes.
+4. Confirm the final GitHub Actions validation is green.
+5. Create the `MOBILE-CORE-FROZEN` Git tag.
+6. Start production AI/server integration only after the frozen baseline exists.
 
 ## Mobile Core Completion Gate
 
 Do not begin full AI integration until:
 
-1. Final hardening is complete.
-2. TypeScript passes.
-3. Expo Doctor passes.
-4. Full device test passes.
-5. Critical defects are fixed.
-6. Mobile Core receives the `MOBILE-CORE-FROZEN` Git tag.
+1. Final hardening is complete. ✅
+2. TypeScript passes. ✅
+3. Expo Doctor passes. ✅
+4. Full device test passes. ⏳
+5. Critical defects found during device testing are fixed. ⏳
+6. Mobile Core receives the `MOBILE-CORE-FROZEN` Git tag. ⏳
 
 ## AI Architecture After Mobile Core
 
@@ -329,4 +402,3 @@ At the end of every major phase:
 5. Update this file.
 6. Push to GitHub.
 7. Add a Git tag for major stable milestones.
-
