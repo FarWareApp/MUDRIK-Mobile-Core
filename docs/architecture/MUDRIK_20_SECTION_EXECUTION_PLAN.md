@@ -4,7 +4,7 @@
 
 MUDRIK development is divided into twenty sequential sections. Each section is treated as a closed engineering unit with explicit scope, completion criteria, evidence, security review, and a five-layer validation gate.
 
-The next section must not enter implementation until the current section is closed. Future sections may be researched or documented, but they must not be coupled into the active runtime before their turn unless a critical dependency requires a narrowly scoped exception that is recorded in this document.
+The next section must not enter implementation until the current section is closed. Future sections may be researched or documented, but they must not be coupled into the active runtime before their turn unless a critical dependency or an explicit owner-directed execution exception requires a narrowly scoped deviation that is recorded in this document.
 
 The objective is not speed at the expense of correctness. The objective is controlled progress with high engineering quality, strong security, reproducibility, and measurable evidence.
 
@@ -20,7 +20,7 @@ For every section:
 6. commit the completed section;
 7. obtain a green CI result where CI applies;
 8. tag major stable milestones where appropriate;
-9. only then unlock implementation of the next section.
+9. only then unlock implementation of the next section unless an explicit recorded exception below applies.
 
 A section is not considered complete because the code compiles, because a feature works once, or because an AI/model says it looks correct.
 
@@ -138,7 +138,7 @@ No undocumented "it worked on my machine" completion.
 
 # Section 1 — Mobile Core Freeze
 
-**Status: ACTIVE. No later section may enter production implementation before this closes.**
+**Status: ACTIVE / OPEN — PHYSICAL GATE DEFERRED BY RECORDED OWNER-DIRECTED EXCEPTION.**
 
 Scope:
 
@@ -152,7 +152,7 @@ Scope:
 Non-goals:
 
 - no production AI/server transport coupling into Mobile UI;
-- no major new feature implementation during the freeze gate.
+- no major new feature implementation inside the Mobile Core freeze surface.
 
 Completion milestone: `MOBILE-CORE-FROZEN`.
 
@@ -441,14 +441,37 @@ Not allowed without explicit recorded exception:
 - mark a section complete with unresolved blockers/critical issues;
 - create a stable milestone tag before required physical/security evidence exists.
 
-## Current Active Section
+## Recorded Execution Exception — Deferred Physical Validation
 
-**Section 1 — Mobile Core Freeze**
+**Recorded 2026-09-12 at the owner's direction.**
 
-Current blocker to closure: the mandatory physical-device/E2E validation matrix and any defects discovered during that validation.
+The owner elected to defer phone/physical-device testing until the broader pre-device implementation program is substantially complete. This changes scheduling only; it does not waive any quality gate.
+
+Rules of this exception:
+
+1. Section 1 remains `ACTIVE / OPEN`; `MOBILE-CORE-FROZEN` must not be created until its physical matrix passes.
+2. Later sections may enter `PRE-DEVICE IMPLEMENTATION` even though Section 1 remains open.
+3. A later section may complete Layers 1–3 and the automation-only portions of Layer 5, but it must remain `OPEN — PHYSICAL/REAL-ENVIRONMENT GATE DEFERRED` whenever Layer 4 requires actual hardware, OS, network, external service, or production-like infrastructure.
+4. No deferred section may receive a stable production/freeze tag before its required Layer 4 evidence exists.
+5. No future subsystem may be coupled into the Mobile Core in a way that invalidates the app-first architecture or hides the fact that Section 1 is not frozen.
+6. Production secrets, live emergency actions, real purchases, destructive automation, or uncontrolled remote execution remain prohibited during pre-device work.
+7. When the deferred physical phase begins, the tested binaries and services must be rebuilt from the then-current exact candidate SHAs; expired or historical APK artifacts are reference evidence only.
+8. Every defect found during deferred physical testing must trigger the normal defect/retest loop and, where applicable, automated regression coverage.
+9. Section 20 cannot close until all deferred Layer 4 obligations from Sections 1–19 have been completed or explicitly shown to be not applicable.
+10. This exception may be revoked at any time; revocation restores strict sequential implementation immediately.
+
+This exception permits continued engineering progress without redefining incomplete work as complete.
+
+## Current Primary Section
+
+**Section 1 — Mobile Core Freeze — OPEN, physical Layer 4 deferred.**
+
+## Current Pre-Device Workstream
+
+**Section 2 — Platform Security Foundation — may proceed in PRE-DEVICE IMPLEMENTATION mode.**
 
 ## Completion Definition
 
-MUDRIK progress is measured by closed sections, not by the number of features described or lines of code written.
+MUDRIK progress is measured by verified section evidence, not by the number of features described or lines of code written.
 
-A section is closed only when implementation, five-layer validation, evidence, security obligations and release documentation all agree that it is closed.
+A section is closed only when implementation, all applicable validation layers, evidence, security obligations and release documentation agree that it is closed. Deferred physical evidence preserves an `OPEN` state until completed.
