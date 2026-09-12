@@ -1,0 +1,35 @@
+name: Mobile Core Validation
+
+on:
+  push:
+    branches:
+      - mudrik-core-v1
+  pull_request:
+    branches:
+      - mudrik-core-v1
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: TypeScript
+        run: npm run typecheck
+
+      - name: Expo Doctor
+        run: npx expo-doctor

@@ -12,6 +12,9 @@ import {
 import {
   ConnectivityService,
 } from '../../contracts/ConnectivityService';
+import {
+  useLifecycle,
+} from '../../core/lifecycle/LifecycleProvider';
 
 import {
   useConnectivityController,
@@ -45,9 +48,13 @@ export function ConnectivityProvider({
   service,
   children,
 }: Props) {
+  const lifecycle =
+    useLifecycle();
+
   const controller =
     useConnectivityController(
       service,
+      lifecycle.isForeground,
     );
 
   const value =

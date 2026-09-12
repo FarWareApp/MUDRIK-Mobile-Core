@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
@@ -12,9 +13,34 @@ import {
 import {
   ConnectivityService,
 } from '../../../contracts/ConnectivityService';
+import {
+  diagnosticsService,
+} from '../../../core/diagnostics/DiagnosticsService';
+
+function snapshotSignature(
+  snapshot: ConnectivitySnapshot,
+): string {
+  return [
+    snapshot.kind,
+    snapshot.isConnected
+      ? 'connected'
+      : 'disconnected',
+    snapshot.isInternetReachable === null
+      ? 'reachability-unknown'
+      : snapshot.isInternetReachable
+        ? 'reachable'
+        : 'unreachable',
+    snapshot.isExpensive === null
+      ? 'cost-unknown'
+      : snapshot.isExpensive
+        ? 'expensive'
+        : 'normal-cost',
+  ].join(':');
+}
 
 export function useConnectivityController(
   service: ConnectivityService,
+  isForeground: boolean,
 ) {
   const [
     connectivity,
@@ -32,56 +58,137 @@ export function useConnectivityController(
       null,
     );
 
-  useEffect(() => {
-    let mounted = true;
+  const mountedRef =
+    useRef(true);
 
-    void service
-      .getCurrent()
-      .then((current) => {
-        if (!mounted) {
+  const latestChangedAtRef =
+    useRef(0);
+
+  const lastSignatureRef =
+    useRef<string | null>(null);
+
+  const previousForegroundRef =
+    useRef(isForeground);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const applySnapshot =
+    useCallback((
+      snapshot: ConnectivitySnapshot,
+      source: 'initial' | 'subscription' | 'foreground',
+    ) => {
+      if (
+        !mountedRef.current ||
+        snapshot.changedAt <
+          latestChangedAtRef.current
+      ) {
+        return;
+      }
+
+      latestChangedAtRef.current =
+        snapshot.changedAt;
+
+      const signature =
+        snapshotSignature(snapshot);
+
+      if (
+        signature !==
+        lastSignatureRef.current
+      ) {
+        lastSignatureRef.current =
+          signature;
+
+        diagnosticsService.record(
+          'connectivity',
+          `${source}:${signature}`,
+        );
+      }
+
+      setConnectivity(snapshot);
+      setLoading(false);
+      setError(null);
+    }, []);
+
+  const refresh =
+    useCallback(async (
+      source: 'initial' | 'foreground',
+    ) => {
+      try {
+        const current =
+          await service.getCurrent();
+
+        applySnapshot(
+          current,
+          source,
+        );
+      } catch (caught) {
+        if (!mountedRef.current) {
           return;
         }
 
-        setConnectivity(
-          current,
+        diagnosticsService.record(
+          'connectivity',
+          caught instanceof Error
+            ? `refresh-failed:${caught.message}`
+            : 'refresh-failed:unknown',
+          'error',
         );
 
-        setError(null);
-      })
-      .catch(() => {
-        if (mounted) {
-          setError(
-            'Unable to read network state.',
-          );
-        }
-      })
-      .finally(() => {
-        if (mounted) {
-          setLoading(false);
-        }
-      });
+        setError(
+          'Unable to read network state.',
+        );
+        setLoading(false);
+      }
+    }, [
+      applySnapshot,
+      service,
+    ]);
+
+  useEffect(() => {
+    void refresh('initial');
 
     const unsubscribe =
       service.subscribe(
         (current) => {
-          if (!mounted) {
-            return;
-          }
-
-          setConnectivity(
+          applySnapshot(
             current,
+            'subscription',
           );
-
-          setLoading(false);
-          setError(null);
         },
       );
 
     return () => {
-      mounted = false;
       unsubscribe();
     };
-  }, [service]);
+  }, [
+    applySnapshot,
+    refresh,
+    service,
+  ]);
+
+  useEffect(() => {
+    const wasForeground =
+      previousForegroundRef.current;
+
+    previousForegroundRef.current =
+      isForeground;
+
+    if (
+      !wasForeground &&
+      isForeground
+    ) {
+      void refresh('foreground');
+    }
+  }, [
+    isForeground,
+    refresh,
+  ]);
 
   const dismissError =
     useCallback(() => {
