@@ -1,0 +1,20 @@
+# Default ownership
+* @FarWareApp
+
+# Security-critical policy and validation
+/src/core/security/ @FarWareApp
+/docs/architecture/MUDRIK_SECURITY_BASELINE.md @FarWareApp
+/docs/architecture/MUDRIK_SECURITY_ASSURANCE_PROGRAM.md @FarWareApp
+/docs/architecture/MUDRIK_THREAT_MODEL_TEMPLATE.md @FarWareApp
+/docs/validation/SECTION_02_PLATFORM_SECURITY_GATE.md @FarWareApp
+/docs/validation/SECURITY_REVIEW_CHECKLIST.md @FarWareApp
+/SECURITY.md @FarWareApp
+
+# Build, dependency and release trust roots
+/.github/workflows/ @FarWareApp
+/.github/dependabot.yml @FarWareApp
+/.github/CODEOWNERS @FarWareApp
+/eas.json @FarWareApp
+/app.json @FarWareApp
+/package.json @FarWareApp
+/yarn.lock @FarWareApp
