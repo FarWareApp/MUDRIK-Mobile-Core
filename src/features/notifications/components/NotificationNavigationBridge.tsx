@@ -28,12 +28,14 @@ const TARGETS =
   ]);
 
 export function NotificationNavigationBridge() {
-  const notifications =
-    useNotifications();
+  const {
+    lastResponse,
+    consumeLastResponse,
+  } = useNotifications();
 
   useEffect(() => {
     const response =
-      notifications.lastResponse;
+      lastResponse;
 
     if (!response) {
       return;
@@ -46,8 +48,7 @@ export function NotificationNavigationBridge() {
       data.target;
 
     const consume = () => {
-      void notifications
-        .consumeLastResponse()
+      void consumeLastResponse()
         .catch((caught) => {
           diagnosticsService.record(
             'notification-navigation',
@@ -117,7 +118,6 @@ export function NotificationNavigationBridge() {
             'warning',
           );
 
-          consume();
           return;
         }
 
@@ -146,9 +146,8 @@ export function NotificationNavigationBridge() {
       consume();
     }
   }, [
-    notifications
-      .consumeLastResponse,
-    notifications.lastResponse,
+    consumeLastResponse,
+    lastResponse,
   ]);
 
   return null;
