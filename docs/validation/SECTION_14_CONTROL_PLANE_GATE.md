@@ -7,6 +7,7 @@ Implementation is locked until preceding execution-plan sections permit it. This
 Normative architecture:
 
 - `docs/architecture/MUDRIK_REALTIME_CONTROL_PLANE.md`
+- `docs/architecture/MUDRIK_CONTROL_PLANE_THREAT_MODEL.md`
 - `docs/architecture/MUDRIK_COMPUTER_AUTONOMY.md`
 - `docs/architecture/MUDRIK_SECURITY_BASELINE.md`
 - `docs/architecture/MUDRIK_20_SECTION_EXECUTION_PLAN.md`
@@ -110,7 +111,7 @@ Required production-like environment testing:
 - [ ] broker restart/failover;
 - [ ] duplicate/redelivered message handling;
 - [ ] task state survives gateway restart;
-- [ ] task state survives ordinary service-process restart;
+- [ ] task state survives ordinary service-process restart.
 
 ### Database / recovery
 
@@ -119,7 +120,7 @@ Required production-like environment testing:
 - [ ] backup restored into isolated environment;
 - [ ] point-in-time recovery exercised where supported;
 - [ ] restored device/task/approval integrity verified;
-- [ ] migration rollback/recovery strategy tested;
+- [ ] migration rollback/recovery strategy tested.
 
 ### Load / latency
 
