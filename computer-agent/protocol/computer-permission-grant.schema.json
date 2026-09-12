@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mudrik.local/schemas/computer-permission-grant.schema.json",
+  "title": "MUDRIK Computer Permission Grant",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "grantId",
+    "deviceId",
+    "capability",
+    "scope",
+    "mode",
+    "createdAt",
+    "expiresAt"
+  ],
+  "properties": {
+    "grantId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "deviceId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "capability": {
+      "type": "string",
+      "enum": [
+        "terminal.read",
+        "terminal.execute",
+        "filesystem.read",
+        "filesystem.write",
+        "filesystem.delete",
+        "git.read",
+        "git.write",
+        "process.read",
+        "process.start",
+        "process.stop",
+        "browser.read",
+        "browser.control",
+        "screen.capture",
+        "network.outbound",
+        "clipboard.read",
+        "clipboard.write",
+        "secrets.use",
+        "system.settings",
+        "system.admin"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["one_shot", "session", "persistent"]
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "filesystemRoots": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "maxLength": 4096 }
+        },
+        "repositories": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "maxLength": 512 }
+        },
+        "executables": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "maxLength": 512 }
+        },
+        "domains": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "maxLength": 512 }
+        },
+        "backgroundAllowed": {
+          "type": "boolean",
+          "default": false
+        },
+        "elevationAllowed": {
+          "type": "boolean",
+          "default": false
+        },
+        "maxTaskDurationSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "revokedAt": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}

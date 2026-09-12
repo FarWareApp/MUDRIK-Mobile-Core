@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mudrik.local/schemas/computer-task.schema.json",
+  "title": "MUDRIK Computer Task Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocolVersion",
+    "taskId",
+    "deviceId",
+    "source",
+    "intent",
+    "risk",
+    "requestedCapabilities",
+    "createdAt",
+    "expiresAt",
+    "nonce",
+    "steps"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "taskId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "deviceId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "source": {
+      "type": "string",
+      "enum": ["web", "mobile", "automation", "api", "local"]
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "workspace": {
+      "type": ["string", "null"],
+      "maxLength": 4096
+    },
+    "risk": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "requestedCapabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["automatic", "task", "one_shot", "blocked"]
+        },
+        "approvalId": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["mode"]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nonce": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 256
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean", "null"]
+      }
+    },
+    "signature": {
+      "type": ["string", "null"]
+    }
+  },
+  "$defs": {
+    "capability": {
+      "type": "string",
+      "enum": [
+        "terminal.read",
+        "terminal.execute",
+        "filesystem.read",
+        "filesystem.write",
+        "filesystem.delete",
+        "git.read",
+        "git.write",
+        "process.read",
+        "process.start",
+        "process.stop",
+        "browser.read",
+        "browser.control",
+        "screen.capture",
+        "network.outbound",
+        "clipboard.read",
+        "clipboard.write",
+        "secrets.use",
+        "system.settings",
+        "system.admin"
+      ]
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stepId", "tool", "summary", "requiredCapabilities"],
+      "properties": {
+        "stepId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "tool": {
+          "type": "string",
+          "enum": [
+            "terminal",
+            "filesystem",
+            "git",
+            "process",
+            "browser",
+            "screen",
+            "clipboard",
+            "system"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "requiredCapabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/capability"
+          }
+        },
+        "input": {
+          "type": "object"
+        },
+        "continueOnError": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  }
+}

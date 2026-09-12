@@ -33,3 +33,6 @@ jobs:
 
       - name: Expo Doctor
         run: npx expo-doctor
+
+      - name: Computer Agent Phase 0 tests
+        run: node --test computer-agent/test/*.test.mjs
