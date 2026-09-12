@@ -64,7 +64,7 @@ export function LifecycleProvider({
   const [
     lastChangedAt,
     setLastChangedAt,
-  ] = useState(Date.now());
+  ] = useState(0);
 
   useEffect(() => {
     diagnosticsService.record(
