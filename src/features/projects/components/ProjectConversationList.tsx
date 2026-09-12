@@ -22,6 +22,8 @@ type Props = {
   linkedIds:
     readonly string[];
 
+  disabled?: boolean;
+
   onToggle: (
     conversationId: string,
   ) => void;
@@ -30,6 +32,7 @@ type Props = {
 export function ProjectConversationList({
   conversations,
   linkedIds,
+  disabled = false,
   onToggle,
 }: Props) {
   const { colors } =
@@ -59,11 +62,26 @@ export function ProjectConversationList({
               conversation.id,
             );
 
+          const title =
+            conversation
+              .title
+              .trim() ||
+            'New conversation';
+
           return (
             <Pressable
               key={
                 conversation.id
               }
+              accessibilityRole="checkbox"
+              accessibilityLabel={
+                title
+              }
+              accessibilityState={{
+                checked: linked,
+                disabled,
+              }}
+              disabled={disabled}
               onPress={() =>
                 onToggle(
                   conversation.id,
@@ -74,6 +92,10 @@ export function ProjectConversationList({
                 {
                   borderBottomColor:
                     colors.border,
+                  opacity:
+                    disabled
+                      ? 0.6
+                      : 1,
                 },
               ]}
             >
@@ -116,10 +138,7 @@ export function ProjectConversationList({
                   },
                 ]}
               >
-                {conversation
-                  .title
-                  .trim() ||
-                  'New conversation'}
+                {title}
               </Text>
             </Pressable>
           );

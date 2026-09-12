@@ -29,6 +29,9 @@ import {
   ProjectRecord,
   ProjectRepository,
 } from '../../../contracts/ProjectRepository';
+import {
+  diagnosticsService,
+} from '../../../core/diagnostics/DiagnosticsService';
 
 import {
   AttachmentCleanupService,
@@ -62,6 +65,19 @@ type Dependencies = {
   attachmentCleanup:
     AttachmentCleanupService;
 };
+
+function recordProjectError(
+  event: string,
+  caught: unknown,
+): void {
+  diagnosticsService.record(
+    'project-detail',
+    caught instanceof Error
+      ? `${event}:${caught.message}`
+      : `${event}:unknown`,
+    'error',
+  );
+}
 
 export function useProjectDetailController({
   projectId,
@@ -155,7 +171,12 @@ export function useProjectDetailController({
         );
 
         setError(null);
-      } catch {
+      } catch (caught) {
+        recordProjectError(
+          'load-failed',
+          caught,
+        );
+
         setError(
           'Unable to load project.',
         );
@@ -180,21 +201,25 @@ export function useProjectDetailController({
         name: string,
         description: string,
       ) => {
-        if (!project) {
-          return;
+        if (!project || busy) {
+          return false;
         }
 
         const cleanName =
           name.trim();
 
         if (!cleanName) {
-          return;
+          setError(
+            'Project name cannot be empty.',
+          );
+          return false;
         }
 
         const now =
           Date.now();
 
         setBusy(true);
+        setError(null);
 
         try {
           await projectRepository
@@ -212,11 +237,23 @@ export function useProjectDetailController({
             );
 
           await load();
+          return true;
+        } catch (caught) {
+          recordProjectError(
+            'save-details-failed',
+            caught,
+          );
+
+          setError(
+            'Unable to save project details.',
+          );
+          return false;
         } finally {
           setBusy(false);
         }
       },
       [
+        busy,
         load,
         project,
         projectRepository,
@@ -235,12 +272,14 @@ export function useProjectDetailController({
         >,
       ) => {
         if (
-          picked.length === 0
+          picked.length === 0 ||
+          busy
         ) {
           return;
         }
 
         setBusy(true);
+        setError(null);
 
         try {
           const imported =
@@ -262,9 +301,21 @@ export function useProjectDetailController({
             );
 
           setAttachments(next);
-        } catch {
-          await attachmentCleanup
-            .cleanupOrphans();
+        } catch (caught) {
+          recordProjectError(
+            'import-attachment-failed',
+            caught,
+          );
+
+          try {
+            await attachmentCleanup
+              .cleanupOrphans();
+          } catch (cleanupError) {
+            recordProjectError(
+              'cleanup-after-import-failed',
+              cleanupError,
+            );
+          }
 
           setError(
             'Unable to add project file.',
@@ -277,43 +328,89 @@ export function useProjectDetailController({
         attachmentCleanup,
         attachmentImporter,
         attachments,
+        busy,
         projectAttachmentRepository,
         projectId,
       ],
     );
 
+  const pickAndImport =
+    useCallback(
+      async (
+        source:
+          | 'media'
+          | 'document'
+          | 'camera',
+      ) => {
+        if (busy) {
+          return;
+        }
+
+        try {
+          const picked =
+            source === 'media'
+              ? await attachmentPicker
+                  .pickMedia()
+              : source === 'document'
+                ? await attachmentPicker
+                    .pickDocuments()
+                : await attachmentPicker
+                    .takePhoto();
+
+          await importAttachments(
+            picked,
+          );
+        } catch (caught) {
+          recordProjectError(
+            `${source}-picker-failed`,
+            caught,
+          );
+
+          setError(
+            source === 'camera'
+              ? 'Camera permission or capture failed.'
+              : source === 'media'
+                ? 'Unable to open photos.'
+                : 'Unable to open files.',
+          );
+        }
+      },
+      [
+        attachmentPicker,
+        busy,
+        importAttachments,
+      ],
+    );
+
   const addMedia =
-    useCallback(async () => {
-      await importAttachments(
-        await attachmentPicker
-          .pickMedia(),
-      );
-    }, [
-      attachmentPicker,
-      importAttachments,
-    ]);
+    useCallback(
+      async () => {
+        await pickAndImport(
+          'media',
+        );
+      },
+      [pickAndImport],
+    );
 
   const addDocument =
-    useCallback(async () => {
-      await importAttachments(
-        await attachmentPicker
-          .pickDocuments(),
-      );
-    }, [
-      attachmentPicker,
-      importAttachments,
-    ]);
+    useCallback(
+      async () => {
+        await pickAndImport(
+          'document',
+        );
+      },
+      [pickAndImport],
+    );
 
   const takePhoto =
-    useCallback(async () => {
-      await importAttachments(
-        await attachmentPicker
-          .takePhoto(),
-      );
-    }, [
-      attachmentPicker,
-      importAttachments,
-    ]);
+    useCallback(
+      async () => {
+        await pickAndImport(
+          'camera',
+        );
+      },
+      [pickAndImport],
+    );
 
   const removeAttachment =
     useCallback(
@@ -321,6 +418,10 @@ export function useProjectDetailController({
         attachment:
           AttachmentRecord,
       ) => {
+        if (busy) {
+          return;
+        }
+
         const next =
           attachments.filter(
             (item) =>
@@ -328,23 +429,40 @@ export function useProjectDetailController({
               attachment.id,
           );
 
-        await projectAttachmentRepository
-          .setAttachments(
-            projectId,
-            next.map(
-              (item) =>
-                item.id,
-            ),
+        setBusy(true);
+        setError(null);
+
+        try {
+          await projectAttachmentRepository
+            .setAttachments(
+              projectId,
+              next.map(
+                (item) =>
+                  item.id,
+              ),
+            );
+
+          setAttachments(next);
+
+          await attachmentCleanup
+            .cleanupOrphans();
+        } catch (caught) {
+          recordProjectError(
+            'remove-attachment-failed',
+            caught,
           );
 
-        setAttachments(next);
-
-        await attachmentCleanup
-          .cleanupOrphans();
+          setError(
+            'Unable to remove project file.',
+          );
+        } finally {
+          setBusy(false);
+        }
       },
       [
         attachmentCleanup,
         attachments,
+        busy,
         projectAttachmentRepository,
         projectId,
       ],
@@ -356,28 +474,49 @@ export function useProjectDetailController({
         conversationId:
           string,
       ) => {
+        if (busy) {
+          return;
+        }
+
         const linked =
           linkedConversationIds
             .includes(
               conversationId,
             );
 
-        if (linked) {
-          await projectConversationRepository
-            .unlink(
-              conversationId,
-            );
-        } else {
-          await projectConversationRepository
-            .link(
-              projectId,
-              conversationId,
-            );
-        }
+        setBusy(true);
+        setError(null);
 
-        await load();
+        try {
+          if (linked) {
+            await projectConversationRepository
+              .unlink(
+                conversationId,
+              );
+          } else {
+            await projectConversationRepository
+              .link(
+                projectId,
+                conversationId,
+              );
+          }
+
+          await load();
+        } catch (caught) {
+          recordProjectError(
+            'toggle-conversation-failed',
+            caught,
+          );
+
+          setError(
+            'Unable to update linked conversation.',
+          );
+        } finally {
+          setBusy(false);
+        }
       },
       [
+        busy,
         linkedConversationIds,
         load,
         projectConversationRepository,

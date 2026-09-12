@@ -19,6 +19,8 @@ type Props = {
   attachments:
     AttachmentRecord[];
 
+  disabled?: boolean;
+
   onRemove: (
     attachment:
       AttachmentRecord,
@@ -27,6 +29,7 @@ type Props = {
 
 export function ProjectAttachmentList({
   attachments,
+  disabled = false,
   onRemove,
 }: Props) {
   const { colors } =
@@ -93,14 +96,21 @@ export function ProjectAttachmentList({
             </Text>
 
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${attachment.name}`}
+              disabled={disabled}
               onPress={() =>
                 onRemove(
                   attachment,
                 )
               }
-              style={
-                styles.remove
-              }
+              style={[
+                styles.remove,
+                {
+                  opacity:
+                    disabled ? 0.45 : 1,
+                },
+              ]}
             >
               <Text
                 style={{
@@ -141,8 +151,8 @@ const styles =
     },
 
     remove: {
-      width: 42,
-      height: 42,
+      width: 44,
+      height: 44,
       alignItems: 'center',
       justifyContent:
         'center',

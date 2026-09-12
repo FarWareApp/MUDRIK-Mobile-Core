@@ -26,10 +26,10 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: yarn install --frozen-lockfile --non-interactive
 
       - name: TypeScript
-        run: npm run typecheck
+        run: yarn typecheck
 
       - name: Expo Doctor
         run: npx expo-doctor

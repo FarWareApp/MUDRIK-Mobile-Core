@@ -107,7 +107,10 @@ export function ProjectDetailScreen(
       props,
     );
 
-  if (controller.loading) {
+  if (
+    controller.loading &&
+    !controller.project
+  ) {
     return (
       <SafeAreaView
         style={[
@@ -122,12 +125,26 @@ export function ProjectDetailScreen(
           <ActivityIndicator
             color={colors.accent}
           />
+          <Text
+            style={[
+              styles.stateText,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
+            Loading project…
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
   if (!controller.project) {
+    const loadFailed =
+      Boolean(controller.error);
+
     return (
       <SafeAreaView
         style={[
@@ -140,13 +157,70 @@ export function ProjectDetailScreen(
       >
         <View style={styles.center}>
           <Text
-            style={{
-              color:
-                colors.textSecondary,
-            }}
+            accessibilityRole={
+              loadFailed
+                ? 'alert'
+                : undefined
+            }
+            style={[
+              styles.stateText,
+              {
+                color:
+                  loadFailed
+                    ? colors.error
+                    : colors.textSecondary,
+              },
+            ]}
           >
-            Project not found.
+            {loadFailed
+              ? controller.error
+              : 'Project not found.'}
           </Text>
+
+          {loadFailed && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading project"
+              onPress={() => {
+                void controller.load();
+              }}
+              style={[
+                styles.stateButton,
+                {
+                  backgroundColor:
+                    colors.accent,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color:
+                    colors.accentText,
+                  fontWeight: '700',
+                }}
+              >
+                Retry
+              </Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back to projects"
+            onPress={() =>
+              router.back()
+            }
+            style={styles.stateLink}
+          >
+            <Text
+              style={{
+                color: colors.accent,
+                fontWeight: '700',
+              }}
+            >
+              Back
+            </Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -202,6 +276,8 @@ export function ProjectDetailScreen(
     >
       <View style={styles.header}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
           onPress={() =>
             router.back()
           }
@@ -238,6 +314,9 @@ export function ProjectDetailScreen(
         </Text>
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Edit project"
+          disabled={controller.busy}
           onPress={() =>
             setEditOpen(true)
           }
@@ -246,6 +325,10 @@ export function ProjectDetailScreen(
             {
               backgroundColor:
                 colors.surfaceElevated,
+              opacity:
+                controller.busy
+                  ? 0.5
+                  : 1,
             },
           ]}
         >
@@ -259,6 +342,52 @@ export function ProjectDetailScreen(
           </Text>
         </Pressable>
       </View>
+
+      {controller.error && (
+        <View
+          accessibilityRole="alert"
+          style={[
+            styles.errorBanner,
+            {
+              backgroundColor:
+                colors.surface,
+              borderColor:
+                colors.error,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.errorText,
+              {
+                color:
+                  colors.textPrimary,
+              },
+            ]}
+          >
+            {controller.error}
+          </Text>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss project error"
+            onPress={
+              controller.dismissError
+            }
+            style={styles.dismissError}
+          >
+            <Text
+              style={{
+                color:
+                  colors.textSecondary,
+                fontSize: 18,
+              }}
+            >
+              ×
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={
@@ -295,12 +424,22 @@ export function ProjectDetailScreen(
           </Text>
 
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add project file"
             disabled={
               controller.busy
             }
             onPress={
               openAddMenu
             }
+            style={{
+              minHeight: 44,
+              justifyContent: 'center',
+              opacity:
+                controller.busy
+                  ? 0.5
+                  : 1,
+            }}
           >
             <Text
               style={{
@@ -318,6 +457,7 @@ export function ProjectDetailScreen(
           attachments={
             controller.attachments
           }
+          disabled={controller.busy}
           onRemove={(
             attachment,
           ) => {
@@ -352,6 +492,7 @@ export function ProjectDetailScreen(
             controller
               .linkedConversationIds
           }
+          disabled={controller.busy}
           onToggle={(
             conversationId,
           ) => {
@@ -380,13 +521,16 @@ export function ProjectDetailScreen(
           description,
         ) => {
           void (async () => {
-            await controller
-              .saveDetails(
-                name,
-                description,
-              );
+            const saved =
+              await controller
+                .saveDetails(
+                  name,
+                  description,
+                );
 
-            setEditOpen(false);
+            if (saved) {
+              setEditOpen(false);
+            }
           })();
         }}
       />
@@ -424,6 +568,29 @@ const styles =
       paddingHorizontal: 8,
     },
 
+    errorBanner: {
+      marginHorizontal: 14,
+      marginBottom: 4,
+      minHeight: 48,
+      borderWidth: 1,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingLeft: 12,
+    },
+
+    errorText: {
+      flex: 1,
+      fontSize: 12,
+    },
+
+    dismissError: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
     content: {
       padding: 18,
       paddingBottom: 50,
@@ -454,5 +621,27 @@ const styles =
       alignItems: 'center',
       justifyContent:
         'center',
+      paddingHorizontal: 24,
+    },
+
+    stateText: {
+      textAlign: 'center',
+      fontSize: 14,
+      lineHeight: 20,
+    },
+
+    stateButton: {
+      minHeight: 44,
+      borderRadius: 22,
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      marginTop: 16,
+    },
+
+    stateLink: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: 18,
+      marginTop: 6,
     },
   });
