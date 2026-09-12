@@ -48,6 +48,18 @@ const {
   'src/contracts/TransportCancelledError.ts',
 );
 
+const {
+  SQLiteMessageRepository,
+} = loadTypeScriptModule(
+  'src/features/chat/storage/SQLiteMessageRepository.ts',
+);
+
+const {
+  SQLiteSettingsRepository,
+} = loadTypeScriptModule(
+  'src/features/settings/storage/SQLiteSettingsRepository.ts',
+);
+
 test(
   'diagnostics redact common credentials and sensitive context',
   () => {
@@ -307,6 +319,86 @@ test(
     assert.equal(
       enabled,
       repository,
+    );
+  },
+);
+
+test(
+  'message repository upserts the same logical message identity instead of inserting a second identity',
+  async () => {
+    const calls = [];
+    const database = {
+      runAsync: async (sql, params) => {
+        calls.push({ sql, params });
+      },
+    };
+
+    const repository =
+      new SQLiteMessageRepository(
+        async () => database,
+      );
+
+    const base = {
+      id: 'user-1760000000000-ab12cd34',
+      conversationId: 'conversation-1',
+      role: 'user',
+      kind: 'text',
+      text: 'first attempt',
+      createdAt: 1760000000000,
+    };
+
+    await repository.save(base);
+    await repository.save({
+      ...base,
+      text: 'retry of same logical message',
+    });
+
+    assert.equal(calls.length, 2);
+
+    for (const call of calls) {
+      assert.match(
+        call.sql,
+        /INSERT OR REPLACE INTO messages/,
+      );
+      assert.equal(
+        call.params[0],
+        base.id,
+      );
+      assert.equal(
+        call.params[1],
+        base.conversationId,
+      );
+    }
+  },
+);
+
+test(
+  'settings reset storage operation is scoped only to app_settings',
+  async () => {
+    const calls = [];
+    const database = {
+      runAsync: async (sql, params) => {
+        calls.push({ sql, params });
+      },
+    };
+
+    const repository =
+      new SQLiteSettingsRepository(
+        async () => database,
+      );
+
+    await repository.clear();
+
+    assert.equal(calls.length, 1);
+    assert.match(
+      calls[0].sql,
+      /^DELETE FROM app_settings$/,
+    );
+    assert.equal(
+      /conversations|projects|attachments|messages|drafts/.test(
+        calls[0].sql,
+      ),
+      false,
     );
   },
 );
