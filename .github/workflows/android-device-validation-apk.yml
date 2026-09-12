@@ -5,6 +5,8 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 concurrency:
   group: section01-android-apk-${{ github.ref }}
@@ -84,6 +86,11 @@ jobs:
           printf '%s  %s\n' "$APK_SHA256" "mudrik-section01-${GITHUB_SHA}.apk" > section01-apk/SHA256SUMS
           cat section01-apk/build-metadata.json
           cat section01-apk/SHA256SUMS
+
+      - name: Attest APK build provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a
+        with:
+          subject-path: section01-apk/*.apk
 
       - name: Upload traceable APK artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
