@@ -113,7 +113,10 @@ function domainMatches(requestedDomain: string, allowedDomain: string): boolean 
     return false;
   }
 
-  return requested === allowed || requested.endsWith(`.${allowed}`);
+  // Exact host matching is the safe default. Subdomain authority must be
+  // represented explicitly by listing each permitted host or by a future,
+  // separately reviewed scope type.
+  return requested === allowed;
 }
 
 function normalizeScopedPath(value: string): string | null {
@@ -278,11 +281,13 @@ function parseGrant(value: unknown):
     return { grant: null, reason: 'grant_invalid' };
   }
 
-  if (
-    RESOURCE_PREFIX_REQUIRED.has(value.capability) &&
-    scope.resourcePrefix === undefined
-  ) {
-    return { grant: null, reason: 'grant_scope_required' };
+  if (RESOURCE_PREFIX_REQUIRED.has(value.capability)) {
+    if (
+      scope.resourcePrefix === undefined ||
+      normalizeScopedPath(scope.resourcePrefix) === '/'
+    ) {
+      return { grant: null, reason: 'grant_scope_required' };
+    }
   }
 
   if (
