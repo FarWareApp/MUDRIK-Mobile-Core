@@ -129,6 +129,13 @@ jobs:
           }
           NODE
 
+      - name: Reviewed advisory dependency paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          yarn why uuid || true
+          yarn why decode-uri-component || true
+
       - name: Install pinned lint toolchain
         run: yarn add --dev --ignore-scripts --non-interactive --exact eslint@9.39.5 eslint-config-expo@57.0.2
 
