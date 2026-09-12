@@ -2,22 +2,22 @@
 
 ## Current Phase
 
-Two tracks are active and intentionally separated:
+Two tracks exist and remain intentionally separated:
 
-1. **Final Mobile Core Device Validation / Freeze Gate**
-2. **Computer Autonomy Phase 0 — Web Console + Local Computer Agent foundation**
+1. **Final Mobile Core Device Validation / Freeze Gate** — the only active Mobile implementation section.
+2. **Computer Autonomy Phase 0 — Web Console + Local Computer Agent foundation** — isolated from the Mobile runtime and not being coupled into the Mobile UI before freeze.
 
-The code-level Final Mobile Core Hardening pass is complete. The Mobile Core is not frozen yet because physical-device / end-to-end validation is still required.
-
-The Computer Agent foundation is isolated from the Mobile Core runtime and does not change the mobile UI architecture before freeze.
+The code-level Mobile Core hardening and automated pre-device validation pass are complete at the current baseline. The Mobile Core is **not frozen** because the mandatory app-owned Android physical-device / end-to-end gate is still open.
 
 ## Current Branch
 
 `mudrik-core-v1`
 
-## Latest Validated Code Baseline
+## Latest Validated Pre-Device Code Baseline
 
-`953a7afba5ee8f6eb5580fa938099bc086f33704` — add local computer agent cli and event protocol
+`fc9d407af881437196ace43cd858b356dfdc33df` — regress project attachment orphan protection
+
+This is the latest code baseline with complete recorded automated evidence before the subsequent validation-documentation/status-only commits. The final freeze candidate will receive a new exact-SHA validation after physical-device fixes and evidence are complete.
 
 ## Repository
 
@@ -30,8 +30,9 @@ Repository visibility verified on 2026-09-12: **public**.
 ## Current Overall Progress
 
 - Mobile Core implementation + code hardening: approximately 97–98%
-- Remaining Mobile Core gate: physical-device / end-to-end validation and any defects discovered there
-- Computer Autonomy: Phase 0 foundation started
+- Automated pre-device validation: strong and green on the latest recorded code baseline
+- Remaining Mobile Core gate: app-owned Android build identity + physical-device / end-to-end validation and any defects discovered there
+- Computer Autonomy: Phase 0 foundation started and isolated
 - Full MUDRIK platform: still under active construction
 
 ## Accepted Computer Product Direction — 2026-09-12
@@ -114,7 +115,7 @@ The Computer Agent initiates the outbound authenticated connection. Device priva
 - Task runner with structured progress events
 - Local CLI for executing task envelopes against permission grants
 - Automated Phase 0 policy/terminal/task-runner tests
-- GitHub Actions now validates Computer Agent Phase 0 in addition to Mobile TypeScript and Expo Doctor
+- GitHub Actions validates Computer Agent Phase 0 in addition to the Mobile Core gates
 
 ## Next Computer Autonomy Work
 
@@ -259,7 +260,7 @@ All platforms must reuse the same versioned task/capability protocol.
 
 ## Final Mobile Core Hardening Completed — 2026-09-12
 
-The hardening pass completed the following code-level work:
+The hardening and pre-device validation pass includes:
 
 - Final navigation / route hardening
 - Notification target and project-route validation
@@ -283,44 +284,85 @@ The hardening pass completed the following code-level work:
 - Project detail invalid/missing route IDs are handled safely
 - Core Health / Diagnostics screen added
 - Diagnostics refresh/clear controls added
-- Safe manual orphan-attachment cleanup added without deleting linked user data
-- Settings reset now requires confirmation and explicitly preserves conversations/projects/files
+- Safe manual orphan-attachment cleanup added
+- Orphan classification now protects attachments linked to messages, drafts **or projects**
+- Settings reset requires confirmation and its storage operation is scoped to application settings
 - Connectivity refreshes again when the app returns to foreground
-- Stale connectivity snapshots are ignored
-- Connectivity changes are recorded in diagnostics
-- GitHub Actions validation added using the repository's Yarn lockfile
+- Stale connectivity snapshots are ignored and the ordering policy is regression-tested
+- Runtime online/offline resolution is regression-tested
+- Permission result normalization is regression-tested so a native denial never silently becomes granted
+- SQLite migration ordering, upgrade and failure behavior are regression-tested through V6
+- Arabic/German/English translation parity and mixed text-direction policies are regression-tested
+- Conversation-title normalization/length behavior is regression-tested
+- GitHub Actions uses a frozen dependency graph and validates package/lockfile reproducibility
+- GitHub Actions rejects tracked environment/private-key files
+- GitHub Actions scans the full Git history for common credential/private-key patterns
+- GitHub Actions blocks High/Critical production dependency advisories
+- GitHub Actions pins checkout/setup-node actions to commit SHAs and pins Expo Doctor
 
-## Last Validation
+## Closed Section 01 High Defect
 
-Validated on GitHub Actions against `953a7afba5ee8f6eb5580fa938099bc086f33704`:
+`S01-DATA-001` — a project-only attachment could previously be classified as orphaned because the orphan SQL query did not include `project_attachments`. In that state, storage cleanup could delete a valid project file.
+
+- Severity: **High**
+- Status: **Closed**
+- Fix: `8bbdb93dbf76c72485552a3a750547b850ea9bf9`
+- Regression: `fc9d407af881437196ace43cd858b356dfdc33df`
+- Defect record: `docs/validation/SECTION_01_DEFECTS.md`
+
+The fix expands orphan ownership checks to message, draft and project attachment links. Physical project-file/orphan-cleanup verification remains mandatory before freeze.
+
+## Last Recorded Automated Validation
+
+Validated on GitHub Actions against exact code baseline `fc9d407af881437196ace43cd858b356dfdc33df`:
 
 - Workflow: `Mobile Core Validation`
-- Run: `#9`
-- Dependency install using `yarn.lock`: PASS
+- Run: **#76**
+- Run ID: `34701696198`
+- Frozen dependency install: PASS
+- Manifest / lockfile reproducibility: PASS
+- Tracked sensitive-file gate: PASS
+- Full Git-history secret scan: PASS
+- Dependency audit: **0 High / 0 Critical**; 2 reviewed Moderate transitive advisories
+- ESLint: PASS
 - TypeScript (`tsc --noEmit`): PASS
-- Expo Doctor: PASS
-- Computer Agent Phase 0 tests: PASS
-- Overall CI result: PASS
+- Mobile Core automated regression tests: **27/27 PASS**
+- Expo Doctor: **21/21 PASS**
+- Computer Agent Phase 0 tests: **10/10 PASS**
+- Overall CI result: **PASS**
+
+The two reviewed Moderate transitive advisories are:
+
+- `uuid@7.0.3` via Expo config tooling;
+- `decode-uri-component@0.2.2` via `expo-router -> query-string`.
+
+They are not hidden and remain under review. No incompatible dependency override is accepted merely to suppress audit output.
 
 ## Current Mobile Work
 
-Device / end-to-end validation before freezing Mobile Core.
+**Section 01 — Physical Android Device / E2E / Recovery gate.**
 
 No production AI model or production server transport should be coupled into the Mobile UI during this gate.
+
+Final physical evidence must follow `docs/validation/SECTION_01_ANDROID_DEVICE_RUNBOOK.md` and must come from an app-owned Android build traceable to the exact tested commit. Expo Go alone is not sufficient to close Layer 4.
+
+The repository currently has no committed `eas.json` and no fixed `expo.android.package`. A permanent Android application ID must be owner-selected rather than invented merely to satisfy validation.
 
 ## Remaining Mobile Core Work
 
 ### Mandatory Device / E2E Gate
 
+- App-owned Android build identity/profile
 - Launch from a clean install
 - Launch after database already contains existing user data
-- Restart persistence test
+- Force-close/restart persistence test
+- Android device reboot persistence/state test
 - Background → foreground lifecycle test
 - Wi-Fi → cellular transition test
 - Cellular → Wi-Fi transition test
 - Online → offline → online transition test
 - Real mobile-data test outside the home Wi-Fi network
-- Permission allow / deny / retry flows
+- Permission allow / deny / OS re-enable flows
 - Camera attachment flow
 - Image/video picker attachment flow
 - Document attachment flow
@@ -328,41 +370,52 @@ No production AI model or production server transport should be coupled into the
 - Attachment-only message test
 - Text + attachment message test
 - Send / Stop / retry test
+- Rapid repeated send/retry duplicate-state check
 - Conversation create/open/search/pin/archive/delete test
 - Draft restoration / Save Text Drafts off test
 - Project create/edit/archive/delete test
 - Project file add/remove test
+- Verify project-only files survive orphan cleanup
+- Verify true orphans are removed without affecting shared attachments
 - Project-conversation link/unlink test
-- Notification navigation / deep-link test
-- Settings persistence test
+- Notification navigation / invalid target / deep-link test
+- Settings persistence/reset-preserves-user-data test
 - Reduced Motion test
 - RTL / LTR and mixed Arabic/German/English text test
-- Core Health / Diagnostics screen test
+- Core Health / Diagnostics screen and sanitized-output test
 - Safe storage cleanup test
 - Voice recording / player core test
 - Accessibility manual pass on primary screens
-- Fix every critical defect discovered during device testing
+- Recovery after interrupted operations
+- Fix every Blocker/Critical/High freeze-scope defect discovered during device testing
 
 ### Freeze
 
 Only after the device/E2E gate passes:
 
-1. Run TypeScript again.
-2. Run Expo Doctor again.
-3. Run Computer Agent protocol tests again.
-4. Commit any final device-test fixes.
-5. Confirm the final GitHub Actions validation is green.
-6. Create the `MOBILE-CORE-FROZEN` Git tag for the mobile baseline.
-7. Continue Web/Agent/Control Plane work as independently deployable components.
+1. Fix every freeze-scope defect and add automated regressions where practical.
+2. Run the frozen dependency/reproducibility gates again.
+3. Run the sensitive-file and full-history secret gates again.
+4. Run dependency audit again.
+5. Run ESLint again.
+6. Run TypeScript again.
+7. Run all Mobile Core automated regressions again.
+8. Run Expo Doctor again.
+9. Run Computer Agent protocol tests again.
+10. Confirm GitHub Actions is green on the exact final candidate.
+11. Update the final evidence and freeze SHA.
+12. Create the `MOBILE-CORE-FROZEN` Git tag.
+13. Continue production AI/server coupling only after the freeze rule is satisfied.
 
 ## Mobile Core Completion Gate
 
-1. Final hardening is complete. ✅
-2. TypeScript passes. ✅
-3. Expo Doctor passes. ✅
-4. Full device test passes. ⏳
-5. Critical defects found during device testing are fixed. ⏳
-6. Mobile Core receives the `MOBILE-CORE-FROZEN` Git tag. ⏳
+1. Code-level hardening is complete. ✅
+2. Automated pre-device validation is green. ✅
+3. High defect `S01-DATA-001` is fixed and regression-tested. ✅
+4. Full app-owned Android device/E2E test passes. ⏳
+5. All Blocker/Critical/High defects found during physical testing are closed/reviewed. ⏳
+6. Final exact-candidate CI is green after device fixes. ⏳
+7. Mobile Core receives the `MOBILE-CORE-FROZEN` Git tag. ⏳
 
 ## AI Architecture After Mobile Core
 
