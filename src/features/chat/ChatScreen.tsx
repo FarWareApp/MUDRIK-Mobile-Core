@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, {
+  useMemo,
+  useState,
+} from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -15,13 +18,14 @@ import { AttachmentPicker } from '../../contracts/AttachmentPicker';
 import { AttachmentRepository } from '../../contracts/AttachmentRepository';
 import { ConversationRepository } from '../../contracts/ConversationRepository';
 import { DraftRepository } from '../../contracts/DraftRepository';
+import { MessageRepository } from '../../contracts/MessageRepository';
+import { MessageTransport } from '../../contracts/MessageTransport';
+import { useAppSettings } from '../../core/settings/AppSettingsProvider';
+import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { AttachmentImportService } from '../attachments/AttachmentImportService';
 import { AttachmentDraftTray } from '../attachments/components/AttachmentDraftTray';
 import { useAttachmentDraftController } from '../attachments/hooks/useAttachmentDraftController';
 import { AttachmentFileStore } from '../attachments/storage/AttachmentFileStore';
-import { MessageRepository } from '../../contracts/MessageRepository';
-import { MessageTransport } from '../../contracts/MessageTransport';
-import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { useActiveConversation } from '../conversations/ActiveConversationProvider';
 import { ChatBootstrapState } from './components/ChatBootstrapState';
 import { ChatErrorBanner } from './components/ChatErrorBanner';
@@ -55,6 +59,7 @@ export function ChatScreen({
   attachmentFileStore,
 }: Props) {
   const { colors } = useTheme();
+  const { settings } = useAppSettings();
 
   const {
     activeConversationId,
@@ -65,6 +70,36 @@ export function ChatScreen({
     quickActionsOpen,
     setQuickActionsOpen,
   ] = useState(false);
+
+  const effectiveDraftRepository =
+    useMemo<DraftRepository>(() => {
+      if (settings.saveDrafts) {
+        return draftRepository;
+      }
+
+      return {
+        get: async (conversationId) => {
+          await draftRepository.clear(
+            conversationId,
+          );
+
+          return null;
+        },
+
+        save: async () => {
+          // Draft persistence is intentionally disabled.
+        },
+
+        clear: async (conversationId) => {
+          await draftRepository.clear(
+            conversationId,
+          );
+        },
+      };
+    }, [
+      draftRepository,
+      settings.saveDrafts,
+    ]);
 
   const {
     conversationId,
@@ -88,7 +123,8 @@ export function ChatScreen({
     transport,
     conversationRepository,
     messageRepository,
-    draftRepository,
+    draftRepository:
+      effectiveDraftRepository,
     attachmentRepository,
     attachmentFileStore,
     selectedConversationId:

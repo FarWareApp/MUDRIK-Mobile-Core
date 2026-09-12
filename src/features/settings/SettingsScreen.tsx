@@ -137,6 +137,7 @@ export function SettingsScreen({
         </Pressable>
 
         <Text
+          accessibilityRole="header"
           style={[
             styles.title,
             {
@@ -278,8 +279,8 @@ export function SettingsScreen({
         />
 
         <SettingToggleRow
-          label="Save drafts"
-          description="Keep unfinished text and attachments locally."
+          label="Save text drafts"
+          description="Keep unfinished message text between app sessions. Turning this off removes persisted text drafts."
           value={
             settings.settings.saveDrafts
           }
@@ -293,7 +294,7 @@ export function SettingsScreen({
 
         <SettingToggleRow
           label="Auto-play voice"
-          description="Automatically play voice responses when available."
+          description="Used by the voice-response pipeline when voice responses are available."
           value={
             settings.settings
               .autoPlayVoice
@@ -308,7 +309,7 @@ export function SettingsScreen({
 
         <SettingToggleRow
           label="Cellular uploads"
-          description="Allow media uploads while using mobile data."
+          description="Controls production media uploads over mobile data when a server transport is connected."
           value={
             settings.settings
               .cellularUploads
@@ -524,16 +525,16 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    minHeight: 62,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
   },
 
   back: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -546,7 +547,7 @@ const styles = StyleSheet.create({
   },
 
   spacer: {
-    width: 42,
+    width: 44,
   },
 
   center: {
