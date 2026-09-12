@@ -3,29 +3,15 @@ import { useEffect } from 'react';
 import { router } from 'expo-router';
 
 import {
-  NotificationTarget,
-} from '../../../contracts/Notification';
-import {
   diagnosticsService,
 } from '../../../core/diagnostics/DiagnosticsService';
-import {
-  normalizeProjectId,
-} from '../../projects/ProjectId';
 
 import {
   useNotifications,
 } from '../NotificationProvider';
-
-const TARGETS =
-  new Set<NotificationTarget>([
-    'home',
-    'conversations',
-    'projects',
-    'project',
-    'settings',
-    'companion',
-    'voice',
-  ]);
+import {
+  resolveNotificationRoute,
+} from '../resolveNotificationRoute';
 
 export function NotificationNavigationBridge() {
   const {
@@ -41,12 +27,6 @@ export function NotificationNavigationBridge() {
       return;
     }
 
-    const data =
-      response.notification.data;
-
-    const rawTarget =
-      data.target;
-
     const consume = () => {
       void consumeLastResponse()
         .catch((caught) => {
@@ -60,16 +40,15 @@ export function NotificationNavigationBridge() {
         });
     };
 
-    if (
-      typeof rawTarget !== 'string'
-      ||
-      !TARGETS.has(
-        rawTarget as NotificationTarget,
-      )
-    ) {
+    const route =
+      resolveNotificationRoute(
+        response.notification.data,
+      );
+
+    if (!route) {
       diagnosticsService.record(
         'notification-navigation',
-        'ignored-invalid-target',
+        'ignored-invalid-route',
         'warning',
       );
 
@@ -77,62 +56,21 @@ export function NotificationNavigationBridge() {
       return;
     }
 
-    const target =
-      rawTarget as NotificationTarget;
-
     try {
-      if (target === 'home') {
-        router.push('/');
-      } else if (
-        target === 'conversations'
-      ) {
-        router.push('/conversations');
-      } else if (
-        target === 'projects'
-      ) {
-        router.push('/projects');
-      } else if (
-        target === 'settings'
-      ) {
-        router.push('/settings');
-      } else if (
-        target === 'companion'
-      ) {
-        router.push('/companion');
-      } else if (
-        target === 'voice'
-      ) {
-        router.push('/voice');
-      } else if (
-        target === 'project'
-      ) {
-        const projectId =
-          normalizeProjectId(
-            data.projectId,
-          );
-
-        if (!projectId) {
-          diagnosticsService.record(
-            'notification-navigation',
-            'ignored-invalid-project-id',
-            'warning',
-          );
-
-          return;
-        }
-
+      if (route.kind === 'path') {
+        router.push(route.path);
+      } else {
         router.push({
           pathname: '/project/[id]',
-
           params: {
-            id: projectId,
+            id: route.projectId,
           },
         });
       }
 
       diagnosticsService.record(
         'notification-navigation',
-        `navigated:${target}`,
+        `navigated:${route.target}`,
       );
     } catch (caught) {
       diagnosticsService.record(
