@@ -10,29 +10,9 @@ import {
   AppPermissionRecord,
   PermissionService,
 } from '../../../contracts/PermissionService';
-
-function mapPermission(
-  id: AppPermissionId,
-  result: {
-    granted: boolean;
-    status: string;
-    canAskAgain?: boolean;
-  },
-): AppPermissionRecord {
-  return {
-    id,
-
-    status:
-      result.granted
-        ? 'granted'
-        : result.status === 'denied'
-          ? 'denied'
-          : 'unknown',
-
-    canAskAgain:
-      result.canAskAgain ?? true,
-  };
-}
+import {
+  normalizePermissionRecord,
+} from '../normalizePermissionRecord';
 
 export class NativePermissionService
   implements PermissionService
@@ -59,22 +39,22 @@ export class NativePermissionService
     ]);
 
     return [
-      mapPermission(
+      normalizePermissionRecord(
         'microphone',
         microphone,
       ),
 
-      mapPermission(
+      normalizePermissionRecord(
         'camera',
         camera,
       ),
 
-      mapPermission(
+      normalizePermissionRecord(
         'media-library',
         mediaLibrary,
       ),
 
-      mapPermission(
+      normalizePermissionRecord(
         'notifications',
         notifications,
       ),
@@ -85,7 +65,7 @@ export class NativePermissionService
     id: AppPermissionId,
   ): Promise<AppPermissionRecord> {
     if (id === 'microphone') {
-      return mapPermission(
+      return normalizePermissionRecord(
         id,
         await AudioModule
           .requestRecordingPermissionsAsync(),
@@ -93,7 +73,7 @@ export class NativePermissionService
     }
 
     if (id === 'camera') {
-      return mapPermission(
+      return normalizePermissionRecord(
         id,
         await ImagePicker
           .requestCameraPermissionsAsync(),
@@ -103,14 +83,14 @@ export class NativePermissionService
     if (
       id === 'media-library'
     ) {
-      return mapPermission(
+      return normalizePermissionRecord(
         id,
         await ImagePicker
           .requestMediaLibraryPermissionsAsync(),
       );
     }
 
-    return mapPermission(
+    return normalizePermissionRecord(
       id,
       await Notifications
         .requestPermissionsAsync(),
