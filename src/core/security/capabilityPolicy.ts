@@ -141,6 +141,12 @@ function normalizeScopedPath(value: string): string | null {
     return null;
   }
 
+  // Root is syntactically a valid absolute path. Higher-level grant policy
+  // decides whether such a broad scope is permitted for a capability.
+  if (value === '/') {
+    return '/';
+  }
+
   const segments = value.split('/');
   if (
     segments.some((segment) => segment === '..' || segment === '.') ||
@@ -149,7 +155,7 @@ function normalizeScopedPath(value: string): string | null {
     return null;
   }
 
-  return value === '/' ? '/' : `/${segments.slice(1).join('/')}`;
+  return `/${segments.slice(1).join('/')}`;
 }
 
 function resourcePrefixMatches(resourcePath: string, resourcePrefix: string): boolean {
