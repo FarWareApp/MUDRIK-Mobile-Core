@@ -1,0 +1,99 @@
+name: Android Device Validation APK
+
+on:
+  push:
+    branches:
+      - mudrik-core-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: section01-android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: '22'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install frozen dependencies
+        run: yarn install --frozen-lockfile --non-interactive
+
+      - name: Verify candidate preflight
+        env:
+          SECTION01_EXPECTED_SHA: ${{ github.sha }}
+        run: yarn device:preflight
+
+      - name: Generate Android native project
+        env:
+          CI: '1'
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Build app-owned debug APK
+        working-directory: android
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK and create evidence metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK='android/app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$APK"
+
+          mkdir -p section01-apk
+          OUT="section01-apk/mudrik-section01-${GITHUB_SHA}.apk"
+          cp "$APK" "$OUT"
+
+          APK_SHA256="$(sha256sum "$OUT" | awk '{print $1}')"
+          APK_BYTES="$(stat -c '%s' "$OUT")"
+          ANDROID_PACKAGE="$(node -p "require('./app.json').expo.android.package")"
+          APP_VERSION="$(node -p "require('./app.json').expo.version")"
+
+          cat > section01-apk/build-metadata.json <<EOF
+          {
+            "candidateSha": "${GITHUB_SHA}",
+            "branch": "${GITHUB_REF_NAME}",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunNumber": "${GITHUB_RUN_NUMBER}",
+            "appVersion": "${APP_VERSION}",
+            "androidPackage": "${ANDROID_PACKAGE}",
+            "buildKind": "github-actions-debug-apk",
+            "apkFile": "mudrik-section01-${GITHUB_SHA}.apk",
+            "apkSha256": "${APK_SHA256}",
+            "apkBytes": ${APK_BYTES}
+          }
+          EOF
+
+          printf '%s  %s\n' "$APK_SHA256" "mudrik-section01-${GITHUB_SHA}.apk" > section01-apk/SHA256SUMS
+          cat section01-apk/build-metadata.json
+          cat section01-apk/SHA256SUMS
+
+      - name: Upload traceable APK artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mudrik-section01-android-${{ github.sha }}
+          path: section01-apk/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
