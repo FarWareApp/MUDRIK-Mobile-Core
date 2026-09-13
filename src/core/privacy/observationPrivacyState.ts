@@ -196,10 +196,9 @@ export function transitionObservationPrivacy(input: unknown): ObservationPrivacy
 
   const state = record.state;
   const event = record.event;
-  const hasReactivationChecks = Object.prototype.hasOwnProperty.call(
-    record,
-    'reactivationChecks',
-  );
+  const hasReactivationChecks =
+    Object.prototype.hasOwnProperty.call(record, 'reactivationChecks') &&
+    record.reactivationChecks !== undefined;
 
   if (hasReactivationChecks && !isReactivationEvent(event)) {
     return failClosed(state);
