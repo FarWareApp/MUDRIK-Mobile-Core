@@ -4,7 +4,8 @@ export type IdentityIdKind =
   | 'session'
   | 'refresh_family'
   | 'device_key'
-  | 'pairing_challenge';
+  | 'pairing_challenge'
+  | 'auth_challenge';
 
 const PREFIX: Readonly<Record<IdentityIdKind, string>> = {
   account: 'acct_',
@@ -13,6 +14,7 @@ const PREFIX: Readonly<Record<IdentityIdKind, string>> = {
   refresh_family: 'rfm_',
   device_key: 'dkey_',
   pairing_challenge: 'pair_',
+  auth_challenge: 'ach_',
 };
 
 const BODY_PATTERN = /^[a-z0-9][a-z0-9_-]{15,63}$/;
