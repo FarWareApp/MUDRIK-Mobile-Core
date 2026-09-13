@@ -17,6 +17,9 @@ import {
 import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
+import {
+  motion,
+} from '../../../design-system/tokens/motion';
 
 type Props = {
   visible: boolean;
@@ -41,12 +44,16 @@ export function QuickActionBackdrop({
       entering={
         reducedMotion
           ? undefined
-          : FadeIn.duration(140)
+          : FadeIn.duration(
+              motion.duration.quick,
+            )
       }
       exiting={
         reducedMotion
           ? undefined
-          : FadeOut.duration(120)
+          : FadeOut.duration(
+              motion.duration.quick,
+            )
       }
       pointerEvents="box-none"
       style={styles.container}

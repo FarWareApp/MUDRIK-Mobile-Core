@@ -17,8 +17,14 @@ import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
 import {
+  AdaptiveGlassSurface,
+} from '../../../design-system/components/AdaptiveGlassSurface';
+import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
+import {
+  motion,
+} from '../../../design-system/tokens/motion';
 import {
   radius,
 } from '../../../design-system/tokens/radius';
@@ -53,96 +59,114 @@ export function QuickActionMenuItem({
         reducedMotion
           ? undefined
           : FadeInDown
-              .duration(180)
-              .delay(index * 28)
+              .duration(
+                motion.duration.fast,
+              )
+              .delay(
+                index
+                * motion.stagger.compact,
+              )
       }
       exiting={
         reducedMotion
           ? undefined
-          : FadeOutDown.duration(110)
+          : FadeOutDown.duration(
+              motion.duration.quick,
+            )
       }
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.button,
-          isRTL && styles.buttonRTL,
+      <AdaptiveGlassSurface
+        style={[
+          styles.surface,
           {
-            backgroundColor: pressed
-              ? colors.surfacePressed
-              : colors.surface,
-            borderColor: pressed
-              ? colors.accentSoft
-              : colors.border,
+            borderColor: colors.border,
             shadowColor: colors.shadow,
-            opacity: pressed ? 0.9 : 1,
-            transform: [
-              {
-                scale: pressed ? 0.98 : 1,
-              },
-            ],
           },
         ]}
       >
-        <Text
-          numberOfLines={1}
-          style={[
-            styles.label,
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          onPress={onPress}
+          style={({ pressed }) => [
+            styles.button,
+            isRTL && styles.buttonRTL,
             {
-              color: colors.textPrimary,
-              textAlign: isRTL
-                ? 'right'
-                : 'left',
-            },
-          ]}
-        >
-          {label}
-        </Text>
-
-        <View
-          importantForAccessibility="no-hide-descendants"
-          style={[
-            styles.symbol,
-            {
-              backgroundColor:
-                colors.accentSoft,
+              backgroundColor: pressed
+                ? colors.surfacePressed
+                : 'transparent',
+              opacity: pressed ? 0.9 : 1,
+              transform: [
+                {
+                  scale: pressed
+                    ? motion.press.subtleScale
+                    : 1,
+                },
+              ],
             },
           ]}
         >
           <Text
+            numberOfLines={1}
             style={[
-              styles.symbolText,
-              { color: colors.accent },
+              styles.label,
+              {
+                color: colors.textPrimary,
+                textAlign: isRTL
+                  ? 'right'
+                  : 'left',
+              },
             ]}
           >
-            {symbol}
+            {label}
           </Text>
-        </View>
-      </Pressable>
+
+          <View
+            importantForAccessibility="no-hide-descendants"
+            style={[
+              styles.symbol,
+              {
+                backgroundColor:
+                  colors.accentSoft,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.symbolText,
+                { color: colors.accent },
+              ]}
+            >
+              {symbol}
+            </Text>
+          </View>
+        </Pressable>
+      </AdaptiveGlassSurface>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  surface: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    elevation: 4,
+  },
   button: {
     minWidth: 184,
     minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
     paddingLeft: spacing.lg,
     paddingRight: spacing.sm,
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 4,
   },
   buttonRTL: {
     flexDirection: 'row-reverse',

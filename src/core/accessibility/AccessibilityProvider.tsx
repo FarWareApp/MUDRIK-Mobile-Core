@@ -9,6 +9,7 @@ import React, {
 
 import {
   AccessibilityInfo,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 
@@ -20,6 +21,12 @@ type AccessibilityContextValue = {
   reducedMotion: boolean;
 
   systemReducedMotion:
+    boolean;
+
+  reducedTransparency:
+    boolean;
+
+  systemReducedTransparency:
     boolean;
 
   hapticsEnabled:
@@ -46,6 +53,11 @@ export function AccessibilityProvider({
   const [
     systemReducedMotion,
     setSystemReducedMotion,
+  ] = useState(false);
+
+  const [
+    systemReducedTransparency,
+    setSystemReducedTransparency,
   ] = useState(false);
 
   useEffect(() => {
@@ -81,6 +93,43 @@ export function AccessibilityProvider({
     };
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== 'ios') {
+      return;
+    }
+
+    let mounted = true;
+
+    void AccessibilityInfo
+      .isReduceTransparencyEnabled()
+      .then((enabled) => {
+        if (mounted) {
+          setSystemReducedTransparency(
+            enabled,
+          );
+        }
+      });
+
+    const subscription =
+      AccessibilityInfo
+        .addEventListener(
+          'reduceTransparencyChanged',
+          (
+            enabled:
+              boolean,
+          ) => {
+            setSystemReducedTransparency(
+              enabled,
+            );
+          },
+        );
+
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
   const value =
     useMemo<
       AccessibilityContextValue
@@ -93,6 +142,11 @@ export function AccessibilityProvider({
           systemReducedMotion,
 
         systemReducedMotion,
+
+        reducedTransparency:
+          systemReducedTransparency,
+
+        systemReducedTransparency,
 
         hapticsEnabled:
           settings
@@ -107,6 +161,7 @@ export function AccessibilityProvider({
         settings
           .reducedMotion,
         systemReducedMotion,
+        systemReducedTransparency,
       ],
     );
 

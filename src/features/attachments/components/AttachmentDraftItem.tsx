@@ -1,15 +1,18 @@
 import React from 'react';
 import {
-  Image,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import {
+  Image,
+} from 'expo-image';
 
 import type {
   AttachmentRecord,
 } from '../../../contracts/Attachment';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 
 import { AttachmentRemoveButton } from './AttachmentRemoveButton';
@@ -41,8 +44,12 @@ export function AttachmentDraftItem({
     >
       {attachment.kind === 'image' ? (
         <Image
-          accessibilityIgnoresInvertColors
-          source={{ uri: attachment.localUri }}
+          accessibilityLabel={attachment.name}
+          cachePolicy="memory-disk"
+          contentFit="cover"
+          recyclingKey={attachment.id}
+          source={attachment.localUri}
+          transition={motion.duration.fast}
           style={styles.image}
         />
       ) : (
