@@ -1,0 +1,308 @@
+import {
+  decideEndOfTurn,
+  type EndOfTurnResult,
+} from './endOfTurnPolicy';
+import {
+  SpeechSegmentRegistry,
+  type SpeechRegistryDecision,
+} from './speechSegmentRegistry';
+import {
+  isExecutableSpeechSegment,
+  validateStreamingSpeechSegment,
+} from './streamingSpeech';
+import {
+  validateVoiceActivityEvent,
+} from './voiceActivityEvent';
+import {
+  VoiceActivityRegistry,
+  type VoiceActivityDecision,
+} from './voiceActivityRegistry';
+import {
+  INITIAL_VOICE_SESSION_STATE,
+  transitionVoiceSession,
+  type VoiceRuntimeAction,
+  type VoiceSessionEvent,
+  type VoiceSessionState,
+} from './voiceSessionState';
+
+export type VoiceCoordinatorReason =
+  | 'applied'
+  | 'waiting'
+  | 'no_state_change'
+  | 'invalid_input'
+  | 'activity_rejected'
+  | 'speech_rejected'
+  | 'partial_not_executable'
+  | 'wrong_phase'
+  | 'transition_rejected';
+
+export type VoiceCoordinatorResult = Readonly<{
+  accepted: boolean;
+  reason: VoiceCoordinatorReason;
+  state: VoiceSessionState;
+  actions: readonly VoiceRuntimeAction[];
+  endOfTurn: EndOfTurnResult | null;
+  activityDecision: VoiceActivityDecision | null;
+  speechDecision: SpeechRegistryDecision | null;
+}>;
+
+const SESSION_ID = /^voice_[A-Za-z0-9_-]{16,80}$/;
+
+function result(
+  accepted: boolean,
+  reason: VoiceCoordinatorReason,
+  state: VoiceSessionState,
+  actions: readonly VoiceRuntimeAction[] = ['none'],
+  endOfTurn: EndOfTurnResult | null = null,
+  activityDecision: VoiceActivityDecision | null = null,
+  speechDecision: SpeechRegistryDecision | null = null,
+): VoiceCoordinatorResult {
+  return Object.freeze({
+    accepted,
+    reason,
+    state,
+    actions: Object.freeze([...actions]),
+    endOfTurn,
+    activityDecision,
+    speechDecision,
+  });
+}
+
+export class VoiceRuntimeCoordinator {
+  private state: VoiceSessionState = INITIAL_VOICE_SESSION_STATE;
+  private activityRegistry: VoiceActivityRegistry;
+  private speechRegistry: SpeechSegmentRegistry;
+
+  constructor(private readonly sessionId: string) {
+    if (!SESSION_ID.test(sessionId)) {
+      throw new Error('Invalid voice session id.');
+    }
+
+    this.activityRegistry = new VoiceActivityRegistry(
+      sessionId,
+      this.state.generation,
+    );
+    this.speechRegistry = new SpeechSegmentRegistry(
+      sessionId,
+      this.state.generation,
+    );
+  }
+
+  getState(): VoiceSessionState {
+    return this.state;
+  }
+
+  private replaceGenerationRegistries(): void {
+    this.activityRegistry = new VoiceActivityRegistry(
+      this.sessionId,
+      this.state.generation,
+    );
+    this.speechRegistry = new SpeechSegmentRegistry(
+      this.sessionId,
+      this.state.generation,
+    );
+  }
+
+  private applyTransition(
+    event: VoiceSessionEvent,
+  ): VoiceCoordinatorResult {
+    const previousGeneration = this.state.generation;
+    const transition = transitionVoiceSession({
+      state: this.state,
+      event,
+    });
+
+    if (!transition.accepted) {
+      return result(
+        false,
+        'transition_rejected',
+        this.state,
+      );
+    }
+
+    this.state = transition.next;
+    if (this.state.generation !== previousGeneration) {
+      this.replaceGenerationRegistries();
+    }
+
+    return result(
+      true,
+      transition.reason === 'applied'
+        ? 'applied'
+        : 'no_state_change',
+      this.state,
+      transition.actions,
+    );
+  }
+
+  start(): VoiceCoordinatorResult {
+    return this.applyTransition('start');
+  }
+
+  cancel(): VoiceCoordinatorResult {
+    return this.applyTransition('cancel');
+  }
+
+  completeCancellation(): VoiceCoordinatorResult {
+    return this.applyTransition('cancel_complete');
+  }
+
+  bargeIn(): VoiceCoordinatorResult {
+    return this.applyTransition('barge_in');
+  }
+
+  fail(): VoiceCoordinatorResult {
+    return this.applyTransition('fail');
+  }
+
+  reset(): VoiceCoordinatorResult {
+    const outcome = this.applyTransition('reset');
+    if (outcome.accepted) {
+      this.replaceGenerationRegistries();
+    }
+    return outcome;
+  }
+
+  onActivity(
+    input: unknown,
+    endOfTurnInput: unknown,
+  ): VoiceCoordinatorResult {
+    const validation = validateVoiceActivityEvent(input);
+    if (!validation.accepted || !validation.event) {
+      return result(false, 'invalid_input', this.state);
+    }
+
+    const activityDecision = this.activityRegistry.apply(
+      validation.event,
+    );
+    if (!activityDecision.accepted) {
+      return result(
+        false,
+        'activity_rejected',
+        this.state,
+        ['none'],
+        null,
+        activityDecision,
+      );
+    }
+
+    if (
+      this.state.phase === 'listening' &&
+      validation.event.speechActive
+    ) {
+      const transitioned = this.applyTransition('speech_start');
+      return result(
+        transitioned.accepted,
+        transitioned.reason,
+        transitioned.state,
+        transitioned.actions,
+        null,
+        activityDecision,
+      );
+    }
+
+    if (
+      this.state.phase === 'user_speaking' &&
+      !validation.event.speechActive
+    ) {
+      const endOfTurn = decideEndOfTurn(endOfTurnInput);
+      if (
+        endOfTurn.decision === 'finalize' ||
+        endOfTurn.decision === 'force_finalize'
+      ) {
+        const transitioned = this.applyTransition('speech_end');
+        return result(
+          transitioned.accepted,
+          transitioned.reason,
+          transitioned.state,
+          transitioned.actions,
+          endOfTurn,
+          activityDecision,
+        );
+      }
+
+      return result(
+        true,
+        'waiting',
+        this.state,
+        ['none'],
+        endOfTurn,
+        activityDecision,
+      );
+    }
+
+    return result(
+      true,
+      'no_state_change',
+      this.state,
+      ['none'],
+      null,
+      activityDecision,
+    );
+  }
+
+  onTranscript(input: unknown): VoiceCoordinatorResult {
+    const validation = validateStreamingSpeechSegment(input);
+    if (!validation.accepted || !validation.segment) {
+      return result(false, 'invalid_input', this.state);
+    }
+
+    if (!isExecutableSpeechSegment(validation.segment)) {
+      return result(
+        false,
+        'partial_not_executable',
+        this.state,
+      );
+    }
+
+    const speechDecision = this.speechRegistry.apply(
+      validation.segment,
+    );
+    if (!speechDecision.accepted) {
+      return result(
+        false,
+        'speech_rejected',
+        this.state,
+        ['none'],
+        null,
+        null,
+        speechDecision,
+      );
+    }
+
+    if (this.state.phase !== 'finalizing') {
+      return result(
+        false,
+        'wrong_phase',
+        this.state,
+        ['none'],
+        null,
+        null,
+        speechDecision,
+      );
+    }
+
+    const transitioned = this.applyTransition('transcript_final');
+    return result(
+      transitioned.accepted,
+      transitioned.reason,
+      transitioned.state,
+      transitioned.actions,
+      null,
+      null,
+      speechDecision,
+    );
+  }
+
+  markResponseReady(): VoiceCoordinatorResult {
+    return this.applyTransition('response_ready');
+  }
+
+  markTtsStarted(): VoiceCoordinatorResult {
+    return this.applyTransition('tts_start');
+  }
+
+  markResponseComplete(): VoiceCoordinatorResult {
+    return this.applyTransition('response_complete');
+  }
+}
