@@ -78,6 +78,16 @@ function isEvent(value: unknown): value is ObservationPrivacyEvent {
   );
 }
 
+function isReactivationEvent(
+  event: ObservationPrivacyEvent,
+): boolean {
+  return (
+    event === 'resume_visual' ||
+    event === 'resume_ambient' ||
+    event === 'unlock_privacy'
+  );
+}
+
 function parseReactivationChecks(value: unknown): ReactivationChecks | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return null;
@@ -186,6 +196,22 @@ export function transitionObservationPrivacy(input: unknown): ObservationPrivacy
 
   const state = record.state;
   const event = record.event;
+  const hasReactivationChecks = Object.prototype.hasOwnProperty.call(
+    record,
+    'reactivationChecks',
+  );
+
+  if (hasReactivationChecks && !isReactivationEvent(event)) {
+    return failClosed(state);
+  }
+
+  const checks = hasReactivationChecks
+    ? parseReactivationChecks(record.reactivationChecks)
+    : null;
+
+  if (hasReactivationChecks && checks === null) {
+    return failClosed(state);
+  }
 
   if (
     event === 'app_restart' ||
@@ -253,8 +279,6 @@ export function transitionObservationPrivacy(input: unknown): ObservationPrivacy
       reason: state === 'visual_off' ? 'no_change' : 'applied',
     };
   }
-
-  const checks = parseReactivationChecks(record.reactivationChecks);
 
   if (event === 'resume_visual') {
     if (state === 'privacy_lock' || state === 'ambient_off') {
