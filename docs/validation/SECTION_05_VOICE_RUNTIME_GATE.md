@@ -2,151 +2,163 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
 
-Section 05 builds the provider-neutral voice runtime foundation without coupling production STT/TTS/model providers into the Mobile UI.
+Section 05 establishes the provider-neutral, privacy-bound, replay-resistant voice runtime below UI and above provider adapters. It does not couple production STT/TTS or AI providers into the Mobile UI.
 
-## Scope
+## Accepted Pre-Device Candidate
 
-Section 05 pre-device work includes:
+`504c42e1902665858a61ce9df6e3fbcab844b67c`
 
-- streaming STT contracts;
-- streaming TTS contracts;
-- VAD / speech-boundary model;
-- deterministic end-of-turn policy;
-- two-lane routing contract: instant command vs conversational/reasoning;
-- ambiguity/confidence escalation rules;
-- barge-in and safe cancellation lifecycle;
-- voice-session state machine;
-- multilingual/code-switching metadata contracts;
-- latency tracing/measurement contracts;
-- provider health/failure normalization without provider-specific UI coupling;
-- separation between speech understanding and execution authority;
-- preservation of Section 04 privacy policy and microphone authority.
+Acceptance evidence is recorded in `SECTION_05_AUTOMATED_EVIDENCE.md`.
 
-## Non-goals
+## Scope Implemented
 
-Pre-device Section 05 does not yet claim:
+- provider-neutral streaming STT and TTS contracts;
+- strict runtime validation for untrusted STT/TTS/VAD/provider metadata;
+- partial-versus-final transcript boundary;
+- session/generation/sequence replay protection;
+- monotonic voice generation across reset and barge-in;
+- ordered VAD event registry;
+- bounded end-of-turn policy;
+- deterministic Voice Runtime Coordinator;
+- instant-command candidate versus reasoning/clarification routing;
+- no voice lane may self-authorize tool execution;
+- Section 04 privacy-policy binding for microphone activation;
+- direct versus passive microphone-use distinction;
+- wake-word/hands-free privacy-lock enforcement;
+- evidence-qualified barge-in with echo/noise resistance;
+- deterministic TTS receipt/playback lifecycle;
+- provider-neutral selection and failover policy;
+- no mid-stream cross-provider output mixing after output is observed;
+- privacy-safe voice security audit events;
+- latency trace primitives that report only evidenced timing.
 
-- production STT provider quality;
-- production TTS provider quality;
-- real wake-word accuracy;
-- real acoustic echo cancellation/noise suppression performance;
-- real far-field microphone quality;
-- real sub-second latency on hardware/network;
-- voiceprint as an authorization factor;
-- production smart-home execution;
-- production reasoning-provider integration;
-- that recorded mock audio proves real speech recognition quality.
+## Non-Goals / Deferred Layer 4
 
-No production API key or provider credential belongs in the client or repository.
+Pre-device completion does not prove:
+
+- Android microphone permission behavior on physical hardware;
+- real audio focus, routing, speaker/headset/Bluetooth behavior;
+- production streaming STT accuracy;
+- production TTS naturalness or pronunciation;
+- wake-word false-positive/false-negative rates;
+- acoustic echo cancellation quality;
+- far-field/noisy-room behavior;
+- real barge-in interruption latency;
+- production provider outage/failover behavior;
+- real first-audio or command latency;
+- offline/degraded voice behavior on target devices;
+- production process-death/background/foreground recovery;
+- final accessibility/device-matrix behavior.
+
+No production provider credential, endpoint or vendor-specific UI logic is required to satisfy this gate.
 
 ## Layer 1 — Specification and Static Correctness
 
-Required evidence:
+Required PASS evidence:
 
-- `MUDRIK_VOICE_INTERACTION.md` remains authoritative;
-- STT/TTS/provider interfaces are replaceable;
-- UI does not depend on provider identity;
-- instant-command lane is separate from reasoning lane;
-- confidence/ambiguity can escalate but cannot silently lower permission requirements;
-- voice understanding never grants execution authority;
-- cancellation and barge-in semantics are explicit;
-- Section 04 privacy lock remains authoritative over passive microphone use;
-- TypeScript/lint/CodeQL pass;
-- no new production secrets or unjustified runtime dependencies.
+- `MUDRIK_VOICE_INTERACTION.md` remains the architectural authority;
+- voice understanding is never permission authority;
+- Mobile UI remains provider-neutral;
+- microphone activation delegates to Section 04 privacy/sensor policy;
+- passive microphone activation cannot bypass `ambient_off` or `privacy_lock`;
+- direct user interaction does not silently unlock passive observation;
+- no API key/provider secret is present in provider descriptors or repository code;
+- TypeScript and lint pass;
+- CodeQL passes;
+- full-history secret scan passes;
+- dependency High/Critical gate passes.
 
 ## Layer 2 — Unit and Component Verification
 
-Mandatory deterministic tests include:
+Mandatory deterministic behavior includes:
 
-- voice session legal state transitions;
-- invalid/out-of-order session events fail safely;
-- VAD speech-start/speech-end ordering;
-- short noise/transient does not finalize a turn;
-- minimum/maximum silence behavior is bounded;
-- end-of-turn decision is deterministic;
-- partial STT hypotheses can update without becoming executable final intent;
-- final STT result has stable segment identity/order;
-- low-confidence/ambiguous instant intent escalates to reasoning/clarification;
-- clear allowed simple intent may choose instant lane;
-- high-risk intent never becomes "safe" because speech confidence is high;
-- barge-in cancels TTS playback before accepting overlapping response audio;
-- cancellation is idempotent;
-- stale session/segment events are rejected;
-- latency trace ordering and durations are validated;
-- multilingual metadata accepts Arabic/German/English/code-switching without changing authority.
+- partial STT segments are non-executable;
+- final STT segments are accepted only in the correct session phase;
+- stale/future generations are rejected;
+- sequence conflicts and post-final replay are rejected;
+- generationless legacy events normalize only to generation zero;
+- generation increases on reset and post-barge-in resume;
+- VAD ordering is monotonic and conflict-resistant;
+- malformed VAD/STT/TTS input fails closed;
+- end-of-turn waits through active speech and insufficient silence;
+- bounded maximum duration prevents an indefinitely stuck turn;
+- instant-command routing never grants execution authority;
+- high/critical capability candidates do not enter direct instant execution;
+- direct microphone interaction requires explicit request, permission, trust and runtime availability;
+- wake-word/hands-free modes obey passive observation privacy restrictions;
+- barge-in requires current assistant speech and qualified input evidence;
+- possible echo requires stronger lexical/stability evidence;
+- TTS playback start requires accepted first audio;
+- TTS completion requires final chunk plus playback completion evidence;
+- late TTS chunks after cancellation are rejected;
+- provider selection excludes unavailable, non-streaming, wrong-service and language-incompatible candidates;
+- provider failover after output requires explicit restart and generation rotation;
+- voice audit structurally rejects raw transcript/audio/provider payload content.
 
 ## Layer 3 — Integration, Security and Adversarial Verification
 
-Required adversarial coverage:
+Required adversarial cases include:
 
-- forged STT final result with unexpected fields;
-- partial transcript attempting execution;
-- stale transcript from prior session;
-- duplicate final segment;
-- out-of-order sequence;
-- confidence `NaN`, negative, or >1;
-- fake provider "success" without final transcription;
-- cancellation racing with final transcript;
-- barge-in racing with TTS completion;
-- provider/network failure mid-stream;
-- reasoning lane cannot bypass capability policy;
-- privacy lock blocks passive microphone activation;
-- direct explicit microphone interaction does not silently enable passive listening;
-- spoken high-risk command still requires normal deterministic authorization;
-- malformed latency timestamps do not produce false performance claims.
+- stale VAD from a prior generation arriving after barge-in;
+- stale STT final arriving after reset;
+- stale TTS chunk arriving after cancellation;
+- final transcript arriving before the coordinator reaches `finalizing`;
+- same-sequence transcript with conflicting content;
+- same-sequence VAD with conflicting state;
+- malformed timing/confidence/identity/provider metadata;
+- caller attempts to forge barge-in while assistant is not speaking;
+- assistant self-echo or short noise attempting to stop TTS;
+- passive wake/hands-free attempt while privacy lock is active;
+- TTS playback-complete reported before first audio or final chunk;
+- provider switch after output without generation rotation;
+- STT failover without replayable buffered input;
+- hidden credential/content fields injected into provider or audit metadata.
 
-## Layer 4 — Real Device / Audio / Network Verification
+Any uncertain identity, ordering, phase, privacy state or provider state must reject or move to a safer non-executing path.
+
+## Layer 4 — Real Device / Provider / Acoustic Verification
 
 **DEFERRED** under the recorded owner-directed physical-validation exception.
 
-Before final Section 05 closure verify on real supported devices:
+Before final closure verify at minimum:
 
-- microphone permission allow/deny/revoke;
-- press-to-talk recording;
-- open voice-session microphone behavior;
-- app background/foreground/interruption;
-- Bluetooth/headset routing;
-- speaker echo/barge-in behavior;
-- streaming STT partial/final timing;
-- Arabic dialect accuracy;
-- German accuracy;
-- English accuracy;
-- Arabic/German/English code-switching;
-- noisy-room and far-field behavior;
-- TTS first-audio latency;
-- TTS interruption latency;
-- end-of-turn false-cut and over-wait cases;
-- offline/network-loss behavior;
-- provider failover if enabled;
-- measured p50/p95/p99 latency for supported paths.
+- real Android microphone permission allow/deny/revoke;
+- real audio focus/routing and phone-call interruption;
+- wired/Bluetooth/headset behavior;
+- real streaming STT with Arabic dialects, German, English and code-switching;
+- Arabizi/custom vocabulary where supported;
+- noisy-room and far-field recognition;
+- wake-word false-positive/false-negative rates;
+- privacy-lock behavior with actual wake/hands-free services;
+- acoustic echo cancellation and assistant self-echo rejection;
+- real VAD/end-of-turn timing;
+- barge-in stop latency;
+- streaming TTS first-audio latency;
+- pronunciation, mixed-language speech and Arabic word separation;
+- network degradation/outage/provider failover;
+- offline/degraded behavior;
+- background/foreground/process-death recovery;
+- real cancellation with late provider packets;
+- device/accessibility matrix;
+- independent voice/privacy/security review.
 
-Mock/provider-contract tests cannot close real audio quality or latency obligations.
+## Layer 5 — Evidence / Release Gate
 
-## Layer 5 — Release / Independent Review / Evidence
-
-Before pre-device completion:
+Pre-device completion requires:
 
 - exact candidate SHA recorded;
 - Mobile Core Validation green;
 - CodeQL green;
-- voice runtime regressions/adversarial tests green;
-- no unresolved Critical/High Section 05 defect;
-- privacy boundary reviewed;
-- provider-neutral boundary reviewed;
-- deferred hardware/audio limitations recorded.
+- voice and whole Mobile regression suites green;
+- no unresolved Section 05 Critical/High defect;
+- dependency and secret gates green;
+- known defects and repairs recorded;
+- deferred Layer 4 obligations explicit.
 
-Before final production closure:
-
-- applicable Layer 4 passes;
-- real provider evaluations recorded;
-- latency/quality thresholds are measured rather than claimed;
-- voice/privacy/security review completed;
-- final candidate is revalidated after device/provider fixes.
+Production closure additionally requires all applicable Layer 4 items and a final revalidation after real-world fixes.
 
 ## Core Acceptance Rule
 
-Speech can propose what the user meant. It cannot grant permission, broaden privacy state, or claim an action succeeded without execution evidence.
-
-Voice must remain low-latency, interruptible, provider-replaceable and safe under partial, duplicate, stale, malformed, ambiguous and cancelled stream events.
+Voice input may interpret user intent, select a candidate lane and prepare actions, but it never grants execution authority. Microphone use remains subject to the privacy/sensor policy, and every asynchronous VAD/STT/TTS event is bound to the current session generation so delayed provider or device events cannot revive a cancelled or previous turn.
