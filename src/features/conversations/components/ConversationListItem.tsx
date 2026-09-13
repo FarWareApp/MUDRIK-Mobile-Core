@@ -7,7 +7,13 @@ import {
 } from 'react-native';
 
 import { ConversationRecord } from '../../../contracts/ConversationRepository';
+import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typography } from '../../../design-system/tokens/typography';
+
+import { formatConversationUpdatedAt } from '../formatters/formatConversationUpdatedAt';
+import { ConversationListActionButton } from './ConversationListActionButton';
 
 type Props = {
   conversation: ConversationRecord;
@@ -27,133 +33,101 @@ export function ConversationListItem({
   onDelete,
 }: Props) {
   const { colors } = useTheme();
+  const { locale, t } = useLocale();
 
   const title =
     conversation.title.trim() ||
-    'New conversation';
+    t('untitledConversation');
 
-  const date = new Date(
-    conversation.updatedAt,
-  ).toLocaleString();
+  const updatedAt =
+    formatConversationUpdatedAt(
+      conversation.updatedAt,
+      locale,
+    );
 
   return (
     <View
       style={[
         styles.container,
         {
-          borderBottomColor:
-            colors.border,
+          borderBottomColor: colors.border,
           opacity: disabled ? 0.6 : 1,
         },
       ]}
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Open conversation: ${title}`}
+        accessibilityLabel={`${t('openConversation')}: ${title}`}
         disabled={disabled}
         onPress={onOpen}
-        style={styles.main}
+        style={({ pressed }) => [
+          styles.main,
+          {
+            backgroundColor: pressed
+              ? colors.surfacePressed
+              : 'transparent',
+          },
+        ]}
       >
-        <View style={styles.titleRow}>
-          {conversation.isPinned && (
-            <Text
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              style={{
-                color: colors.accent,
-                marginRight: 6,
-              }}
-            >
-              ●
-            </Text>
-          )}
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.title,
+            { color: colors.textPrimary },
+          ]}
+        >
+          {title}
+        </Text>
 
+        {updatedAt ? (
           <Text
             numberOfLines={1}
             style={[
-              styles.title,
-              {
-                color: colors.textPrimary,
-              },
+              styles.date,
+              { color: colors.textSecondary },
             ]}
           >
-            {title}
+            {updatedAt}
           </Text>
-        </View>
-
-        <Text
-          style={[
-            styles.date,
-            {
-              color: colors.textSecondary,
-            },
-          ]}
-        >
-          {date}
-        </Text>
+        ) : null}
       </Pressable>
 
       <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
+        <ConversationListActionButton
+          accessibilityLabel={`${
             conversation.isPinned
-              ? `Unpin ${title}`
-              : `Pin ${title}`
-          }
+              ? t('unpinConversation')
+              : t('pinConversation')
+          }: ${title}`}
           disabled={disabled}
+          selected={conversation.isPinned}
           onPress={onPin}
-          style={styles.action}
         >
-          <Text
-            style={{
-              color: colors.textSecondary,
-            }}
-          >
-            {conversation.isPinned
-              ? '☆'
-              : '★'}
-          </Text>
-        </Pressable>
+          ★
+        </ConversationListActionButton>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
+        <ConversationListActionButton
+          accessibilityLabel={`${
             conversation.isArchived
-              ? `Restore ${title}`
-              : `Archive ${title}`
-          }
+              ? t('restoreConversation')
+              : t('archiveConversation')
+          }: ${title}`}
           disabled={disabled}
           onPress={onArchive}
-          style={styles.action}
         >
-          <Text
-            style={{
-              color: colors.textSecondary,
-            }}
-          >
-            {conversation.isArchived
-              ? '↩'
-              : '▣'}
-          </Text>
-        </Pressable>
+          {conversation.isArchived
+            ? '↩'
+            : '▣'}
+        </ConversationListActionButton>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Delete ${title}`}
+        <ConversationListActionButton
+          accessibilityLabel={`${t('deleteConversationAction')}: ${title}`}
           disabled={disabled}
+          tone="danger"
           onPress={onDelete}
-          style={styles.action}
         >
-          <Text
-            style={{
-              color: colors.error,
-              fontSize: 20,
-            }}
-          >
-            ×
-          </Text>
-        </Pressable>
+          ×
+        </ConversationListActionButton>
       </View>
     </View>
   );
@@ -161,46 +135,32 @@ export function ConversationListItem({
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 72,
+    minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth:
-      StyleSheet.hairlineWidth,
-    marginHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginHorizontal: spacing.lg,
   },
-
   main: {
     flex: 1,
-    minHeight: 56,
+    minHeight: 60,
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    marginLeft: -spacing.sm,
+    borderRadius: spacing.md,
   },
-
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
   title: {
-    flex: 1,
-    fontSize: 16,
+    fontSize: typography.body,
     fontWeight: '600',
   },
-
   date: {
-    marginTop: 5,
-    fontSize: 11,
+    marginTop: spacing.xs,
+    fontSize: typography.caption,
+    fontVariant: ['tabular-nums'],
   },
-
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-
-  action: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
