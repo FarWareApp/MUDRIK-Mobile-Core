@@ -7,6 +7,7 @@ import {
 } from '../identity/identityIds';
 
 import {
+  isSurfaceId,
   parseSurfaceDescriptor,
 } from './surfaceContract';
 
@@ -14,13 +15,13 @@ import type {
   SurfaceDescriptor,
 } from './surfaceContract';
 
-export type TrustedSurfaceRecord = Readonly<{
-  accountId: string;
-  surface: SurfaceDescriptor;
-  revision: number;
-  approvedAt: number;
-  state: 'active' | 'revoked';
-}>;
+import {
+  parseTrustedSurfaceRecord,
+} from './trustedSurfaceRecord';
+
+import type {
+  TrustedSurfaceRecord,
+} from './trustedSurfaceRecord';
 
 export type TrustedSurfaceUpdateResult = Readonly<{
   accepted: boolean;
@@ -73,6 +74,18 @@ function trustBindingMatches(
     record.expectedAccountId === accountId
     && record.expectedDeviceId === deviceId
   );
+}
+
+function buildRecord(
+  input: Readonly<{
+    accountId: string;
+    surface: SurfaceDescriptor;
+    revision: number;
+    approvedAt: number;
+    state: 'active' | 'revoked';
+  }>,
+): TrustedSurfaceRecord | null {
+  return parseTrustedSurfaceRecord(input);
 }
 
 export class TrustedSurfaceRegistry {
@@ -197,15 +210,24 @@ export class TrustedSurfaceRegistry {
       }
     }
 
+    const next = buildRecord({
+      accountId: record.accountId,
+      surface,
+      revision: record.revision,
+      approvedAt: record.approvedAt,
+      state: 'active',
+    });
+
+    if (!next) {
+      return {
+        accepted: false,
+        reason: 'invalid_registration',
+      };
+    }
+
     this.records.set(
       surface.surfaceId,
-      Object.freeze({
-        accountId: record.accountId,
-        surface,
-        revision: record.revision,
-        approvedAt: record.approvedAt,
-        state: 'active',
-      }),
+      next,
     );
 
     return {
@@ -219,7 +241,7 @@ export class TrustedSurfaceRegistry {
     revision: number,
   ): TrustedSurfaceUpdateResult {
     if (
-      typeof surfaceId !== 'string'
+      !isSurfaceId(surfaceId)
       || !isSafeNonNegativeInteger(revision)
     ) {
       return {
@@ -252,13 +274,24 @@ export class TrustedSurfaceRegistry {
       };
     }
 
+    const next = buildRecord({
+      accountId: current.accountId,
+      surface: current.surface,
+      revision,
+      approvedAt: current.approvedAt,
+      state: 'revoked',
+    });
+
+    if (!next) {
+      return {
+        accepted: false,
+        reason: 'invalid_registration',
+      };
+    }
+
     this.records.set(
       surfaceId,
-      Object.freeze({
-        ...current,
-        revision,
-        state: 'revoked',
-      }),
+      next,
     );
 
     return {
