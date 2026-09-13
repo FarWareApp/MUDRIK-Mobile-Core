@@ -12,11 +12,6 @@ const {
   'src/features/chat/formatters/getLocalMessageDateKey.ts',
 );
 const {
-  getMessageDateBucket,
-} = loadTypeScriptModule(
-  'src/features/chat/formatters/getMessageDateBucket.ts',
-);
-const {
   buildMessageListItems,
 } = loadTypeScriptModule(
   'src/features/chat/list/buildMessageListItems.ts',
@@ -76,35 +71,6 @@ test(
 );
 
 test(
-  'date bucket distinguishes today yesterday and older calendar days',
-  () => {
-    const now = localTime(2026, 9, 13, 23);
-
-    assert.equal(
-      getMessageDateBucket(
-        localTime(2026, 9, 13, 1),
-        now,
-      ),
-      'today',
-    );
-    assert.equal(
-      getMessageDateBucket(
-        localTime(2026, 9, 12, 23),
-        now,
-      ),
-      'yesterday',
-    );
-    assert.equal(
-      getMessageDateBucket(
-        localTime(2026, 9, 10),
-        now,
-      ),
-      'dated',
-    );
-  },
-);
-
-test(
   'list builder preserves message order and inserts one separator per contiguous calendar day',
   () => {
     const first = message(
@@ -152,11 +118,12 @@ test(
 );
 
 test(
-  'MessageList renders dedicated date separators instead of embedding date text in bubbles',
+  'MessageList renders deterministic localized date separators outside bubbles',
   () => {
     assert.match(list, /buildMessageListItems/);
     assert.match(list, /MessageDateSeparator/);
-    assert.match(separator, /t\('today'\)/);
-    assert.match(separator, /t\('yesterday'\)/);
+    assert.doesNotMatch(list, /Date\.now\(/);
+    assert.match(separator, /formatMessageDate/);
+    assert.doesNotMatch(separator, /getMessageDateBucket/);
   },
 );
