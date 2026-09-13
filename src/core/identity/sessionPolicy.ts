@@ -15,6 +15,7 @@ export type SessionDecisionReason =
   | 'device_mismatch'
   | 'device_key_mismatch'
   | 'issued_in_future'
+  | 'lifetime_exceeded'
   | 'expired'
   | 'revoked'
   | 'reauthentication_required'
@@ -24,6 +25,8 @@ export type SessionDecision = Readonly<{
   allowed: boolean;
   reason: SessionDecisionReason;
 }>;
+
+export const MAX_ACCESS_SESSION_LIFETIME_MS = 15 * 60 * 1000;
 
 type SessionRecord = Readonly<{
   sessionId: string;
@@ -146,6 +149,13 @@ export function evaluateSession(input: unknown): SessionDecision {
     session.authenticatedAtMs > wrapper.nowMs
   ) {
     return { allowed: false, reason: 'issued_in_future' };
+  }
+
+  if (
+    session.expiresAtMs - session.issuedAtMs >
+    MAX_ACCESS_SESSION_LIFETIME_MS
+  ) {
+    return { allowed: false, reason: 'lifetime_exceeded' };
   }
 
   if (session.state === 'revoked') {
