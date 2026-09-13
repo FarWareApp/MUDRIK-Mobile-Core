@@ -224,7 +224,7 @@ export function transitionVoiceSession(input: unknown): VoiceSessionTransition {
   if (event === 'reset') {
     return result(
       state,
-      INITIAL_VOICE_SESSION_STATE,
+      nextState(state, 'idle', null, true),
       true,
       'applied',
       state.phase === 'assistant_speaking'
