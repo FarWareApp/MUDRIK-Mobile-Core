@@ -8,6 +8,9 @@ import {
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typography } from '../../../design-system/tokens/typography';
 
 type ViewMode =
   | 'active'
@@ -25,59 +28,69 @@ export function ConversationViewTabs({
   const { colors } = useTheme();
   const { t } = useLocale();
 
+  const renderTab = (
+    mode: ViewMode,
+    label: string,
+  ) => {
+    const selected =
+      value === mode;
+
+    return (
+      <Pressable
+        accessibilityRole="tab"
+        accessibilityLabel={label}
+        accessibilityState={{ selected }}
+        onPress={() => onChange(mode)}
+        style={({ pressed }) => [
+          styles.tab,
+          {
+            backgroundColor: selected
+              ? colors.surface
+              : pressed
+                ? colors.surfacePressed
+                : 'transparent',
+            borderColor: selected
+              ? colors.border
+              : 'transparent',
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.tabText,
+            {
+              color: selected
+                ? colors.textPrimary
+                : colors.textSecondary,
+            },
+          ]}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
+
   return (
     <View
+      accessibilityRole="tablist"
       style={[
         styles.container,
         {
           backgroundColor:
-            colors.surfaceElevated,
+            colors.surfaceInput,
+          borderColor: colors.border,
         },
       ]}
     >
-      <Pressable
-        onPress={() => onChange('active')}
-        style={[
-          styles.tab,
-          value === 'active' && {
-            backgroundColor: colors.surface,
-          },
-        ]}
-      >
-        <Text
-          style={{
-            color:
-              value === 'active'
-                ? colors.textPrimary
-                : colors.textSecondary,
-            fontWeight: '600',
-          }}
-        >
-          {t('activeConversations')}
-        </Text>
-      </Pressable>
-
-      <Pressable
-        onPress={() => onChange('archived')}
-        style={[
-          styles.tab,
-          value === 'archived' && {
-            backgroundColor: colors.surface,
-          },
-        ]}
-      >
-        <Text
-          style={{
-            color:
-              value === 'archived'
-                ? colors.textPrimary
-                : colors.textSecondary,
-            fontWeight: '600',
-          }}
-        >
-          {t('archivedConversations')}
-        </Text>
-      </Pressable>
+      {renderTab(
+        'active',
+        t('activeConversations'),
+      )}
+      {renderTab(
+        'archived',
+        t('archivedConversations'),
+      )}
     </View>
   );
 }
@@ -85,17 +98,24 @@ export function ConversationViewTabs({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 14,
-    padding: 3,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.lg,
+    padding: spacing.xs,
   },
 
   tab: {
     flex: 1,
-    minHeight: 38,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 11,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.md,
+  },
+
+  tabText: {
+    fontSize: typography.secondary,
+    fontWeight: '700',
   },
 });
