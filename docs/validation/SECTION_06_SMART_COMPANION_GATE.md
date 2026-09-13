@@ -2,9 +2,29 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted pre-device candidate:
+
+`97ac1435eee06a96e4de1b2797baa5ec90a0c3e0`
 
 Section 06 establishes one primary, user-configurable companion identity and interaction policy. The companion shapes presentation and conversational style only. It never grants capabilities, permissions, sensor access, tool authority, memory authority or device trust.
+
+Automated acceptance evidence:
+
+- Mobile Core Validation run `#284` / ID `34781835325`: **SUCCESS**;
+- CodeQL Security Analysis run `#177` / ID `34781835439`: **SUCCESS**;
+- Mobile/Security/Identity/Privacy/Voice/Companion regressions: **239/239 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- full Git-history secret scan: **PASS**;
+- no known unresolved Critical/High Section 06 defect.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_06_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_06_DEFECTS.md`
 
 ## Scope
 
@@ -16,11 +36,13 @@ Section 06 establishes one primary, user-configurable companion identity and int
 - presence level;
 - preferred-language preferences;
 - memory-policy binding identifier only, without memory access implementation;
-- consistent profile projection for text and voice surfaces;
+- consistent profile projection for text, voice and avatar surfaces;
 - deterministic initiative policy;
 - explicit zero-authority companion boundary;
 - durable SQLite persistence and migration from the legacy profile;
-- fail-closed validation for malformed persisted/untrusted profile data.
+- fail-closed validation for malformed persisted/untrusted profile data;
+- monotonic revision protection against stale profile writes;
+- truthful save-failure UX for the profile editor.
 
 ## Explicit Non-Goals
 
@@ -37,53 +59,61 @@ The following belong to later sections and MUST NOT be silently implemented here
 
 ## Layer 1 — Specification and Static Correctness
 
-Required PASS evidence:
+Status: **PASS for pre-device scope**.
+
+Evidence includes:
 
 - `MUDRIK_SMART_COMPANION.md` remains the architectural authority;
-- exactly one primary active profile is supported initially;
+- exactly one primary profile is supported initially;
 - profile has no provider API keys, model IDs, tokens or execution grants;
 - personality/presence fields cannot imply capability authority;
-- voice and avatar identifiers are renderer/provider-neutral references;
+- voice/avatar identifiers are provider-neutral references;
 - memory binding is a reference, not memory permission itself;
-- new fields migrate without destroying the legacy profile;
-- TypeScript and lint pass;
+- V8 migration expands the legacy profile non-destructively;
+- TypeScript passes;
+- lint passes without the prior Section 06 hook warning;
 - CodeQL passes;
 - secret and dependency gates pass.
 
 ## Layer 2 — Unit / Component Verification
 
-Mandatory deterministic cases:
+Status: **PASS for pre-device scope**.
 
-- valid profile normalizes without widening permissions;
+Covered deterministic cases include:
+
+- valid profile normalization without authority widening;
 - invalid/extra profile fields fail closed;
 - blank/oversized names are rejected or safely normalized;
 - personality dimensions stay within explicit bounds;
 - speaking-rate bounds are enforced;
 - preferred-language entries are bounded and deduplicated;
 - provider/model/credential-shaped fields are rejected;
-- companion disabled state prevents proactive companion behavior;
-- `silent` presence permits direct replies only;
-- `normal` presence permits requested replies and necessary notifications only;
-- `helpful`/`active` initiative still requires an independently authorized category;
-- quiet-hours policy can suppress proactive presentation;
-- no companion policy decision returns tool/sensor/memory permission authority;
-- profile reset preserves unrelated conversation/project data.
+- disabled companion state prevents companion presentation;
+- `silent`, `normal`, `helpful`, and `active` presence behavior is deterministic;
+- `helpful`/`active` still require independently authorized categories for proactivity;
+- quiet-hours can suppress proactive presentation;
+- no companion policy decision returns tool/sensor/memory/disclosure authority;
+- text/voice/avatar identity projection remains consistent;
+- persisted profile is validated before use.
 
 ## Layer 3 — Integration / Security / Adversarial Verification
 
-Required adversarial cases:
+Status: **PASS for pre-device scope**.
 
-- malicious profile attempts to inject `modelId`, `apiKey`, `toolScopes`, `permissions`, `systemPrompt` or equivalent authority-bearing fields;
-- malformed persisted JSON/language lists;
-- corrupted numeric personality values (`NaN`, infinity, fractions/out-of-range where disallowed);
+Covered adversarial cases include:
+
+- profile injection attempts for `modelId`, `apiKey`, `toolScopes`, `permissions`, `systemPrompt` and equivalent unknown fields;
+- credential-shaped voice/avatar/memory references;
+- malformed persisted language data;
+- corrupted/out-of-range numeric personality values;
 - stale profile update attempting to overwrite a newer profile revision;
-- disabled companion receiving proactive trigger;
-- high initiative attempting to bypass notification/privacy policy;
-- memory policy reference attempting to become direct memory-category authority;
-- voice/avatar references attempting to embed a provider credential;
-- reset/settings flow accidentally deleting unrelated app data.
+- disabled companion receiving direct/proactive presentation triggers;
+- high initiative attempting to bypass notification/quiet-hours policy;
+- memory-policy reference attempting to become memory authority;
+- malformed profile attempting to project identity;
+- V7 -> V8 migration preserving existing companion data.
 
-Any ambiguity must resolve to a non-proactive, non-authoritative state.
+Any ambiguity resolves to a non-proactive, non-authoritative state.
 
 ## Layer 4 — Physical / UX Verification
 
@@ -96,24 +126,15 @@ Before final closure verify at minimum:
 - migration from a pre-V8 database with an existing companion profile;
 - disabled companion UI behavior;
 - name, voice, avatar and personality choices across text/voice surfaces;
-- accessibility, keyboard, RTL/LTR and mixed-language behavior;
+- accessibility, keyboard, safe-area, RTL/LTR and mixed-language behavior;
 - no conversation/project loss after companion changes;
 - device performance and visual regression checks.
 
 ## Layer 5 — Evidence / Release Gate
 
-Pre-device completion requires:
+Pre-device evidence gate: **PASS** on candidate `97ac1435eee06a96e4de1b2797baa5ec90a0c3e0`.
 
-- exact candidate SHA recorded;
-- Mobile Core Validation green;
-- CodeQL green;
-- Section 06 and whole-core regressions green;
-- zero unresolved Critical/High Section 06 defects;
-- dependency and secret gates green;
-- defects/repairs recorded;
-- Layer 4 obligations remain explicit.
-
-Production closure additionally requires Layer 4 and final revalidation on the then-current exact candidate.
+Production closure is **NOT PASS** because Layer 4 remains deferred. No final production/freeze tag is authorized for Section 06.
 
 ## Core Acceptance Rule
 
