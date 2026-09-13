@@ -20,13 +20,16 @@ import type {
 
 import {
   isSurfaceId,
-  parseSurfaceDescriptor,
 } from './surfaceContract';
 
 import type {
   SurfaceDescriptor,
   SurfacePresentationCapability,
 } from './surfaceContract';
+
+import type {
+  TrustedSurfaceRegistry,
+} from './trustedSurfaceRegistry';
 
 export type ContentSensitivity =
   | 'public'
@@ -55,7 +58,7 @@ export type PresenceResolution = Readonly<{
 }>;
 
 type CandidateInput = Readonly<{
-  surface: unknown;
+  surfaceId: string;
   presence: unknown;
   deviceTrustInput: unknown;
 }>;
@@ -100,7 +103,7 @@ const TOP_LEVEL_KEYS = new Set([
 ]);
 
 const CANDIDATE_KEYS = new Set([
-  'surface',
+  'surfaceId',
   'presence',
   'deviceTrustInput',
 ]);
@@ -186,7 +189,6 @@ function parseRequiredCapabilities(
 
   const seen =
     new Set<SurfacePresentationCapability>();
-
   const result: SurfacePresentationCapability[] = [];
 
   for (const item of value) {
@@ -253,12 +255,10 @@ function parseInput(
     parseNullableSurfaceId(
       record.currentPrimarySurfaceId,
     );
-
   const pinnedSurfaceId =
     parseNullableSurfaceId(
       record.pinnedSurfaceId,
     );
-
   const requiredCapabilities =
     parseRequiredCapabilities(
       record.requiredCapabilities,
@@ -295,6 +295,7 @@ function parseInput(
   }
 
   const candidates: CandidateInput[] = [];
+  const seenSurfaceIds = new Set<string>();
 
   for (const candidate of record.candidates) {
     if (
@@ -314,12 +315,16 @@ function parseInput(
       || Object.keys(candidateRecord).some(
         (key) => !CANDIDATE_KEYS.has(key),
       )
+      || !isSurfaceId(candidateRecord.surfaceId)
+      || seenSurfaceIds.has(candidateRecord.surfaceId)
     ) {
       return null;
     }
 
+    seenSurfaceIds.add(candidateRecord.surfaceId);
+
     candidates.push({
-      surface: candidateRecord.surface,
+      surfaceId: candidateRecord.surfaceId,
       presence: candidateRecord.presence,
       deviceTrustInput:
         candidateRecord.deviceTrustInput,
@@ -393,14 +398,10 @@ function disclosureAllowed(
       return true;
     }
 
-    if (
+    return (
       surface.privacyClass === 'personal_shared_space'
       && input.userConfirmedDisclosure
-    ) {
-      return true;
-    }
-
-    return false;
+    );
   }
 
   if (
@@ -466,22 +467,18 @@ function scoreCandidate(
     presence.recentDirectInteraction
       ? 80
       : 0;
-
   const activeBonus =
     presence.deviceActive
       ? 40
       : 0;
-
   const roomBonus =
     presence.explicitRoomMatch
       ? 25
       : 0;
-
   const degradedPenalty =
     presence.availability === 'degraded'
       ? 100
       : 0;
-
   const latencyPenalty =
     Math.min(
       100,
@@ -503,16 +500,16 @@ function scoreCandidate(
 
 function buildEligibleCandidates(
   input: ResolutionInput,
+  surfaceRegistry: TrustedSurfaceRegistry,
 ): readonly EligibleCandidate[] {
   const eligible: EligibleCandidate[] = [];
-  const seenSurfaceIds = new Set<string>();
 
   for (const candidate of input.candidates) {
     const surface =
-      parseSurfaceDescriptor(
-        candidate.surface,
+      surfaceRegistry.getActiveSurface(
+        candidate.surfaceId,
+        input.accountId,
       );
-
     const presence =
       parsePresenceObservation(
         candidate.presence,
@@ -522,12 +519,9 @@ function buildEligibleCandidates(
       !surface
       || !presence
       || presence.surfaceId !== surface.surfaceId
-      || seenSurfaceIds.has(surface.surfaceId)
     ) {
       continue;
     }
-
-    seenSurfaceIds.add(surface.surfaceId);
 
     if (
       !trustBindingMatches(
@@ -597,15 +591,23 @@ function buildEligibleCandidates(
 
 export function resolvePresenceSurface(
   rawInput: unknown,
+  surfaceRegistry: TrustedSurfaceRegistry,
 ): PresenceResolution {
   const input = parseInput(rawInput);
 
-  if (!input) {
+  if (
+    !input
+    || !surfaceRegistry
+    || typeof surfaceRegistry.getActiveSurface !== 'function'
+  ) {
     return invalidDecision();
   }
 
   const eligible =
-    buildEligibleCandidates(input);
+    buildEligibleCandidates(
+      input,
+      surfaceRegistry,
+    );
 
   const bySurfaceId =
     new Map(
