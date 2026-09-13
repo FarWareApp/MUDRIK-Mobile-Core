@@ -4,6 +4,7 @@ export type SpeechLanguageTag = string;
 
 export type StreamingSpeechSegment = Readonly<{
   sessionId: string;
+  generation: number;
   segmentId: string;
   sequence: number;
   kind: SpeechStreamKind;
@@ -22,6 +23,7 @@ export type SpeechSegmentValidation = Readonly<{
     | 'accepted'
     | 'invalid_shape'
     | 'invalid_identity'
+    | 'invalid_generation'
     | 'invalid_sequence'
     | 'invalid_text'
     | 'invalid_confidence'
@@ -104,6 +106,7 @@ export function validateStreamingSpeechSegment(
   const record = input as Record<string, unknown>;
   const allowedKeys = new Set([
     'sessionId',
+    'generation',
     'segmentId',
     'sequence',
     'kind',
@@ -130,6 +133,14 @@ export function validateStreamingSpeechSegment(
     !SEGMENT_ID.test(record.segmentId)
   ) {
     return reject('invalid_identity');
+  }
+
+  if (
+    typeof record.generation !== 'number' ||
+    !Number.isSafeInteger(record.generation) ||
+    record.generation < 0
+  ) {
+    return reject('invalid_generation');
   }
 
   if (
@@ -211,6 +222,7 @@ export function validateStreamingSpeechSegment(
 
   const segment: StreamingSpeechSegment = Object.freeze({
     sessionId: record.sessionId,
+    generation: record.generation,
     segmentId: record.segmentId,
     sequence: record.sequence,
     kind: record.kind,
