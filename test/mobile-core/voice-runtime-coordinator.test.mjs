@@ -124,6 +124,35 @@ test('coordinator never executes partial transcript and accepts current final on
   assert.equal(secondFinal.accepted, false);
   assert.equal(secondFinal.reason, 'wrong_phase');
   assert.equal(secondFinal.state.phase, 'processing');
+  assert.equal(secondFinal.speechDecision, null);
+});
+
+test('wrong-phase final transcript cannot poison the speech registry', () => {
+  const coordinator = new coordinatorModule.VoiceRuntimeCoordinator(SESSION);
+  coordinator.start();
+
+  const premature = coordinator.onTranscript(finalTranscript());
+  assert.equal(premature.accepted, false);
+  assert.equal(premature.reason, 'wrong_phase');
+  assert.equal(premature.speechDecision, null);
+  assert.equal(premature.state.phase, 'listening');
+
+  coordinator.onActivity(
+    activity({ speechActive: true }),
+    finalizeMetrics,
+  );
+  coordinator.onActivity(
+    activity({ sequence: 1, atMs: 900, speechActive: false }),
+    finalizeMetrics,
+  );
+
+  const corrected = coordinator.onTranscript(
+    finalTranscript({ text: 'شغّل الضوء الآن' }),
+  );
+  assert.equal(corrected.accepted, true);
+  assert.equal(corrected.reason, 'applied');
+  assert.equal(corrected.state.phase, 'processing');
+  assert.equal(corrected.speechDecision.reason, 'accepted');
 });
 
 test('barge-in invalidates old generation before listening resumes', () => {
