@@ -11,6 +11,12 @@ const {
   'src/core/presence/presenceResolver.ts',
 );
 
+const {
+  TrustedSurfaceRegistry,
+} = loadTypeScriptModule(
+  'src/core/presence/trustedSurfaceRegistry.ts',
+);
+
 const ACCOUNT = 'acct_aaaaaaaaaaaaaaaa';
 const DEVICE_A = 'dev_aaaaaaaaaaaaaaaa';
 const DEVICE_B = 'dev_bbbbbbbbbbbbbbbb';
@@ -61,31 +67,67 @@ function trust({
   deviceKeyId = KEY_A,
   thumbprint = THUMB_A,
   state = 'active',
-  accountId = ACCOUNT,
 } = {}) {
   return {
     device: {
       deviceId,
-      accountId,
+      accountId: ACCOUNT,
       deviceKeyId,
       publicKeyThumbprint: thumbprint,
       state,
       hardwareBacked: true,
     },
-    expectedAccountId: accountId,
+    expectedAccountId: ACCOUNT,
     expectedDeviceId: deviceId,
     expectedDeviceKeyId: deviceKeyId,
     expectedPublicKeyThumbprint: thumbprint,
   };
 }
 
-function candidate(descriptor = surface(), overrides = {}) {
+function trustForSurface(descriptor, state = 'active') {
+  if (descriptor.deviceId === DEVICE_B) {
+    return trust({
+      deviceId: DEVICE_B,
+      deviceKeyId: KEY_B,
+      thumbprint: THUMB_B,
+      state,
+    });
+  }
+
+  return trust({ state });
+}
+
+function registryWith(...descriptors) {
+  const registry = new TrustedSurfaceRegistry();
+
+  descriptors.forEach((descriptor, index) => {
+    const result = registry.register({
+      accountId: ACCOUNT,
+      surface: descriptor,
+      revision: 1,
+      approvedAt: 1_000 + index,
+      explicitUserApproval: true,
+      deviceTrustInput:
+        trustForSurface(descriptor),
+    });
+
+    assert.equal(result.reason, 'accepted');
+  });
+
+  return registry;
+}
+
+function candidate(
+  descriptor = surface(),
+  overrides = {},
+) {
   return {
-    surface: descriptor,
-    presence: presence(descriptor.surfaceId),
-    deviceTrustInput: trust({
-      deviceId: descriptor.deviceId,
-    }),
+    surfaceId: descriptor.surfaceId,
+    presence: presence(
+      descriptor.surfaceId,
+    ),
+    deviceTrustInput:
+      trustForSurface(descriptor),
     ...overrides,
   };
 }
@@ -109,22 +151,39 @@ function input(overrides = {}) {
 }
 
 test(
-  'resolver requires active Section 03 device trust',
+  'resolver requires an approved registry surface and current active device trust',
   () => {
-    const blocked = candidate(
-      surface(),
+    const descriptor = surface();
+    const registry = registryWith(descriptor);
+
+    const revokedEvidence = candidate(
+      descriptor,
       {
-        deviceTrustInput: trust({
-          state: 'revoked',
-        }),
+        deviceTrustInput:
+          trustForSurface(
+            descriptor,
+            'revoked',
+          ),
       },
     );
 
     assert.equal(
       resolvePresenceSurface(
         input({
-          candidates: [blocked],
+          candidates: [revokedEvidence],
         }),
+        registry,
+      ).selectedSurfaceId,
+      null,
+    );
+
+    const emptyRegistry =
+      new TrustedSurfaceRegistry();
+
+    assert.equal(
+      resolvePresenceSurface(
+        input(),
+        emptyRegistry,
       ).selectedSurfaceId,
       null,
     );
@@ -132,39 +191,41 @@ test(
 );
 
 test(
-  'resolver rejects device trust bound to a different surface device',
+  'live candidate cannot override approved privacy classification',
   () => {
-    const descriptor = surface();
-    const mismatched = candidate(
-      descriptor,
-      {
-        deviceTrustInput: trust({
-          deviceId: DEVICE_B,
-          deviceKeyId: KEY_B,
-          thumbprint: THUMB_B,
-        }),
-      },
+    const shared = surface({
+      privacyClass: 'household_shared',
+      kind: 'television',
+      sharedSpace: true,
+      capabilities: ['text'],
+    });
+    const registry = registryWith(shared);
+
+    const decision = resolvePresenceSurface(
+      input({
+        contentSensitivity: 'private',
+        userConfirmedDisclosure: true,
+        candidates: [candidate(shared)],
+      }),
+      registry,
     );
 
-    assert.equal(
-      resolvePresenceSurface(
-        input({
-          candidates: [mismatched],
-        }),
-      ).selectedSurfaceId,
-      null,
-    );
+    assert.equal(decision.selectedSurfaceId, null);
   },
 );
 
 test(
   'Follow Me off keeps only an eligible current surface',
   () => {
+    const descriptor = surface();
+    const registry = registryWith(descriptor);
+
     const kept = resolvePresenceSurface(
       input({
         followMeEnabled: false,
         currentPrimarySurfaceId: SURFACE_A,
       }),
+      registry,
     );
 
     assert.equal(kept.selectedSurfaceId, SURFACE_A);
@@ -175,6 +236,7 @@ test(
         followMeEnabled: false,
         currentPrimarySurfaceId: null,
       }),
+      registry,
     );
 
     assert.equal(noAutomatic.selectedSurfaceId, null);
@@ -186,52 +248,38 @@ test(
 );
 
 test(
-  'private content is never routed to household shared surfaces',
-  () => {
-    const descriptor = surface({
-      privacyClass: 'household_shared',
-      kind: 'television',
-      sharedSpace: true,
-      capabilities: ['text'],
-    });
-
-    const decision = resolvePresenceSurface(
-      input({
-        contentSensitivity: 'private',
-        userConfirmedDisclosure: true,
-        candidates: [candidate(descriptor)],
-      }),
-    );
-
-    assert.equal(decision.selectedSurfaceId, null);
-  },
-);
-
-test(
   'sensitive audio requires personal private surface and private audio capability',
   () => {
-    const descriptor = surface({
+    const limited = surface({
       capabilities: ['text', 'audio_output'],
     });
+    const limitedRegistry = registryWith(limited);
 
-    const blocked = resolvePresenceSurface(
-      input({
-        contentSensitivity: 'sensitive',
-        requiredCapabilities: ['audio_output'],
-        candidates: [candidate(descriptor)],
-      }),
+    assert.equal(
+      resolvePresenceSurface(
+        input({
+          contentSensitivity: 'sensitive',
+          requiredCapabilities: ['audio_output'],
+          candidates: [candidate(limited)],
+        }),
+        limitedRegistry,
+      ).selectedSurfaceId,
+      null,
     );
 
-    assert.equal(blocked.selectedSurfaceId, null);
+    const full = surface();
+    const fullRegistry = registryWith(full);
 
-    const allowed = resolvePresenceSurface(
-      input({
-        contentSensitivity: 'sensitive',
-        requiredCapabilities: ['audio_output'],
-      }),
+    assert.equal(
+      resolvePresenceSurface(
+        input({
+          contentSensitivity: 'sensitive',
+          requiredCapabilities: ['audio_output'],
+        }),
+        fullRegistry,
+      ).selectedSurfaceId,
+      SURFACE_A,
     );
-
-    assert.equal(allowed.selectedSurfaceId, SURFACE_A);
   },
 );
 
@@ -244,7 +292,7 @@ test(
       sharedSpace: true,
       capabilities: ['text'],
     });
-
+    const registry = registryWith(descriptor);
     const c = candidate(descriptor);
 
     assert.equal(
@@ -253,6 +301,7 @@ test(
           userConfirmedDisclosure: true,
           candidates: [c],
         }),
+        registry,
       ).selectedSurfaceId,
       null,
     );
@@ -264,6 +313,7 @@ test(
         userConfirmedDisclosure: true,
         candidates: [c],
       }),
+      registry,
     );
 
     assert.equal(
@@ -280,10 +330,14 @@ test(
 test(
   'ineligible pinned target fails closed instead of silently falling back',
   () => {
+    const descriptor = surface();
+    const registry = registryWith(descriptor);
+
     const decision = resolvePresenceSurface(
       input({
         pinnedSurfaceId: SURFACE_B,
       }),
+      registry,
     );
 
     assert.equal(decision.selectedSurfaceId, null);
@@ -297,29 +351,25 @@ test(
 test(
   'automatic ranking is deterministic across candidate order',
   () => {
-    const descriptorA = surface();
-    const descriptorB = surface({
+    const aSurface = surface();
+    const bSurface = surface({
       surfaceId: SURFACE_B,
       deviceId: DEVICE_B,
     });
-
-    const a = candidate(descriptorA);
-    const b = candidate(
-      descriptorB,
-      {
-        deviceTrustInput: trust({
-          deviceId: DEVICE_B,
-          deviceKeyId: KEY_B,
-          thumbprint: THUMB_B,
-        }),
-      },
+    const registry = registryWith(
+      aSurface,
+      bSurface,
     );
+    const a = candidate(aSurface);
+    const b = candidate(bSurface);
 
     const first = resolvePresenceSurface(
       input({ candidates: [b, a] }),
+      registry,
     );
     const second = resolvePresenceSurface(
       input({ candidates: [a, b] }),
+      registry,
     );
 
     assert.equal(first.selectedSurfaceId, SURFACE_A);
@@ -330,10 +380,13 @@ test(
 test(
   'resolver preserves privacy state and grants no new authority',
   () => {
+    const descriptor = surface();
+    const registry = registryWith(descriptor);
     const decision = resolvePresenceSurface(
       input({
         privacyState: 'privacy_lock',
       }),
+      registry,
     );
 
     assert.equal(
@@ -351,10 +404,12 @@ test(
 );
 
 test(
-  'future or expired presence evidence is never selected',
+  'future presence evidence and duplicate candidate identities fail closed',
   () => {
+    const descriptor = surface();
+    const registry = registryWith(descriptor);
     const future = candidate(
-      surface(),
+      descriptor,
       {
         presence: presence(
           SURFACE_A,
@@ -369,19 +424,36 @@ test(
     assert.equal(
       resolvePresenceSurface(
         input({ candidates: [future] }),
+        registry,
       ).selectedSurfaceId,
       null,
     );
+
+    const duplicate = resolvePresenceSurface(
+      input({
+        candidates: [
+          candidate(descriptor),
+          candidate(descriptor),
+        ],
+      }),
+      registry,
+    );
+
+    assert.equal(duplicate.reason, 'invalid_input');
   },
 );
 
 test(
   'unknown resolver fields fail closed to no surface and privacy lock',
   () => {
-    const decision = resolvePresenceSurface({
-      ...input(),
-      unexpected: true,
-    });
+    const registry = registryWith(surface());
+    const decision = resolvePresenceSurface(
+      {
+        ...input(),
+        unexpected: true,
+      },
+      registry,
+    );
 
     assert.equal(decision.selectedSurfaceId, null);
     assert.equal(decision.reason, 'invalid_input');
