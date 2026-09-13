@@ -7,6 +7,8 @@ export type SpeechRegistryDecision = Readonly<{
     | 'accepted'
     | 'idempotent_duplicate'
     | 'wrong_session'
+    | 'stale_generation'
+    | 'future_generation'
     | 'stale_sequence'
     | 'sequence_conflict'
     | 'already_finalized';
@@ -18,6 +20,7 @@ function equalSegments(
 ): boolean {
   return (
     a.sessionId === b.sessionId &&
+    a.generation === b.generation &&
     a.segmentId === b.segmentId &&
     a.sequence === b.sequence &&
     a.kind === b.kind &&
@@ -39,6 +42,7 @@ export class SpeechSegmentRegistry {
 
   constructor(
     private readonly expectedSessionId: string,
+    private readonly expectedGeneration = 0,
   ) {}
 
   apply(
@@ -49,6 +53,22 @@ export class SpeechSegmentRegistry {
         accepted: false,
         idempotent: false,
         reason: 'wrong_session',
+      };
+    }
+
+    if (segment.generation < this.expectedGeneration) {
+      return {
+        accepted: false,
+        idempotent: false,
+        reason: 'stale_generation',
+      };
+    }
+
+    if (segment.generation > this.expectedGeneration) {
+      return {
+        accepted: false,
+        idempotent: false,
+        reason: 'future_generation',
       };
     }
 
