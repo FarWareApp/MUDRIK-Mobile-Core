@@ -24,13 +24,14 @@ export function ComposerActionButton({
   onPress,
 }: Props) {
   const { colors } = useTheme();
+  const unavailable = disabled || !onPress;
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityState={{ disabled: unavailable }}
+      disabled={unavailable}
       hitSlop={4}
       onPress={onPress}
       style={({ pressed }) => [
@@ -39,13 +40,44 @@ export function ComposerActionButton({
           backgroundColor: emphasized
             ? colors.accent
             : pressed
-              ? colors.surfaceElevated
-              : 'transparent',
-          opacity: disabled
-            ? 0.4
+              ? colors.surfacePressed
+              : colors.surface,
+          borderColor: emphasized
+            ? 'transparent'
             : pressed
-              ? 0.72
+              ? colors.accentSoft
+              : colors.border,
+          opacity: unavailable
+            ? 0.44
+            : pressed
+              ? 0.86
               : 1,
+          shadowColor: colors.shadow,
+          shadowOpacity:
+            emphasized && !unavailable
+              ? pressed
+                ? 0.18
+                : 0.26
+              : 0,
+          shadowRadius: pressed ? 5 : 8,
+          shadowOffset: {
+            width: 0,
+            height: pressed ? 2 : 4,
+          },
+          elevation:
+            emphasized && !unavailable
+              ? pressed
+                ? 2
+                : 4
+              : 0,
+          transform: [
+            {
+              scale:
+                pressed && !unavailable
+                  ? 0.96
+                  : 1,
+            },
+          ],
         },
       ]}
     >
@@ -58,6 +90,7 @@ const styles = StyleSheet.create({
   button: {
     width: 44,
     height: 44,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
