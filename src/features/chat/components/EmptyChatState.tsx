@@ -2,45 +2,83 @@ import React from 'react';
 import {
   StyleSheet,
   Text,
-  View,
 } from 'react-native';
+import Animated, {
+  FadeInUp,
+} from 'react-native-reanimated';
 
-import { useLocale } from '../../../core/localization/LocaleProvider';
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import {
+  useAccessibility,
+} from '../../../core/accessibility/AccessibilityProvider';
+import {
+  useLocale,
+} from '../../../core/localization/LocaleProvider';
+import {
+  AdaptiveGlassSurface,
+} from '../../../design-system/components/AdaptiveGlassSurface';
+import {
+  useTheme,
+} from '../../../design-system/theme/ThemeProvider';
+import {
+  motion,
+} from '../../../design-system/tokens/motion';
+import {
+  radius,
+} from '../../../design-system/tokens/radius';
+import {
+  spacing,
+} from '../../../design-system/tokens/spacing';
+import {
+  typography,
+} from '../../../design-system/tokens/typography';
 
 export function EmptyChatState() {
+  const { reducedMotion } =
+    useAccessibility();
   const { colors } = useTheme();
   const { isRTL, t } = useLocale();
 
   return (
-    <View style={styles.container}>
-      <View
+    <Animated.View
+      entering={
+        reducedMotion
+          ? undefined
+          : FadeInUp.duration(
+              motion.duration.standard,
+            )
+      }
+      style={styles.container}
+    >
+      <AdaptiveGlassSurface
         style={[
           styles.logo,
           {
-            backgroundColor: colors.surfaceElevated,
             borderColor: colors.border,
+            shadowColor: colors.shadow,
           },
         ]}
       >
         <Text
+          importantForAccessibility="no"
           style={[
             styles.logoText,
             {
-              color: colors.textPrimary,
+              color: colors.accent,
             },
           ]}
         >
           M
         </Text>
-      </View>
+      </AdaptiveGlassSurface>
 
       <Text
         style={[
           styles.title,
           {
             color: colors.textPrimary,
-            textAlign: isRTL ? 'right' : 'left',
+            textAlign: isRTL
+              ? 'right'
+              : 'left',
           },
         ]}
       >
@@ -52,13 +90,15 @@ export function EmptyChatState() {
           styles.body,
           {
             color: colors.textSecondary,
-            textAlign: isRTL ? 'right' : 'left',
+            textAlign: isRTL
+              ? 'right'
+              : 'left',
           },
         ]}
       >
         {t('emptyChatBody')}
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -66,31 +106,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.huge,
   },
-
   logo: {
-    width: 58,
-    height: 58,
+    width: 64,
+    height: 64,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
-    borderWidth: 1,
-    marginBottom: 20,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: spacing.xl,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 3,
   },
-
   logoText: {
-    fontSize: 25,
+    fontSize: typography.title,
+    lineHeight: 28,
     fontWeight: '900',
   },
-
   title: {
-    fontSize: 25,
+    fontSize: typography.title,
+    lineHeight: 29,
     fontWeight: '800',
+    writingDirection: 'auto',
   },
-
   body: {
-    marginTop: 8,
-    fontSize: 15,
+    marginTop: spacing.sm,
+    maxWidth: 420,
+    fontSize: typography.secondary,
+    lineHeight: 21,
+    writingDirection: 'auto',
   },
 });

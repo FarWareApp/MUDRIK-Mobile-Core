@@ -1,52 +1,84 @@
 import React from 'react';
 import {
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
-import { radius } from '../../../design-system/tokens/radius';
+import {
+  useLocale,
+} from '../../../core/localization/LocaleProvider';
+import {
+  AdaptiveGlassSurface,
+} from '../../../design-system/components/AdaptiveGlassSurface';
+import {
+  useTheme,
+} from '../../../design-system/theme/ThemeProvider';
+import {
+  radius,
+} from '../../../design-system/tokens/radius';
+import {
+  spacing,
+} from '../../../design-system/tokens/spacing';
+
+import {
+  SendingIndicatorDot,
+} from './SendingIndicatorDot';
 
 export function SendingIndicator() {
+  const { t } = useLocale();
   const { colors } = useTheme();
 
   return (
-    <View
-      accessibilityLabel="Response in progress"
+    <AdaptiveGlassSurface
       style={[
         styles.container,
         {
-          backgroundColor: colors.surfaceElevated,
+          borderColor: colors.border,
+          shadowColor: colors.shadow,
         },
       ]}
     >
-      <Text
-        style={[
-          styles.text,
-          {
-            color: colors.textSecondary,
-          },
-        ]}
+      <View
+        accessible
+        accessibilityLabel={
+          t('responseInProgress')
+        }
+        accessibilityLiveRegion="polite"
+        style={styles.dots}
       >
-        ●  ●  ●
-      </Text>
-    </View>
+        {[0, 1, 2].map((index) => (
+          <SendingIndicatorDot
+            key={index}
+            index={index}
+          />
+        ))}
+      </View>
+    </AdaptiveGlassSurface>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     alignSelf: 'flex-start',
-    marginHorizontal: 16,
-    marginVertical: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.xs,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.lg,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
   },
-
-  text: {
-    fontSize: 11,
-    letterSpacing: 2,
+  dots: {
+    minWidth: 54,
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
 });
