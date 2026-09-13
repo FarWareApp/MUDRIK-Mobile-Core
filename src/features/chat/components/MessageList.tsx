@@ -32,7 +32,6 @@ export function MessageList({
   const { reducedMotion } = useAccessibility();
 
   const items = buildMessageListItems(messages);
-  const now = Date.now();
 
   const handleScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
@@ -60,7 +59,6 @@ export function MessageList({
           return (
             <MessageDateSeparator
               createdAt={item.createdAt}
-              now={now}
             />
           );
         }
