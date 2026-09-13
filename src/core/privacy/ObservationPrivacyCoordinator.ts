@@ -2,7 +2,10 @@ import type {
   ObservationPrivacyRepository,
   ObservationPrivacySnapshot,
 } from './ObservationPrivacyRepository';
-import type { SensorObservationController } from './SensorObservationController';
+import type {
+  SensorObservationController,
+  SensorStopResult,
+} from './SensorObservationController';
 import {
   transitionObservationPrivacy,
   type ObservationPrivacyEvent,
@@ -35,8 +38,29 @@ function isRestrictiveEvent(event: ObservationPrivacyEvent): boolean {
   );
 }
 
+function isLifecycleEvent(event: ObservationPrivacyEvent): boolean {
+  return (
+    event === 'app_restart' ||
+    event === 'model_restart' ||
+    event === 'device_handoff' ||
+    event === 'room_change' ||
+    event === 'new_conversation' ||
+    event === 'ordinary_activity'
+  );
+}
+
 function persistenceReason(event: ObservationPrivacyEvent): string {
   return `privacy_event:${event}`;
+}
+
+function requiresSensorReconciliation(
+  state: ObservationPrivacyPolicyState,
+  event: ObservationPrivacyEvent,
+): boolean {
+  return (
+    state !== 'active' &&
+    (isRestrictiveEvent(event) || isLifecycleEvent(event))
+  );
 }
 
 export class ObservationPrivacyCoordinator {
@@ -47,6 +71,32 @@ export class ObservationPrivacyCoordinator {
 
   async getCurrentPolicy(): Promise<ObservationPrivacySnapshot> {
     return this.repository.get();
+  }
+
+  private async stopForState(
+    state: ObservationPrivacyPolicyState,
+  ): Promise<SensorStopResult> {
+    try {
+      if (state === 'visual_off') {
+        return await this.sensorController.stopPassiveVisualObservation();
+      }
+
+      if (state === 'ambient_off' || state === 'privacy_lock') {
+        return await this.sensorController.stopAllPassiveObservation();
+      }
+
+      return {
+        confirmed: true,
+        stoppedSensorIds: [],
+        failedSensorIds: [],
+      };
+    } catch {
+      return {
+        confirmed: false,
+        stoppedSensorIds: [],
+        failedSensorIds: [],
+      };
+    }
   }
 
   async apply(input: Readonly<{
@@ -83,43 +133,25 @@ export class ObservationPrivacyCoordinator {
       };
     }
 
-    if (!transition.changed) {
-      return {
-        state: transition.nextState,
-        persisted: current.recoveredFailClosed === false,
-        sensorStopConfirmed: null,
-        allowed: true,
-        reason: 'no_change',
-        failedSensorIds: [],
-      };
-    }
+    const restrictive = isRestrictiveEvent(input.event);
 
-    if (isRestrictiveEvent(input.event)) {
-      let persisted = false;
-      try {
-        await this.repository.set({
-          state: transition.nextState,
-          reason: persistenceReason(input.event),
-          updatedAtMs: input.nowMs,
-        });
-        persisted = true;
-      } catch {
-        persisted = false;
+    if (restrictive) {
+      let persisted = current.recoveredFailClosed === false && !transition.changed;
+
+      if (transition.changed || current.recoveredFailClosed) {
+        try {
+          await this.repository.set({
+            state: transition.nextState,
+            reason: persistenceReason(input.event),
+            updatedAtMs: input.nowMs,
+          });
+          persisted = true;
+        } catch {
+          persisted = false;
+        }
       }
 
-      let stopResult;
-      try {
-        stopResult =
-          input.event === 'stop_visual'
-            ? await this.sensorController.stopPassiveVisualObservation()
-            : await this.sensorController.stopAllPassiveObservation();
-      } catch {
-        stopResult = {
-          confirmed: false,
-          stoppedSensorIds: [],
-          failedSensorIds: [],
-        } as const;
-      }
+      const stopResult = await this.stopForState(transition.nextState);
 
       if (!stopResult.confirmed || stopResult.failedSensorIds.length > 0) {
         return {
@@ -148,7 +180,42 @@ export class ObservationPrivacyCoordinator {
         persisted: true,
         sensorStopConfirmed: true,
         allowed: true,
-        reason: 'applied',
+        reason: transition.changed ? 'applied' : 'no_change',
+        failedSensorIds: [],
+      };
+    }
+
+    if (!transition.changed) {
+      if (requiresSensorReconciliation(transition.nextState, input.event)) {
+        const stopResult = await this.stopForState(transition.nextState);
+
+        if (!stopResult.confirmed || stopResult.failedSensorIds.length > 0) {
+          return {
+            state: transition.nextState,
+            persisted: current.recoveredFailClosed === false,
+            sensorStopConfirmed: false,
+            allowed: false,
+            reason: 'sensor_stop_incomplete',
+            failedSensorIds: Object.freeze([...stopResult.failedSensorIds]),
+          };
+        }
+
+        return {
+          state: transition.nextState,
+          persisted: current.recoveredFailClosed === false,
+          sensorStopConfirmed: true,
+          allowed: true,
+          reason: 'no_change',
+          failedSensorIds: [],
+        };
+      }
+
+      return {
+        state: transition.nextState,
+        persisted: current.recoveredFailClosed === false,
+        sensorStopConfirmed: null,
+        allowed: true,
+        reason: 'no_change',
         failedSensorIds: [],
       };
     }
