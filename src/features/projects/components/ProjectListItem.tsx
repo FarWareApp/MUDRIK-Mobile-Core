@@ -1,5 +1,4 @@
 import React from 'react';
-
 import {
   Pressable,
   StyleSheet,
@@ -7,18 +6,18 @@ import {
   View,
 } from 'react-native';
 
-import {
-  ProjectRecord,
-} from '../../../contracts/ProjectRepository';
+import { ProjectRecord } from '../../../contracts/ProjectRepository';
+import { useLocale } from '../../../core/localization/LocaleProvider';
+import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typography } from '../../../design-system/tokens/typography';
 
-import {
-  useTheme,
-} from '../../../design-system/theme/ThemeProvider';
+import { formatProjectUpdatedAt } from '../formatters/formatProjectUpdatedAt';
+import { ProjectListActionButton } from './ProjectListActionButton';
 
 type Props = {
   project: ProjectRecord;
   disabled?: boolean;
-
   onOpen: () => void;
   onArchive: () => void;
   onDelete: () => void;
@@ -31,161 +30,132 @@ export function ProjectListItem({
   onArchive,
   onDelete,
 }: Props) {
-  const { colors } =
-    useTheme();
+  const { colors } = useTheme();
+  const { locale, t } = useLocale();
+
+  const updatedAt = formatProjectUpdatedAt(
+    project.updatedAt,
+    locale,
+  );
 
   return (
     <View
       style={[
         styles.container,
         {
-          borderBottomColor:
-            colors.border,
+          borderBottomColor: colors.border,
           opacity: disabled ? 0.6 : 1,
         },
       ]}
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Open project: ${project.name}`}
+        accessibilityLabel={`${t('openProject')}: ${project.name}`}
         disabled={disabled}
         onPress={onOpen}
-        style={styles.main}
+        style={({ pressed }) => [
+          styles.main,
+          {
+            backgroundColor: pressed
+              ? colors.surfacePressed
+              : 'transparent',
+          },
+        ]}
       >
         <Text
           numberOfLines={1}
           style={[
             styles.name,
-            {
-              color:
-                colors.textPrimary,
-            },
+            { color: colors.textPrimary },
           ]}
         >
           {project.name}
         </Text>
 
-        {!!project.description && (
+        {project.description ? (
           <Text
             numberOfLines={2}
             style={[
               styles.description,
-              {
-                color:
-                  colors.textSecondary,
-              },
+              { color: colors.textSecondary },
             ]}
           >
             {project.description}
           </Text>
-        )}
+        ) : null}
 
-        <Text
-          style={[
-            styles.date,
-            {
-              color:
-                colors.textSecondary,
-            },
-          ]}
-        >
-          {new Date(
-            project.updatedAt,
-          ).toLocaleString()}
-        </Text>
+        {updatedAt ? (
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.date,
+              { color: colors.textSecondary },
+            ]}
+          >
+            {updatedAt}
+          </Text>
+        ) : null}
       </Pressable>
 
-      <View
-        style={styles.actions}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
+      <View style={styles.actions}>
+        <ProjectListActionButton
+          accessibilityLabel={`${
             project.isArchived
-              ? `Restore ${project.name}`
-              : `Archive ${project.name}`
-          }
+              ? t('restoreProject')
+              : t('archiveProject')
+          }: ${project.name}`}
           disabled={disabled}
           onPress={onArchive}
-          style={styles.action}
         >
-          <Text
-            style={{
-              color:
-                colors.textSecondary,
-            }}
-          >
-            {project.isArchived
-              ? '↩'
-              : '▣'}
-          </Text>
-        </Pressable>
+          {project.isArchived ? '↩' : '▣'}
+        </ProjectListActionButton>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Delete ${project.name}`}
+        <ProjectListActionButton
+          accessibilityLabel={`${t('deleteProjectAction')}: ${project.name}`}
           disabled={disabled}
+          tone="danger"
           onPress={onDelete}
-          style={styles.action}
         >
-          <Text
-            style={{
-              color:
-                colors.error,
-              fontSize: 20,
-            }}
-          >
-            ×
-          </Text>
-        </Pressable>
+          ×
+        </ProjectListActionButton>
       </View>
     </View>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      minHeight: 82,
-      marginHorizontal: 16,
-      flexDirection: 'row',
-      alignItems: 'center',
-      borderBottomWidth:
-        StyleSheet.hairlineWidth,
-    },
-
-    main: {
-      flex: 1,
-      minHeight: 60,
-      justifyContent: 'center',
-      paddingVertical: 12,
-    },
-
-    name: {
-      fontSize: 16,
-      fontWeight: '700',
-    },
-
-    description: {
-      marginTop: 4,
-      fontSize: 12,
-      lineHeight: 17,
-    },
-
-    date: {
-      marginTop: 5,
-      fontSize: 10,
-    },
-
-    actions: {
-      flexDirection: 'row',
-    },
-
-    action: {
-      width: 44,
-      height: 44,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    minHeight: 84,
+    marginHorizontal: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  main: {
+    flex: 1,
+    minHeight: 64,
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    marginLeft: -spacing.sm,
+    borderRadius: spacing.md,
+  },
+  name: {
+    fontSize: typography.body,
+    fontWeight: '700',
+  },
+  description: {
+    marginTop: spacing.xs,
+    fontSize: typography.caption,
+    lineHeight: 17,
+  },
+  date: {
+    marginTop: spacing.xs,
+    fontSize: typography.caption,
+    fontVariant: ['tabular-nums'],
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+});

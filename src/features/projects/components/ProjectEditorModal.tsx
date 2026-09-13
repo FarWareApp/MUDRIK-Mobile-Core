@@ -2,7 +2,6 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-
 import {
   KeyboardAvoidingView,
   Modal,
@@ -14,23 +13,19 @@ import {
   View,
 } from 'react-native';
 
-import {
-  useAccessibility,
-} from '../../../core/accessibility/AccessibilityProvider';
-import {
-  useTheme,
-} from '../../../design-system/theme/ThemeProvider';
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
+import { useLocale } from '../../../core/localization/LocaleProvider';
+import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typography } from '../../../design-system/tokens/typography';
 
 type Props = {
   visible: boolean;
-
   title: string;
-
   initialName?: string;
   initialDescription?: string;
-
   onCancel: () => void;
-
   onSave: (
     name: string,
     description: string,
@@ -45,18 +40,12 @@ export function ProjectEditorModal({
   onCancel,
   onSave,
 }: Props) {
-  const { colors } =
-    useTheme();
-  const { reducedMotion } =
-    useAccessibility();
+  const { colors, mode } = useTheme();
+  const { reducedMotion } = useAccessibility();
+  const { isRTL, t } = useLocale();
 
-  const [name, setName] =
-    useState(initialName);
-
-  const [
-    description,
-    setDescription,
-  ] = useState(
+  const [name, setName] = useState(initialName);
+  const [description, setDescription] = useState(
     initialDescription,
   );
 
@@ -66,30 +55,21 @@ export function ProjectEditorModal({
     }
 
     setName(initialName);
-    setDescription(
-      initialDescription,
-    );
+    setDescription(initialDescription);
   }, [
     initialDescription,
     initialName,
     visible,
   ]);
 
-  const canSave =
-    name.trim().length > 0;
+  const canSave = name.trim().length > 0;
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType={
-        reducedMotion
-          ? 'none'
-          : 'fade'
-      }
-      onRequestClose={
-        onCancel
-      }
+      animationType={reducedMotion ? 'none' : 'fade'}
+      onRequestClose={onCancel}
     >
       <KeyboardAvoidingView
         behavior={
@@ -104,8 +84,9 @@ export function ProjectEditorModal({
           style={[
             styles.card,
             {
-              backgroundColor:
-                colors.surface,
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              shadowColor: colors.shadow,
             },
           ]}
         >
@@ -113,54 +94,48 @@ export function ProjectEditorModal({
             accessibilityRole="header"
             style={[
               styles.title,
-              {
-                color:
-                  colors.textPrimary,
-              },
+              { color: colors.textPrimary },
             ]}
           >
             {title}
           </Text>
 
           <TextInput
-            accessibilityLabel="Project name"
+            accessibilityLabel={t('projectName')}
             value={name}
             onChangeText={setName}
-            placeholder="Project name"
-            placeholderTextColor={
-              colors.textSecondary
-            }
+            keyboardAppearance={mode}
+            placeholder={t('projectName')}
+            placeholderTextColor={colors.textSecondary}
             maxLength={120}
+            returnKeyType="next"
             style={[
               styles.input,
               {
-                color:
-                  colors.textPrimary,
-                borderColor:
-                  colors.border,
+                color: colors.textPrimary,
+                borderColor: colors.border,
+                backgroundColor: colors.surfaceInput,
+                textAlign: isRTL ? 'right' : 'left',
               },
             ]}
           />
 
           <TextInput
-            accessibilityLabel="Project description"
+            accessibilityLabel={t('projectDescription')}
             value={description}
-            onChangeText={
-              setDescription
-            }
-            placeholder="Description"
-            placeholderTextColor={
-              colors.textSecondary
-            }
+            onChangeText={setDescription}
+            keyboardAppearance={mode}
+            placeholder={t('projectDescription')}
+            placeholderTextColor={colors.textSecondary}
             multiline
             maxLength={2000}
             style={[
               styles.description,
               {
-                color:
-                  colors.textPrimary,
-                borderColor:
-                  colors.border,
+                color: colors.textPrimary,
+                borderColor: colors.border,
+                backgroundColor: colors.surfaceInput,
+                textAlign: isRTL ? 'right' : 'left',
               },
             ]}
           />
@@ -168,53 +143,52 @@ export function ProjectEditorModal({
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Cancel project editing"
+              accessibilityLabel={t('cancelProjectEditing')}
               onPress={onCancel}
-              style={styles.action}
-            >
-              <Text
-                style={{
-                  color:
-                    colors.textSecondary,
-                }}
-              >
-                Cancel
-              </Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Save project"
-              accessibilityState={{
-                disabled: !canSave,
-              }}
-              disabled={!canSave}
-              onPress={() =>
-                onSave(
-                  name,
-                  description,
-                )
-              }
-              style={[
-                styles.save,
+              style={({ pressed }) => [
+                styles.action,
                 {
-                  backgroundColor:
-                    canSave
-                      ? colors.accent
-                      : colors.surfaceElevated,
+                  backgroundColor: pressed
+                    ? colors.surfacePressed
+                    : 'transparent',
                 },
               ]}
             >
               <Text
                 style={{
-                  color:
-                    canSave
-                      ? colors.accentText
-                      : colors.textSecondary,
+                  color: colors.textSecondary,
+                  fontWeight: '600',
+                }}
+              >
+                {t('cancel')}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('saveProject')}
+              accessibilityState={{ disabled: !canSave }}
+              disabled={!canSave}
+              onPress={() => onSave(name, description)}
+              style={({ pressed }) => [
+                styles.save,
+                {
+                  backgroundColor: canSave
+                    ? colors.accent
+                    : colors.surfaceElevated,
+                  opacity: canSave && pressed ? 0.86 : 1,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color: canSave
+                    ? colors.accentText
+                    : colors.textSecondary,
                   fontWeight: '700',
                 }}
               >
-                Save
+                {t('save')}
               </Text>
             </Pressable>
           </View>
@@ -224,67 +198,64 @@ export function ProjectEditorModal({
   );
 }
 
-const styles =
-  StyleSheet.create({
-    overlay: {
-      flex: 1,
-      justifyContent:
-        'center',
-      padding: 22,
-      backgroundColor:
-        'rgba(0,0,0,0.48)',
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.xxl,
+    backgroundColor: 'rgba(0,0,0,0.48)',
+  },
+  card: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    elevation: 8,
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    shadowOffset: {
+      width: 0,
+      height: 10,
     },
-
-    card: {
-      borderRadius: 22,
-      padding: 18,
-    },
-
-    title: {
-      fontSize: 20,
-      fontWeight: '700',
-      marginBottom: 16,
-    },
-
-    input: {
-      minHeight: 48,
-      borderWidth: 1,
-      borderRadius: 14,
-      paddingHorizontal: 13,
-      fontSize: 15,
-    },
-
-    description: {
-      minHeight: 110,
-      marginTop: 12,
-      borderWidth: 1,
-      borderRadius: 14,
-      padding: 13,
-      fontSize: 14,
-      textAlignVertical:
-        'top',
-    },
-
-    actions: {
-      marginTop: 18,
-      flexDirection: 'row',
-      justifyContent:
-        'flex-end',
-      gap: 10,
-    },
-
-    action: {
-      minHeight: 44,
-      justifyContent:
-        'center',
-      paddingHorizontal: 16,
-    },
-
-    save: {
-      minHeight: 44,
-      borderRadius: 22,
-      justifyContent:
-        'center',
-      paddingHorizontal: 20,
-    },
-  });
+  },
+  title: {
+    fontSize: typography.heading,
+    fontWeight: '700',
+    marginBottom: spacing.lg,
+  },
+  input: {
+    minHeight: 48,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    fontSize: typography.secondary,
+    writingDirection: 'auto',
+  },
+  description: {
+    minHeight: 112,
+    marginTop: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    fontSize: typography.secondary,
+    textAlignVertical: 'top',
+    writingDirection: 'auto',
+  },
+  actions: {
+    marginTop: spacing.xl,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  action: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+  },
+  save: {
+    minHeight: 44,
+    borderRadius: radius.pill,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+});

@@ -1,5 +1,4 @@
 import React from 'react';
-
 import {
   Pressable,
   StyleSheet,
@@ -7,93 +6,110 @@ import {
   View,
 } from 'react-native';
 
-import {
-  useTheme,
-} from '../../../design-system/theme/ThemeProvider';
+import { useLocale } from '../../../core/localization/LocaleProvider';
+import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typography } from '../../../design-system/tokens/typography';
 
-import {
-  ProjectViewMode,
-} from '../hooks/useProjectsController';
+import { ProjectViewMode } from '../hooks/useProjectsController';
 
 type Props = {
   value: ProjectViewMode;
-
-  onChange: (
-    value: ProjectViewMode,
-  ) => void;
+  onChange: (value: ProjectViewMode) => void;
 };
 
 export function ProjectViewTabs({
   value,
   onChange,
 }: Props) {
-  const { colors } =
-    useTheme();
+  const { colors } = useTheme();
+  const { t } = useLocale();
+
+  const tabs: ReadonlyArray<{
+    key: ProjectViewMode;
+    label: string;
+  }> = [
+    {
+      key: 'active',
+      label: t('activeProjects'),
+    },
+    {
+      key: 'archived',
+      label: t('archivedProjects'),
+    },
+  ];
 
   return (
     <View
+      role="tablist"
       style={[
         styles.container,
         {
-          backgroundColor:
-            colors.surfaceElevated,
+          backgroundColor: colors.surfaceElevated,
+          borderColor: colors.border,
         },
       ]}
     >
-      {(
-        [
-          ['active', 'Active'],
-          ['archived', 'Archived'],
-        ] as const
-      ).map(
-        ([key, label]) => (
+      {tabs.map(({ key, label }) => {
+        const selected = value === key;
+
+        return (
           <Pressable
             key={key}
-            onPress={() =>
-              onChange(key)
-            }
-            style={[
+            role="tab"
+            accessibilityLabel={label}
+            accessibilityState={{ selected }}
+            onPress={() => onChange(key)}
+            style={({ pressed }) => [
               styles.tab,
-              value === key && {
-                backgroundColor:
-                  colors.surface,
+              {
+                backgroundColor: selected
+                  ? colors.surface
+                  : pressed
+                    ? colors.surfacePressed
+                    : 'transparent',
               },
             ]}
           >
             <Text
-              style={{
-                color:
-                  value === key
+              style={[
+                styles.label,
+                {
+                  color: selected
                     ? colors.textPrimary
                     : colors.textSecondary,
-                fontWeight: '600',
-              }}
+                },
+              ]}
             >
               {label}
             </Text>
           </Pressable>
-        ),
-      )}
+        );
+      })}
     </View>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flexDirection: 'row',
-      marginHorizontal: 16,
-      marginBottom: 12,
-      borderRadius: 14,
-      padding: 3,
-    },
-
-    tab: {
-      flex: 1,
-      minHeight: 38,
-      borderRadius: 11,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.lg,
+    padding: spacing.xs,
+  },
+  tab: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  label: {
+    fontSize: typography.secondary,
+    fontWeight: '600',
+  },
+});
