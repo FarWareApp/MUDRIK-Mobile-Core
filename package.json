@@ -51,6 +51,7 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "device:preflight": "node ./scripts/section01-device-preflight.mjs",
+    "release:preflight": "node ./scripts/production-release-preflight.mjs",
     "validate:core": "npm run typecheck && npx expo-doctor"
   },
   "private": true,

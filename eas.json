@@ -1,6 +1,7 @@
 {
   "cli": {
-    "requireCommit": true
+    "requireCommit": true,
+    "appVersionSource": "remote"
   },
   "build": {
     "device-validation": {
@@ -9,6 +10,19 @@
         "buildType": "apk"
       }
     },
+    "preview": {
+      "distribution": "internal",
+      "environment": "preview",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "environment": "production"
+    }
+  },
+  "submit": {
     "production": {}
   }
 }
