@@ -24,6 +24,7 @@ import {
 } from '../../core/diagnostics/DiagnosticsService';
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { spacing } from '../../design-system/tokens/spacing';
 import {
   InlineErrorBanner,
 } from '../../shared/components/InlineErrorBanner';
@@ -195,6 +196,7 @@ export function ConversationsScreen({
         <FlatList
           data={controller.conversations}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
             <ConversationListItem
@@ -226,6 +228,10 @@ const styles = StyleSheet.create({
   },
 
   controls: {
-    paddingTop: 14,
+    paddingTop: spacing.lg,
+  },
+
+  listContent: {
+    paddingBottom: spacing.xxl,
   },
 });
