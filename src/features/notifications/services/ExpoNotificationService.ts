@@ -1,7 +1,5 @@
 import { Platform } from 'react-native';
 
-import * as Notifications from 'expo-notifications';
-
 import {
   LocalNotificationContent,
   NotificationEvent,
@@ -12,10 +10,44 @@ import {
   NotificationService,
 } from '../../../contracts/NotificationService';
 
+import {
+  supportsNativeNotificationModule,
+} from './notificationRuntimeSupport';
+
 const CHANNEL_ID = 'mudrik-default';
 
+const UNAVAILABLE_MESSAGE =
+  'Native notifications are unavailable in this runtime. Use a development build or standalone app.';
+
+type NotificationsModule =
+  typeof import('expo-notifications');
+
+type ReceivedListener =
+  Parameters<
+    NotificationsModule[
+      'addNotificationReceivedListener'
+    ]
+  >[0];
+
+type ExpoNotification =
+  Parameters<ReceivedListener>[0];
+
+type ResponseListener =
+  Parameters<
+    NotificationsModule[
+      'addNotificationResponseReceivedListener'
+    ]
+  >[0];
+
+type ExpoNotificationResponse =
+  Parameters<ResponseListener>[0];
+
+type NativeSubscription = {
+  remove(): void;
+};
+
 function mapNotification(
-  notification: Notifications.Notification,
+  notification: ExpoNotification,
 ): NotificationEvent {
   const content =
     notification.request.content;
@@ -30,7 +62,7 @@ function mapNotification(
 }
 
 function mapResponse(
-  response: Notifications.NotificationResponse,
+  response: ExpoNotificationResponse,
 ): NotificationResponseEvent {
   return {
     notification:
@@ -48,8 +80,46 @@ function mapResponse(
 export class ExpoNotificationService
   implements NotificationService
 {
+  private notificationsPromise:
+    Promise<NotificationsModule> | null =
+      null;
+
+  private async getNotifications():
+    Promise<NotificationsModule | null> {
+    if (!supportsNativeNotificationModule()) {
+      return null;
+    }
+
+    if (!this.notificationsPromise) {
+      this.notificationsPromise =
+        import('expo-notifications');
+    }
+
+    return this.notificationsPromise;
+  }
+
+  private async requireNotifications():
+    Promise<NotificationsModule> {
+    const notifications =
+      await this.getNotifications();
+
+    if (!notifications) {
+      throw new Error(
+        UNAVAILABLE_MESSAGE,
+      );
+    }
+
+    return notifications;
+  }
+
   async initialize(): Promise<void> {
-    if (Platform.OS !== 'android') {
+    const Notifications =
+      await this.getNotifications();
+
+    if (
+      !Notifications ||
+      Platform.OS !== 'android'
+    ) {
       return;
     }
 
@@ -70,6 +140,9 @@ export class ExpoNotificationService
   async presentNow(
     content: LocalNotificationContent,
   ): Promise<string> {
+    const Notifications =
+      await this.requireNotifications();
+
     return Notifications
       .scheduleNotificationAsync({
         content: {
@@ -86,6 +159,9 @@ export class ExpoNotificationService
     content: LocalNotificationContent,
     timestamp: number,
   ): Promise<string> {
+    const Notifications =
+      await this.requireNotifications();
+
     return Notifications
       .scheduleNotificationAsync({
         content: {
@@ -113,6 +189,13 @@ export class ExpoNotificationService
   async cancel(
     identifier: string,
   ): Promise<void> {
+    const Notifications =
+      await this.getNotifications();
+
+    if (!Notifications) {
+      return;
+    }
+
     await Notifications
       .cancelScheduledNotificationAsync(
         identifier,
@@ -120,12 +203,26 @@ export class ExpoNotificationService
   }
 
   async cancelAll(): Promise<void> {
+    const Notifications =
+      await this.getNotifications();
+
+    if (!Notifications) {
+      return;
+    }
+
     await Notifications
       .cancelAllScheduledNotificationsAsync();
   }
 
   async getLastResponse():
     Promise<NotificationResponseEvent | null> {
+    const Notifications =
+      await this.getNotifications();
+
+    if (!Notifications) {
+      return null;
+    }
+
     const response =
       await Notifications
         .getLastNotificationResponseAsync();
@@ -137,6 +234,13 @@ export class ExpoNotificationService
 
   async clearLastResponse():
     Promise<void> {
+    const Notifications =
+      await this.getNotifications();
+
+    if (!Notifications) {
+      return;
+    }
+
     await Notifications
       .clearLastNotificationResponseAsync();
   }
@@ -145,42 +249,83 @@ export class ExpoNotificationService
     listener:
       (event: NotificationEvent) => void,
   ): () => void {
-    const subscription =
-      Notifications
-        .addNotificationReceivedListener(
-          (notification) => {
-            listener(
-              mapNotification(
-                notification,
-              ),
+    if (!supportsNativeNotificationModule()) {
+      return () => {};
+    }
+
+    let active = true;
+    let subscription:
+      NativeSubscription | null =
+        null;
+
+    void this.getNotifications()
+      .then((Notifications) => {
+        if (
+          !active ||
+          !Notifications
+        ) {
+          return;
+        }
+
+        subscription =
+          Notifications
+            .addNotificationReceivedListener(
+              (notification) => {
+                listener(
+                  mapNotification(
+                    notification,
+                  ),
+                );
+              },
             );
-          },
-        );
+      })
+      .catch(() => undefined);
 
     return () => {
-      subscription.remove();
+      active = false;
+      subscription?.remove();
     };
   }
 
   subscribeResponses(
-    listener:
-      (
-        event:
-          NotificationResponseEvent,
-      ) => void,
+    listener: (
+      event:
+        NotificationResponseEvent,
+    ) => void,
   ): () => void {
-    const subscription =
-      Notifications
-        .addNotificationResponseReceivedListener(
-          (response) => {
-            listener(
-              mapResponse(response),
+    if (!supportsNativeNotificationModule()) {
+      return () => {};
+    }
+
+    let active = true;
+    let subscription:
+      NativeSubscription | null =
+        null;
+
+    void this.getNotifications()
+      .then((Notifications) => {
+        if (
+          !active ||
+          !Notifications
+        ) {
+          return;
+        }
+
+        subscription =
+          Notifications
+            .addNotificationResponseReceivedListener(
+              (response) => {
+                listener(
+                  mapResponse(response),
+                );
+              },
             );
-          },
-        );
+      })
+      .catch(() => undefined);
 
     return () => {
-      subscription.remove();
+      active = false;
+      subscription?.remove();
     };
   }
 }
