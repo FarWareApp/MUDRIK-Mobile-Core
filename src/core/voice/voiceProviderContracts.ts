@@ -1,0 +1,137 @@
+import type { StreamingSpeechSegment } from './streamingSpeech';
+
+export type VoiceProviderStatus =
+  | 'ready'
+  | 'degraded'
+  | 'unavailable';
+
+export type VoiceProviderFailureCode =
+  | 'permission_denied'
+  | 'network_unavailable'
+  | 'provider_unavailable'
+  | 'timeout'
+  | 'cancelled'
+  | 'invalid_response'
+  | 'unsupported_language'
+  | 'unknown';
+
+export type VoiceProviderFailure = Readonly<{
+  code: VoiceProviderFailureCode;
+  retryable: boolean;
+  providerSafeMessage: string | null;
+}>;
+
+export type StreamingSttRequest = Readonly<{
+  sessionId: string;
+  languageHints: readonly string[];
+  customVocabulary: readonly string[];
+}>;
+
+export interface StreamingSttSession {
+  readonly sessionId: string;
+  pushAudioChunk(chunkRef: string): Promise<void>;
+  finishInput(): Promise<void>;
+  cancel(): Promise<void>;
+}
+
+export interface StreamingSttProvider {
+  getStatus(): Promise<VoiceProviderStatus>;
+  start(
+    request: StreamingSttRequest,
+    onSegment: (segment: StreamingSpeechSegment) => void,
+    onFailure: (failure: VoiceProviderFailure) => void,
+  ): Promise<StreamingSttSession>;
+}
+
+export type StreamingTtsRequest = Readonly<{
+  sessionId: string;
+  utteranceId: string;
+  text: string;
+  languageHint: string | null;
+  voicePreference: string | null;
+  speakingRate: number | null;
+}>;
+
+export type StreamingTtsChunkMetadata = Readonly<{
+  sessionId: string;
+  utteranceId: string;
+  sequence: number;
+  payloadRef: string;
+  isFinal: boolean;
+}>;
+
+export interface StreamingTtsSession {
+  readonly sessionId: string;
+  readonly utteranceId: string;
+  cancel(): Promise<void>;
+}
+
+export interface StreamingTtsProvider {
+  getStatus(): Promise<VoiceProviderStatus>;
+  synthesize(
+    request: StreamingTtsRequest,
+    onChunk: (chunk: StreamingTtsChunkMetadata) => void,
+    onFailure: (failure: VoiceProviderFailure) => void,
+  ): Promise<StreamingTtsSession>;
+}
+
+export function normalizeVoiceProviderFailure(
+  input: unknown,
+): VoiceProviderFailure {
+  const fallback: VoiceProviderFailure = Object.freeze({
+    code: 'unknown',
+    retryable: false,
+    providerSafeMessage: null,
+  });
+
+  if (
+    typeof input !== 'object' ||
+    input === null ||
+    Array.isArray(input)
+  ) {
+    return fallback;
+  }
+
+  const record = input as Record<string, unknown>;
+  const allowedKeys = new Set([
+    'code',
+    'retryable',
+    'providerSafeMessage',
+  ]);
+  const codes: readonly VoiceProviderFailureCode[] = [
+    'permission_denied',
+    'network_unavailable',
+    'provider_unavailable',
+    'timeout',
+    'cancelled',
+    'invalid_response',
+    'unsupported_language',
+    'unknown',
+  ];
+
+  if (
+    Object.keys(record).some((key) => !allowedKeys.has(key)) ||
+    typeof record.code !== 'string' ||
+    !codes.includes(record.code as VoiceProviderFailureCode) ||
+    typeof record.retryable !== 'boolean' ||
+    (
+      record.providerSafeMessage !== null &&
+      typeof record.providerSafeMessage !== 'string'
+    )
+  ) {
+    return fallback;
+  }
+
+  const safeMessage =
+    typeof record.providerSafeMessage === 'string'
+      ? record.providerSafeMessage
+          .replace(/[\u0000-\u001F\u007F]/g, ' ')
+          .slice(0, 240)
+      : null;
+
+  return Object.freeze({
+    code: record.code as VoiceProviderFailureCode,
+    retryable: record.retryable,
+    providerSafeMessage: safeMessage,
+  });
+}
