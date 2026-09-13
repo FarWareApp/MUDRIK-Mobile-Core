@@ -205,6 +205,32 @@ Authoritative architecture:
 
 No production sensor authority will be coupled merely to satisfy pre-device tests.
 
+## UI/UX Detail Preservation Rule
+
+Authoritative detail ledger:
+
+`docs/architecture/MUDRIK_UI_UX_DETAIL_REGISTRY.md`
+
+MUDRIK must preserve small interaction and visual details with the same discipline used for major architecture. A large feature is not considered complete if the small product details around it were silently lost.
+
+Mandatory tracked details include, among others:
+
+- the text-entry box and its exact visual/interaction behavior;
+- the intended attachment paperclip (`📎`) affordance;
+- image, video and document/file attachment flows;
+- pre-send attachment tray behavior;
+- message bubbles and their alignment/spacing/RTL behavior;
+- message timestamps;
+- sending/stop/retry/error states;
+- keyboard/safe-area behavior;
+- floating quick actions;
+- accessibility states;
+- every later user-requested modification to these surfaces.
+
+Known current differences are intentionally recorded rather than forgotten: the composer currently renders `＋` for attachments while the intended product affordance is a paperclip, and `ChatMessage.createdAt` exists while timestamp rendering is currently missing from `MessageBubble`.
+
+UI-affecting refactors must audit the registry before closure. `CURRENT`, `INTENDED`, `MISSING`, `PARTIAL`, `DEFERRED`, `VERIFY` and `VERIFIED` statuses are used so deferred work cannot be mistaken for optional work.
+
 ## Mobile Core Architecture Rule
 
 The app-first boundary remains mandatory:
@@ -336,8 +362,8 @@ When deferred testing begins:
 
 ## Next Work
 
-1. Verify the documentation-only Section 03 closing HEAD remains green in Mobile Validation and CodeQL.
-2. Execute Section 04 — Privacy, Permissions and Observation Control in pre-device mode.
+1. Continue Section 04 privacy/policy/coordinator adversarial verification and close every failure before acceptance.
+2. Keep UI/UX detail changes tracked in `MUDRIK_UI_UX_DETAIL_REGISTRY.md`; do not silently implement or discard them outside the correct active scope.
 3. Keep Sections 01–03 formally open for their deferred Layer 4 obligations.
 4. Do not couple production AI/server/sensor authority into the Mobile UI.
 
