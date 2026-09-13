@@ -3,6 +3,10 @@ import type {
 } from '../privacy/observationPrivacyState';
 
 import {
+  isPresenceSessionId,
+} from './presenceSessionId';
+
+import {
   isSurfaceId,
 } from './surfaceContract';
 
@@ -22,9 +26,6 @@ export type HandoffStateManifest = Readonly<{
   createdAt: number;
   grantsInheritedAuthority: false;
 }>;
-
-const SESSION_PATTERN =
-  /^psess_[a-z0-9][a-z0-9_-]{15,63}$/;
 
 const REFERENCE_PATTERN =
   /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -145,10 +146,7 @@ export function parseHandoffStateManifest(
     parseReferenceList(record.pendingApprovalRefs);
 
   if (
-    typeof record.presenceSessionId !== 'string'
-    || !SESSION_PATTERN.test(
-      record.presenceSessionId,
-    )
+    !isPresenceSessionId(record.presenceSessionId)
     || !isSurfaceId(record.sourceSurfaceId)
     || !isSurfaceId(record.targetSurfaceId)
     || record.sourceSurfaceId === record.targetSurfaceId
