@@ -9,6 +9,9 @@ import { router } from 'expo-router';
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typography } from '../../../design-system/tokens/typography';
 
 type Props = {
   onNewConversation: () => void;
@@ -33,11 +36,13 @@ export function ConversationHistoryHeader({
         accessibilityRole="button"
         accessibilityLabel={t('back')}
         onPress={() => router.back()}
-        style={[
+        style={({ pressed }) => [
           styles.circleButton,
           {
-            backgroundColor:
-              colors.surfaceElevated,
+            backgroundColor: pressed
+              ? colors.surfacePressed
+              : colors.surfaceElevated,
+            borderColor: colors.border,
           },
         ]}
       >
@@ -67,10 +72,17 @@ export function ConversationHistoryHeader({
         accessibilityRole="button"
         accessibilityLabel={t('newConversation')}
         onPress={onNewConversation}
-        style={[
+        style={({ pressed }) => [
           styles.circleButton,
+          styles.primaryButton,
           {
             backgroundColor: colors.accent,
+            borderColor: colors.accent,
+            opacity: pressed ? 0.86 : 1,
+            shadowColor: colors.shadow,
+            transform: [
+              { scale: pressed ? 0.96 : 1 },
+            ],
           },
         ]}
       >
@@ -94,21 +106,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth:
       StyleSheet.hairlineWidth,
-    paddingHorizontal: 14,
+    paddingHorizontal: spacing.lg,
   },
 
   title: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: typography.heading,
     fontWeight: '700',
   },
 
   circleButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  primaryButton: {
+    elevation: 4,
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
   },
 });
