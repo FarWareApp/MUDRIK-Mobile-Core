@@ -41,40 +41,40 @@ export function ComposerActionButton({
             ? colors.accent
             : pressed
               ? colors.surfacePressed
-              : colors.surface,
+              : colors.surfaceElevated,
           borderColor: emphasized
             ? 'transparent'
             : pressed
               ? colors.accentSoft
               : colors.border,
           opacity: unavailable
-            ? 0.44
+            ? 0.4
             : pressed
-              ? 0.86
+              ? 0.88
               : 1,
           shadowColor: colors.shadow,
           shadowOpacity:
             emphasized && !unavailable
               ? pressed
-                ? 0.18
-                : 0.26
+                ? 0.14
+                : 0.2
               : 0,
-          shadowRadius: pressed ? 5 : 8,
+          shadowRadius: pressed ? 5 : 7,
           shadowOffset: {
             width: 0,
-            height: pressed ? 2 : 4,
+            height: pressed ? 2 : 3,
           },
           elevation:
             emphasized && !unavailable
               ? pressed
                 ? 2
-                : 4
+                : 3
               : 0,
           transform: [
             {
               scale:
                 pressed && !unavailable
-                  ? 0.96
+                  ? 0.95
                   : 1,
             },
           ],
@@ -90,7 +90,8 @@ const styles = StyleSheet.create({
   button: {
     width: 44,
     height: 44,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',

@@ -10,6 +10,7 @@ import { useTheme } from '../../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../../design-system/tokens/radius';
 
 import { ComposerActionButton } from './ComposerActionButton';
+import { ComposerPaperclipIcon } from './ComposerPaperclipIcon';
 
 type Props = {
   attachmentCount: number;
@@ -42,22 +43,21 @@ export function ComposerAttachmentButton({
       onPress={onPress}
     >
       <View style={styles.content}>
-        <Text
-          importantForAccessibility="no"
-          style={[
-            styles.glyph,
-            { color: colors.textSecondary },
-          ]}
-        >
-          📎
-        </Text>
+        <ComposerPaperclipIcon
+          color={colors.textSecondary}
+        />
 
         {attachmentCount > 0 && (
           <View
             importantForAccessibility="no-hide-descendants"
             style={[
               styles.badge,
-              { backgroundColor: colors.accent },
+              {
+                backgroundColor:
+                  colors.accent,
+                borderColor:
+                  colors.surfaceInput,
+              },
             ]}
           >
             <Text
@@ -82,16 +82,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glyph: {
-    fontSize: 20,
-  },
   badge: {
     position: 'absolute',
-    top: 3,
-    right: 1,
-    minWidth: 17,
-    height: 17,
+    top: 1,
+    right: 0,
+    minWidth: 18,
+    height: 18,
     paddingHorizontal: 4,
+    borderWidth: 1.5,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',

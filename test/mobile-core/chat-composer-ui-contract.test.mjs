@@ -14,6 +14,10 @@ const attachmentButton = fs.readFileSync(
   'src/features/chat/components/composer/ComposerAttachmentButton.tsx',
   'utf8',
 );
+const paperclipIcon = fs.readFileSync(
+  'src/features/chat/components/composer/ComposerPaperclipIcon.tsx',
+  'utf8',
+);
 const actionButton = fs.readFileSync(
   'src/features/chat/components/composer/ComposerActionButton.tsx',
   'utf8',
@@ -48,12 +52,14 @@ test(
 );
 
 test(
-  'composer surface owns the input shell polish',
+  'composer surface owns a restrained single-shell input treatment',
   () => {
     assert.match(composerSurface, /surfaceInput/);
     assert.match(composerSurface, /focusedSurface/);
     assert.match(composerSurface, /shadowColor/);
     assert.match(composerSurface, /elevation:/);
+    assert.doesNotMatch(textInput, /borderWidth:/);
+    assert.doesNotMatch(textInput, /backgroundColor:/);
 
     for (const token of [
       'surfaceInput',
@@ -70,10 +76,18 @@ test(
 );
 
 test(
-  'attachment affordance is an explicit paperclip with a bounded count badge',
+  'attachment affordance uses a platform-stable paperclip primitive with a bounded count badge',
   () => {
-    assert.match(attachmentButton, /📎/u);
-    assert.doesNotMatch(attachmentButton, /＋/u);
+    assert.match(
+      attachmentButton,
+      /ComposerPaperclipIcon/,
+    );
+    assert.doesNotMatch(
+      attachmentButton,
+      /📎/u,
+    );
+    assert.match(paperclipIcon, /rotate:/);
+    assert.match(paperclipIcon, /borderWidth:\s*2/);
     assert.match(attachmentButton, /attachmentCount > 99/);
     assert.match(attachmentButton, /99\+/);
   },

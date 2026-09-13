@@ -6,7 +6,6 @@ import {
 
 import { useLocale } from '../../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../../design-system/theme/ThemeProvider';
-import { radius } from '../../../../design-system/tokens/radius';
 import { spacing } from '../../../../design-system/tokens/spacing';
 import { typography } from '../../../../design-system/tokens/typography';
 
@@ -43,14 +42,8 @@ export function ComposerTextInput({
       style={[
         styles.input,
         {
-          backgroundColor: editable
-            ? colors.surface
-            : colors.surfaceElevated,
-          borderColor: colors.border,
           color: colors.textPrimary,
-          opacity: editable
-            ? 1
-            : 0.7,
+          opacity: editable ? 1 : 0.62,
           textAlign: isRTL ? 'right' : 'left',
         },
       ]}
@@ -61,13 +54,11 @@ export function ComposerTextInput({
 const styles = StyleSheet.create({
   input: {
     flex: 1,
-    minHeight: 46,
-    maxHeight: 136,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingTop: 11,
-    paddingBottom: 10,
+    minHeight: 44,
+    maxHeight: 128,
+    paddingHorizontal: spacing.sm,
+    paddingTop: 10,
+    paddingBottom: 9,
     fontSize: typography.body,
     lineHeight: 24,
     textAlignVertical: 'top',
