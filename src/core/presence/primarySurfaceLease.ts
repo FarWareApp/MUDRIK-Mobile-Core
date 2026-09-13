@@ -3,6 +3,10 @@ import type {
 } from '../privacy/observationPrivacyState';
 
 import {
+  isPresenceSessionId,
+} from './presenceSessionId';
+
+import {
   isSurfaceId,
 } from './surfaceContract';
 
@@ -28,9 +32,6 @@ export type PrimarySurfaceLeaseResult = Readonly<{
     | 'generation_conflict'
     | 'privacy_state_mismatch';
 }>;
-
-const SESSION_PATTERN =
-  /^psess_[a-z0-9][a-z0-9_-]{15,63}$/;
 
 const MAX_LEASE_TTL_MS =
   60_000;
@@ -85,10 +86,7 @@ export function parsePrimarySurfaceLease(
   }
 
   if (
-    typeof record.presenceSessionId !== 'string'
-    || !SESSION_PATTERN.test(
-      record.presenceSessionId,
-    )
+    !isPresenceSessionId(record.presenceSessionId)
     || !isSurfaceId(record.surfaceId)
     || !isSafeNonNegativeInteger(record.generation)
     || !isSafeNonNegativeInteger(record.issuedAt)
@@ -255,9 +253,7 @@ export class PrimarySurfaceLeaseRegistry {
     now: number,
   ): boolean {
     if (
-      !SESSION_PATTERN.test(
-        presenceSessionId,
-      )
+      !isPresenceSessionId(presenceSessionId)
       || !isSurfaceId(surfaceId)
       || !isSafeNonNegativeInteger(generation)
       || !isSafeNonNegativeInteger(now)
