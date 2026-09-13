@@ -1,16 +1,22 @@
-import React from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import React, {
+  useState,
+} from 'react';
 
-import { useLocale } from '../../../core/localization/LocaleProvider';
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
-import { radius } from '../../../design-system/tokens/radius';
-import { spacing } from '../../../design-system/tokens/spacing';
+import {
+  ComposerAttachmentButton,
+} from './composer/ComposerAttachmentButton';
+import {
+  ComposerSendButton,
+} from './composer/ComposerSendButton';
+import {
+  ComposerSurface,
+} from './composer/ComposerSurface';
+import {
+  ComposerTextInput,
+} from './composer/ComposerTextInput';
+import {
+  ComposerVoiceButton,
+} from './composer/ComposerVoiceButton';
 
 type Props = {
   value: string;
@@ -33,15 +39,14 @@ export function MessageComposer({
   attachmentCount = 0,
   onVoicePress,
 }: Props) {
-  const { colors } = useTheme();
-  const { isRTL, t } = useLocale();
+  const [focused, setFocused] = useState(false);
 
   const canSend =
     (
-      value.trim().length > 0 ||
-      attachmentCount > 0
-    ) &&
-    !sending;
+      value.trim().length > 0
+      || attachmentCount > 0
+    )
+    && !sending;
 
   const submit = async () => {
     if (!canSend) {
@@ -52,196 +57,35 @@ export function MessageComposer({
   };
 
   return (
-    <View
-      style={[
-        styles.wrapper,
-        {
-          borderTopColor: colors.border,
-          backgroundColor: colors.background,
-        },
-      ]}
+    <ComposerSurface
+      focused={focused && !sending}
     >
-      <View
-        style={[
-          styles.composer,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Attachments"
-          accessibilityState={{
-            disabled: sending,
-          }}
-          disabled={sending}
-          onPress={onAttachmentsPress}
-          style={styles.sideButton}
-        >
-          <Text
-            style={[
-              styles.sideButtonText,
-              {
-                color: colors.textSecondary,
-                opacity: sending ? 0.4 : 1,
-              },
-            ]}
-          >
-            ＋
-          </Text>
-        </Pressable>
+      <ComposerAttachmentButton
+        attachmentCount={attachmentCount}
+        disabled={sending}
+        onPress={onAttachmentsPress}
+      />
 
-        <TextInput
-          accessibilityLabel={t('composerPlaceholder')}
-          value={value}
-          onChangeText={onChangeText}
-          editable={!sending}
-          multiline
-          maxLength={12000}
-          placeholder={t('composerPlaceholder')}
-          placeholderTextColor={colors.textSecondary}
-          style={[
-            styles.input,
-            {
-              color: colors.textPrimary,
-              textAlign: isRTL ? 'right' : 'left',
-            },
-          ]}
-        />
+      <ComposerTextInput
+        value={value}
+        editable={!sending}
+        onChangeText={onChangeText}
+        onFocusChange={setFocused}
+      />
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Voice"
-          accessibilityState={{
-            disabled: sending,
-          }}
-          disabled={sending}
-          onPress={onVoicePress}
-          style={styles.sideButton}
-        >
-          <Text
-            style={[
-              styles.voiceText,
-              {
-                color: colors.textSecondary,
-                opacity: sending ? 0.4 : 1,
-              },
-            ]}
-          >
-            ◉
-          </Text>
-        </Pressable>
+      <ComposerVoiceButton
+        disabled={sending}
+        onPress={onVoicePress}
+      />
 
-        {sending ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Stop"
-            onPress={onStop}
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: colors.accent,
-              },
-            ]}
-          >
-            <View style={styles.stopIcon} />
-          </Pressable>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Send"
-            accessibilityState={{
-              disabled: !canSend,
-            }}
-            disabled={!canSend}
-            onPress={() => {
-              void submit();
-            }}
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: canSend
-                  ? colors.accent
-                  : colors.surfaceElevated,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: canSend
-                  ? colors.accentText
-                  : colors.textSecondary,
-                fontSize: 18,
-                fontWeight: '800',
-              }}
-            >
-              ↑
-            </Text>
-          </Pressable>
-        )}
-      </View>
-    </View>
+      <ComposerSendButton
+        sending={sending}
+        canSend={canSend}
+        onSend={() => {
+          void submit();
+        }}
+        onStop={onStop}
+      />
+    </ComposerSurface>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-
-  composer: {
-    minHeight: 56,
-    maxHeight: 160,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    borderWidth: 1,
-    borderRadius: radius.xl,
-    padding: 5,
-  },
-
-  input: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 140,
-    paddingHorizontal: 8,
-    paddingTop: 10,
-    paddingBottom: 9,
-    fontSize: 16,
-    writingDirection: 'auto',
-  },
-
-  sideButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  sideButtonText: {
-    fontSize: 26,
-  },
-
-  voiceText: {
-    fontSize: 20,
-  },
-
-  sendButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 22,
-  },
-
-  stopIcon: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
-    backgroundColor: '#FFFFFF',
-  },
-});
