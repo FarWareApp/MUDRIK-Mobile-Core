@@ -158,6 +158,8 @@ Completion milestone: `MOBILE-CORE-FROZEN`.
 
 # Section 2 — Platform Security Foundation
 
+**Status: PRE-DEVICE COMPLETE — OPEN / LAYER 4 DEFERRED.**
+
 Scope:
 
 - convert `MUDRIK_SECURITY_BASELINE.md` and the Security Assurance Program into enforceable code/configuration controls;
@@ -173,6 +175,14 @@ Completion requires the five-layer gate plus adversarial negative tests.
 
 # Section 3 — Account Identity, Authentication and Device Trust
 
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED.**
+
+Validated pre-device candidate and evidence are recorded in:
+
+- `docs/validation/SECTION_03_IDENTITY_AUTH_DEVICE_TRUST_GATE.md`
+- `docs/validation/SECTION_03_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_03_DEFECTS.md`
+
 Scope:
 
 - account/session architecture;
@@ -187,6 +197,8 @@ Scope:
 No device is trusted merely because it is on the same network.
 
 # Section 4 — Privacy, Permissions and Observation Control
+
+**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
 
 Scope:
 
@@ -468,7 +480,12 @@ This exception permits continued engineering progress without redefining incompl
 
 ## Current Pre-Device Workstream
 
-**Section 2 — Platform Security Foundation — may proceed in PRE-DEVICE IMPLEMENTATION mode.**
+**Section 4 — Privacy, Permissions and Observation Control — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
+
+Pre-device completed/open sections:
+
+- Section 2 — Platform Security Foundation;
+- Section 3 — Account Identity, Authentication and Device Trust.
 
 ## Completion Definition
 
