@@ -62,7 +62,7 @@ export type CompanionProfile = {
   speakingRate: number;
 
   preferredLanguages:
-    string[];
+    readonly string[];
 
   memoryPolicyId:
     string | null;
