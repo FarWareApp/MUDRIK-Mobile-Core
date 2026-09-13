@@ -52,16 +52,16 @@ jobs:
           CI: '1'
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Build app-owned debug APK
+      - name: Build app-owned standalone APK
         working-directory: android
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
 
       - name: Verify APK and create evidence metadata
         shell: bash
         run: |
           set -euo pipefail
 
-          APK='android/app/build/outputs/apk/debug/app-debug.apk'
+          APK='android/app/build/outputs/apk/release/app-release.apk'
           test -s "$APK"
 
           mkdir -p section01-apk
@@ -81,7 +81,7 @@ jobs:
             "workflowRunNumber": "${GITHUB_RUN_NUMBER}",
             "appVersion": "${APP_VERSION}",
             "androidPackage": "${ANDROID_PACKAGE}",
-            "buildKind": "github-actions-debug-apk",
+            "buildKind": "github-actions-standalone-release-apk",
             "apkFile": "mudrik-section01-${GITHUB_SHA}.apk",
             "apkSha256": "${APK_SHA256}",
             "apkBytes": ${APK_BYTES}
