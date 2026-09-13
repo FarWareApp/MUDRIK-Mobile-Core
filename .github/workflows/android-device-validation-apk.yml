@@ -2,6 +2,11 @@ name: Android Device Validation APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - mudrik-core-v1
+    paths:
+      - '.github/device-validation.trigger'
 
 permissions:
   contents: read
