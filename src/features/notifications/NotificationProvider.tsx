@@ -87,7 +87,14 @@ export function NotificationProvider({
   useEffect(() => {
     let mounted = true;
 
-    configureNotificationPresentation();
+    void configureNotificationPresentation()
+      .catch(() => {
+        diagnosticsService.record(
+          'notification',
+          'presentation-handler-unavailable',
+          'warning',
+        );
+      });
 
     const unsubscribeReceived =
       service.subscribeReceived(
