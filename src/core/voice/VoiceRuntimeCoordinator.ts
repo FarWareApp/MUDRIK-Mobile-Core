@@ -1,4 +1,8 @@
 import {
+  qualifyBargeIn,
+  type BargeInDecisionReason,
+} from './bargeInPolicy';
+import {
   decideEndOfTurn,
   type EndOfTurnResult,
 } from './endOfTurnPolicy';
@@ -34,6 +38,7 @@ export type VoiceCoordinatorReason =
   | 'speech_rejected'
   | 'partial_not_executable'
   | 'wrong_phase'
+  | 'barge_in_rejected'
   | 'transition_rejected';
 
 export type VoiceCoordinatorResult = Readonly<{
@@ -44,6 +49,7 @@ export type VoiceCoordinatorResult = Readonly<{
   endOfTurn: EndOfTurnResult | null;
   activityDecision: VoiceActivityDecision | null;
   speechDecision: SpeechRegistryDecision | null;
+  bargeInDecisionReason: BargeInDecisionReason | null;
 }>;
 
 const SESSION_ID = /^voice_[A-Za-z0-9_-]{16,80}$/;
@@ -56,6 +62,7 @@ function result(
   endOfTurn: EndOfTurnResult | null = null,
   activityDecision: VoiceActivityDecision | null = null,
   speechDecision: SpeechRegistryDecision | null = null,
+  bargeInDecisionReason: BargeInDecisionReason | null = null,
 ): VoiceCoordinatorResult {
   return Object.freeze({
     accepted,
@@ -65,6 +72,7 @@ function result(
     endOfTurn,
     activityDecision,
     speechDecision,
+    bargeInDecisionReason,
   });
 }
 
@@ -147,8 +155,77 @@ export class VoiceRuntimeCoordinator {
     return this.applyTransition('cancel_complete');
   }
 
-  bargeIn(): VoiceCoordinatorResult {
-    return this.applyTransition('barge_in');
+  bargeIn(input: unknown): VoiceCoordinatorResult {
+    if (
+      typeof input !== 'object' ||
+      input === null ||
+      Array.isArray(input)
+    ) {
+      return result(
+        false,
+        'barge_in_rejected',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        'invalid_input',
+      );
+    }
+
+    const record = input as Record<string, unknown>;
+    const allowedKeys = new Set([
+      'inputAuthorized',
+      'speechActive',
+      'speechDurationMs',
+      'vadConfidence',
+      'echoState',
+      'hasLexicalEvidence',
+      'hypothesisStability',
+    ]);
+
+    if (Object.keys(record).some((key) => !allowedKeys.has(key))) {
+      return result(
+        false,
+        'barge_in_rejected',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        'invalid_input',
+      );
+    }
+
+    const qualification = qualifyBargeIn({
+      ...record,
+      assistantSpeaking: this.state.phase === 'assistant_speaking',
+    });
+
+    if (!qualification.interrupt) {
+      return result(
+        false,
+        'barge_in_rejected',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        qualification.reason,
+      );
+    }
+
+    const transitioned = this.applyTransition('barge_in');
+    return result(
+      transitioned.accepted,
+      transitioned.reason,
+      transitioned.state,
+      transitioned.actions,
+      null,
+      null,
+      null,
+      qualification.reason,
+    );
   }
 
   fail(): VoiceCoordinatorResult {
