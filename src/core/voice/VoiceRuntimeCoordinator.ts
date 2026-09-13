@@ -156,11 +156,7 @@ export class VoiceRuntimeCoordinator {
   }
 
   reset(): VoiceCoordinatorResult {
-    const outcome = this.applyTransition('reset');
-    if (outcome.accepted) {
-      this.replaceGenerationRegistries();
-    }
-    return outcome;
+    return this.applyTransition('reset');
   }
 
   onActivity(
@@ -255,6 +251,14 @@ export class VoiceRuntimeCoordinator {
       );
     }
 
+    if (this.state.phase !== 'finalizing') {
+      return result(
+        false,
+        'wrong_phase',
+        this.state,
+      );
+    }
+
     const speechDecision = this.speechRegistry.apply(
       validation.segment,
     );
@@ -262,18 +266,6 @@ export class VoiceRuntimeCoordinator {
       return result(
         false,
         'speech_rejected',
-        this.state,
-        ['none'],
-        null,
-        null,
-        speechDecision,
-      );
-    }
-
-    if (this.state.phase !== 'finalizing') {
-      return result(
-        false,
-        'wrong_phase',
         this.state,
         ['none'],
         null,
