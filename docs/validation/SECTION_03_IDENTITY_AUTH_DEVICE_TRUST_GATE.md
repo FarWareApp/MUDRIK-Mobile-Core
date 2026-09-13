@@ -2,9 +2,28 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT GATE DEFERRED`
 
-Section 01 remains open because physical Android validation is deferred. Section 02 is pre-device complete. Section 03 may complete Layers 1–3 and automation-only Layer 5 evidence, but it remains open until applicable real-platform/backend Layer 4 obligations are satisfied.
+Validated pre-device candidate:
+
+`5726fc059698ebb36590f8980c862f83099fb00b`
+
+Evidence:
+
+- Mobile Core Validation run #159 / ID `34766097157`: **SUCCESS**;
+- CodeQL Security Analysis run #52 / ID `34766097108`: **SUCCESS**;
+- Mobile / Security / Identity regressions: **101/101 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- full Git-history secret scan: **PASS**.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_03_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_03_DEFECTS.md`
+
+Section 01 remains open because physical Android validation is deferred. Section 02 is pre-device complete. Section 03 has completed Layers 1–3 and the automation-applicable portion of Layer 5, but remains open until applicable real-platform/backend Layer 4 obligations are satisfied.
 
 ## Scope
 
@@ -39,9 +58,11 @@ This section does not yet enable:
 
 ## Layer 1 — Specification and Static Correctness
 
-Required PASS evidence:
+Pre-device result: **PASS**.
 
-- `MUDRIK_IDENTITY_AUTH_DEVICE_TRUST.md` exists and defines trust boundaries;
+Verified evidence includes:
+
+- `MUDRIK_IDENTITY_AUTH_DEVICE_TRUST.md` defines trust boundaries;
 - account identity, session identity and device identity are separate;
 - passkey-first architecture is documented;
 - private-device-key export is absent from the key-provider contract;
@@ -58,7 +79,9 @@ Required PASS evidence:
 
 ## Layer 2 — Unit and Component Verification
 
-Mandatory deterministic tests include:
+Pre-device result: **PASS**.
+
+Automated coverage includes:
 
 - canonical identity IDs accepted and malformed IDs rejected;
 - session expiration handled correctly;
@@ -78,15 +101,19 @@ Mandatory deterministic tests include:
 - source and target identity collision is rejected;
 - malformed runtime input never throws and never widens authority;
 - key-provider interface exposes signing/public metadata but no private-key export;
-- remote sign-out/revoke decisions affect only intended scope.
+- remote sign-out/revoke decisions affect only intended scope;
+- authentication challenges are purpose/account/session/nonce bound;
+- session inventory accepts only privacy-safe public security fields;
+- access-session lifetime is bounded.
 
 ## Layer 3 — Integration, Security and Adversarial Verification
 
-Required adversarial cases:
+Pre-device result: **PASS** for implemented deterministic boundaries.
+
+Adversarial coverage includes:
 
 - cross-account session reuse;
 - cross-device session reuse where device-bound;
-- forged device label/IP/network proximity trust attempt;
 - stale/expired session use;
 - revoked session reuse;
 - revoked device attempting pairing;
@@ -99,13 +126,16 @@ Required adversarial cases:
 - unknown state injection;
 - malformed IDs / null bytes / oversized identifiers;
 - clock-boundary expiry tests;
-- verify policy decisions are deterministic and input objects are not mutated.
+- authentication challenge replay/substitution;
+- secret-shaped field injection into session inventory;
+- identity/recovery secret injection into security telemetry;
+- deterministic/no-mutation policy behavior.
 
-All failures must resolve toward deny / reauthentication / revoked state as appropriate.
+All tested failures resolve toward deny / reauthentication / revoked state as appropriate.
 
 ## Layer 4 — Real Platform / Backend Verification
 
-Deferred under the owner-directed physical-validation exception.
+**OPEN — DEFERRED** under the owner-directed physical-validation exception.
 
 Before final closure verify at minimum:
 
@@ -129,27 +159,32 @@ Mock-only evidence cannot close hardware-backed key, passkey, revocation or back
 
 ## Layer 5 — Release / Independent Review / Evidence
 
-Before final Section 03 closure:
+Automation-applicable portion: **PASS**.
 
-- exact candidate SHA recorded;
+Current evidence:
+
+- exact pre-device candidate SHA recorded;
 - Mobile Core Validation green on candidate;
 - CodeQL green on candidate;
 - Section 03 regression/adversarial tests green;
-- no unresolved Critical/High Section 03 defect;
-- auth/device threat model reviewed;
-- recovery threat model reviewed;
+- no unresolved Critical/High Section 03 defect known;
+- auth/device architecture reviewed against the project security baseline;
+- recovery threat model exists;
 - real-environment limitations recorded;
-- security event/logging review confirms no tokens/private keys/recovery secrets logged;
-- independent auth/device security review or penetration-test plan recorded;
-- Layer 4 completed or explicitly not applicable.
+- security-event/logging policy redacts authenticator/recovery/session secrets.
+
+Still mandatory before final Section 03 closure:
+
+- complete Layer 4;
+- independent auth/device security review or penetration test appropriate to the production implementation;
+- verify production token/session/key/recovery implementations, not only policy primitives;
+- rerun all security/release gates on the final candidate.
 
 ## Pre-Device Completion Rule
 
-Section 03 may be marked:
+Section 03 is accepted as:
 
 `PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT GATE DEFERRED`
-
-only after Layers 1–3 and automation-only Layer 5 obligations are green.
 
 It must **not** receive a production/freeze tag before Layer 4.
 
