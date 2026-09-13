@@ -1,10 +1,20 @@
 export const SECURITY_EVENT_TYPES = [
   'authorization.allowed',
   'authorization.denied',
+  'authentication.succeeded',
+  'authentication.failed',
+  'authentication.step_up_required',
   'capability.granted',
   'capability.revoked',
   'session.revoked',
+  'session.suspected_reuse',
+  'device.paired',
+  'device.pairing_rejected',
+  'device.key_rotated',
   'device.revoked',
+  'recovery.requested',
+  'recovery.completed',
+  'recovery.denied',
   'privacy.state_changed',
   'replay.rejected',
   'signature.invalid',
@@ -27,7 +37,7 @@ export type SecurityEvent = {
   metadata: Readonly<Record<string, string | number | boolean | null>>;
 };
 
-const SENSITIVE_KEY = /(?:authorization|bearer|cookie|password|passwd|secret|token|refresh[_-]?token|jwt|api[_-]?key|private[_-]?key|credential|session[_-]?key)/i;
+const SENSITIVE_KEY = /(?:authorization|bearer|cookie|password|passwd|secret|token|refresh[_-]?token|jwt|api[_-]?key|private[_-]?key|credential|session[_-]?key|assertion|recovery[_-]?(?:code|key|secret)|challenge[_-]?nonce)/i;
 const BEARER_TOKEN = /\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi;
 const JWT = /\beyJ[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\b/g;
 const COMMON_API_KEY = /\b(?:sk-|ghp_|github_pat_|AIza|gsk_)[A-Za-z0-9_-]{12,}\b/g;
