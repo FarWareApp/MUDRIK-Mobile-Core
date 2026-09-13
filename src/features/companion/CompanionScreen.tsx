@@ -70,17 +70,26 @@ export function CompanionScreen({
   const session =
     useCompanionSessionController();
 
+  const companionEnabled =
+    profile.profile.enabled;
+
+  const sessionPhase =
+    session.phase;
+
+  const stopSession =
+    session.stop;
+
   useEffect(() => {
     if (
-      !profile.profile.enabled
-      && session.phase !== 'idle'
+      !companionEnabled
+      && sessionPhase !== 'idle'
     ) {
-      session.stop();
+      stopSession();
     }
   }, [
-    profile.profile.enabled,
-    session.phase,
-    session.stop,
+    companionEnabled,
+    sessionPhase,
+    stopSession,
   ]);
 
   if (profile.loading) {
@@ -183,7 +192,7 @@ export function CompanionScreen({
               .presentation
           }
           phase={
-            session.phase
+            sessionPhase
           }
         />
 
@@ -206,7 +215,7 @@ export function CompanionScreen({
                   'center',
               }}
             >
-              {profile.profile.enabled
+              {companionEnabled
                 ? 'Companion session is ready. Intelligence and speech providers will connect later.'
                 : 'Companion is disabled. Enable it in Companion settings to start a session.'}
             </Text>
@@ -218,17 +227,16 @@ export function CompanionScreen({
         >
           <CompanionSessionControls
             phase={
-              session.phase
+              sessionPhase
             }
             enabled={
-              profile.profile
-                .enabled
+              companionEnabled
             }
             onStart={
               session.start
             }
             onStop={
-              session.stop
+              stopSession
             }
             onPause={
               session.pause
