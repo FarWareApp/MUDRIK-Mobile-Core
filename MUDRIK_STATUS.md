@@ -1,6 +1,6 @@
 # MUDRIK Project Status
 
-Last consolidated: 2026-09-12
+Last consolidated: 2026-09-13
 
 ## Authoritative Execution Model
 
@@ -26,7 +26,7 @@ The owner elected to defer physical phone/hardware validation until the broader 
 - Branch/ruleset enforcement: **not currently protected**
 - Production repository-governance requirements: `docs/validation/REPOSITORY_PROTECTION_REQUIREMENTS.md`
 
-`CODEOWNERS` exists for security-sensitive paths, but it is advisory until GitHub rules enforce review/status checks.
+`CODEOWNERS` exists for security-sensitive paths, but it remains advisory until GitHub rules enforce review/status checks.
 
 ## Current Section State
 
@@ -42,7 +42,7 @@ Permanent Android application ID:
 
 `com.farwareapp.mudrik`
 
-Device validation assets:
+Device-validation assets:
 
 - `eas.json` with `device-validation` internal APK profile;
 - `scripts/section01-device-preflight.mjs`;
@@ -51,24 +51,17 @@ Device validation assets:
 - `docs/validation/SECTION_01_DEVICE_EVIDENCE_RECORD.md`;
 - manual `.github/workflows/android-device-validation-apk.yml`.
 
-The APK workflow is manual while phone testing is deferred. It performs exact-SHA preflight, Expo native generation, Gradle APK build, SHA-256 evidence and provenance attestation. Production release signing remains a separate future security boundary.
-
-Reference APK build proven successful before deferral:
+Reference app-owned APK build proven before deferral:
 
 - candidate: `acecb662e6bac231e18a62bccc45197794bda172`;
 - Mobile Core Validation run #93 / ID `34708290715`: SUCCESS;
-- Android Device Validation APK run #2 / ID `34708290677`: SUCCESS;
-- artifact was temporary reference evidence and is not the future final test binary.
+- Android Device Validation APK run #2 / ID `34708290677`: SUCCESS.
 
-When physical testing starts, rebuild the APK from the then-current exact candidate SHA.
+The historical APK is reference evidence only. When physical testing starts, rebuild from the then-current exact candidate SHA.
 
-Important closed Section 01 defect:
+Important closed defect:
 
-`S01-DATA-001` — High / Closed. Project-only attachments could previously be misclassified as orphans and deleted by cleanup. The ownership query now protects message, draft and project attachment links, with regression coverage.
-
-Detailed record:
-
-`docs/validation/SECTION_01_DEFECTS.md`
+`S01-DATA-001` — High / Closed. Project-only attachments could previously be misclassified as orphans and deleted. Ownership cleanup now protects message, draft and project links, with regression coverage.
 
 ### Section 02 — Platform Security Foundation
 
@@ -76,7 +69,7 @@ Status:
 
 `PRE-DEVICE COMPLETE — OPEN / LAYER 4 REAL-ENVIRONMENT VALIDATION DEFERRED`
 
-Validated security code candidate:
+Validated security candidate:
 
 `256d55f2b93f33468d3c98d9e3a8192e2c584e1f`
 
@@ -84,86 +77,141 @@ Evidence:
 
 - Mobile Core Validation run #133 / ID `34714989382`: SUCCESS;
 - CodeQL Security Analysis run #26 / ID `34714989334`: SUCCESS;
-- Mobile + Platform Security regressions: **57/57 PASS**;
+- regressions at acceptance: **57/57 PASS**;
 - Expo Doctor: **21/21 PASS**;
 - Computer Agent Phase 0: **10/10 PASS**;
 - dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
 - full Git-history secret scan: PASS.
 
-Implemented security foundation:
+Implemented security foundation includes:
 
 - canonical capability registry with no wildcard authority;
 - exhaustive capability risk classification;
 - deterministic default-deny authorization outside AI/model control;
 - runtime validation of untrusted request/grant objects;
 - revoked/expired grant rejection;
-- exact identity binding;
 - non-root workspace scopes for filesystem/git/terminal authority;
-- exact-host allowlists for network authority;
-- explicit background/elevation scope;
+- exact-host network allowlists;
+- explicit background/elevation scopes;
 - traversal/encoding/ambiguous-path rejection;
 - secret-reference boundary;
-- secure-storage contract without pretending ordinary storage is secure;
-- privacy-safe security-event schema and credential redaction;
+- secure-storage contract;
+- privacy-safe security-event schema/redaction;
 - CodeQL SAST;
-- dependency and secret gates;
-- Dependabot proposals;
+- dependency/secret gates;
+- Dependabot;
 - CODEOWNERS;
 - vulnerability-reporting policy;
-- threat-model template;
-- security-review checklist;
-- APK build-provenance foundation.
+- threat-model/review templates;
+- APK provenance foundation.
 
-Important closed Section 02 defect:
+Important closed defect:
 
-`S02-AUTH-001` — High / Closed. The first policy implementation could treat an unscoped capability grant as allowing background/elevated use. It was detected during adversarial review before production coupling and fixed so missing scope fails toward foreground/no-elevation, with stronger explicit scopes for high-authority capabilities.
+`S02-AUTH-001` — High / Closed. An early unscoped capability policy could imply background/elevated authority. Missing scope now fails toward foreground/no-elevation, and high-authority capabilities require explicit narrow scope.
 
-Detailed evidence and defects:
+Evidence:
 
 - `docs/validation/SECTION_02_PLATFORM_SECURITY_GATE.md`
 - `docs/validation/SECTION_02_AUTOMATED_EVIDENCE.md`
 - `docs/validation/SECTION_02_DEFECTS.md`
 
-Layer 4 still required before final production closure:
-
-- Android hardware-backed secure storage;
-- iOS secure storage when iOS enters release scope;
-- desktop OS key-store/TPM where supported;
-- real credential invalidation/revocation;
-- production-like secret-manager integration;
-- production signing/verification failure tests;
-- outage/degraded authorization behavior;
-- kill/revoke behavior during partial failure;
-- independent security review of cryptographic/authentication boundaries;
-- enforced repository protection/rulesets.
-
 ### Section 03 — Account Identity, Authentication and Device Trust
 
 Status:
 
-`NEXT PRE-DEVICE SECTION — NOT YET VALIDATED`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
 
-Planned scope:
+Validated pre-device candidate:
 
-- account/session architecture;
-- passkey-first design where supported;
-- MFA/step-up authentication for sensitive actions;
-- local device identity and cryptographic key binding;
-- pairing/unpairing/revocation;
-- session inventory and remote sign-out;
-- short-lived credentials and rotation;
-- recovery-flow threat model;
-- signed task/device identity foundations and replay protection interfaces.
+`5726fc059698ebb36590f8980c862f83099fb00b`
 
-No device is trusted merely because it shares a local network or account session.
+Evidence:
+
+- Mobile Core Validation run #159 / ID `34766097157`: **SUCCESS**;
+- CodeQL Security Analysis run #52 / ID `34766097108`: **SUCCESS**;
+- Mobile / Security / Identity regressions: **101/101 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- full Git-history secret scan: **PASS**.
+
+Implemented pre-device identity foundation:
+
+- strict typed account/device/session/device-key/refresh/challenge identifiers;
+- passkey-first architecture aligned to current public-key authentication standards;
+- explicit authentication-assurance levels rather than a boolean authenticated state;
+- deterministic step-up policy;
+- high-risk authentication freshness bounds;
+- critical operations require recent phishing-resistant authentication and explicit approval boundaries;
+- access sessions bound exactly to account/device/device-key and capped to a short lifetime;
+- revoked/expired/reauth-required/suspected-reuse session states fail closed;
+- device trust binds account/device/key/public-key thumbprint;
+- hardware-backed metadata never overrides revoked/suspended/pending state;
+- device-key provider exposes signing/public metadata only and no private-key export API;
+- refresh-family rotation and generation-reuse detection;
+- one-time pairing challenges with exact account/source/target/key/time binding;
+- standard versus privileged pairing assurance requirements;
+- scoped session/device/global revocation policy;
+- one-time purpose/account/session/nonce-bound authentication challenges;
+- privacy-safe session inventory with strict field allowlist;
+- identity lifecycle security-event types and stronger authenticator/recovery-secret redaction;
+- account recovery threat model that forbids recovery becoming a weaker universal bypass.
+
+No unresolved Critical/High Section 03 defect is known in the accepted pre-device scope.
+
+Detailed evidence:
+
+- `docs/architecture/MUDRIK_IDENTITY_AUTH_DEVICE_TRUST.md`
+- `docs/architecture/MUDRIK_ACCOUNT_RECOVERY_THREAT_MODEL.md`
+- `docs/validation/SECTION_03_IDENTITY_AUTH_DEVICE_TRUST_GATE.md`
+- `docs/validation/SECTION_03_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_03_DEFECTS.md`
+
+Layer 4 still mandatory later:
+
+- real passkey/WebAuthn registration/login;
+- Android hardware-backed/non-exportable device keys where supported;
+- iOS/desktop equivalents when in release scope;
+- production-like token/session persistence;
+- persistent backend refresh rotation/reuse detection;
+- real two-device pairing;
+- remote sign-out/revoke with target online and offline;
+- key rotation/reinstall/migration behavior;
+- recovery implementation and abuse simulations;
+- clock-skew/network-failure behavior;
+- independent auth/device security review or penetration test.
+
+### Section 04 — Privacy, Permissions and Observation Control
+
+Status:
+
+`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+
+Primary objectives:
+
+- implement the observation privacy state machine;
+- create a truthful live Sensor-State Registry;
+- make `visual_off`, `ambient_off` and `privacy_lock` enforceable below AI/personality;
+- make stop/privacy commands immediate and sticky across restart/handoff/context changes;
+- require explicit re-enable and real OS permission checks;
+- separate camera, microphone, location, presence and health observation boundaries;
+- expose privacy-safe indicators/status;
+- prove device handoff cannot silently restore observation;
+- fail toward a more private state when sensor/control state cannot be verified.
+
+Authoritative architecture:
+
+`docs/architecture/MUDRIK_OBSERVATION_PRIVACY.md`
+
+No production sensor authority will be coupled merely to satisfy pre-device tests.
 
 ## Mobile Core Architecture Rule
 
 The app-first boundary remains mandatory:
 
 - Mobile UI is presentation/interaction, not the authority layer;
-- chat accepts input and renders output without depending on the output source;
-- production AI/provider/server transport remains decoupled from Mobile UI until the Mobile Core physical freeze obligation is satisfied;
+- chat accepts input and renders output without depending on output source;
+- production AI/provider/server transport remains decoupled from Mobile UI until Mobile Core physical freeze obligations are satisfied;
 - modules retain one responsibility where practical;
 - future server/AI/agent systems must not silently weaken Mobile privacy or permission behavior.
 
@@ -175,34 +223,20 @@ Target topology:
 
 The browser/phone sends high-level tasks. The local Computer Agent executes only inside deterministic capability policy. No raw unauthenticated remote shell is exposed.
 
-Computer Agent Phase 0 already includes:
-
-- versioned task/grant/event protocols;
-- default-deny policy;
-- scoped filesystem/executable handling;
-- expiration/revocation checks;
-- critical one-shot approval model;
-- per-step permission re-evaluation;
-- Linux-first terminal adapter with `shell: false`;
-- restricted inherited environment;
-- timeout/output limits/cancellation;
-- structured task lifecycle and CLI;
-- automated regression tests.
-
 Future autonomous work loop:
 
 `Understand -> Inspect -> Research -> Plan -> Implement -> Build -> Test -> Diagnose -> Repair -> Re-test -> Review -> Finish`
 
-Completion must be based on verification evidence, not on code generation alone.
+Completion is based on verification evidence, not code generation alone.
 
 ## High-Assurance Control Plane Direction
 
-The future server is not a generic relay. Architecture is defined for a high-assurance, low-latency real-time control plane with:
+The future server is a high-assurance, low-latency real-time control plane, not a generic relay. Required properties include:
 
-- protected edge and regional gateways;
+- protected edge/regional gateways;
 - persistent authenticated outbound device channels;
 - encrypted transport;
-- independently signed/validated sensitive commands;
+- independently validated sensitive commands;
 - nonce/expiry/sequence/replay protection;
 - durable task/event delivery;
 - idempotency and duplicate-execution defense;
@@ -213,13 +247,13 @@ The future server is not a generic relay. Architecture is defined for a high-ass
 - durable source-of-truth state;
 - failover/recovery/load/latency acceptance tests.
 
-Architecture and threat model:
+Relevant architecture:
 
 - `docs/architecture/MUDRIK_HIGH_ASSURANCE_CONTROL_PLANE.md`
 - `docs/architecture/MUDRIK_CONTROL_PLANE_THREAT_MODEL.md`
 - `docs/validation/SECTION_14_CONTROL_PLANE_ACCEPTANCE_GATE.md`
 
-The Control Plane routes/authorizes state; it does not replace the Computer Agent's local permission boundary.
+The Control Plane does not replace the Computer Agent's local permission boundary.
 
 ## Privacy and Companion Principles
 
@@ -257,7 +291,7 @@ Core rules:
 - production secrets/private keys are not committed;
 - security telemetry is minimized/redacted;
 - sensitive actions require deterministic policy;
-- security incidents are not hidden to protect brand reputation;
+- security incidents are not hidden merely to protect brand reputation;
 - user protection and lawful incident response take priority.
 
 ## Dependency / Tooling Posture
@@ -267,7 +301,7 @@ Current stack includes Expo SDK 57, React Native, TypeScript, SQLite and Expo Ro
 Validation toolchain includes:
 
 - frozen Yarn lockfile;
-- ESLint `9.39.5` + `eslint-config-expo 57.0.2` because Expo/React plugin compatibility currently prevents a clean ESLint 10 migration;
+- ESLint `9.39.5` + `eslint-config-expo 57.0.2` due current Expo/React plugin compatibility constraints;
 - TypeScript;
 - Expo Doctor `1.20.4` pinned in CI;
 - Node 22 in CI;
@@ -302,10 +336,10 @@ When deferred testing begins:
 
 ## Next Work
 
-1. Confirm documentation-only Section 02 closing commits remain green in Mobile Validation and CodeQL.
-2. Begin Section 03 — Account Identity, Authentication and Device Trust in pre-device mode.
-3. Keep Section 01 and Section 02 formally open for deferred Layer 4 evidence.
-4. Do not couple production AI/server authority into the Mobile UI.
+1. Verify the documentation-only Section 03 closing HEAD remains green in Mobile Validation and CodeQL.
+2. Execute Section 04 — Privacy, Permissions and Observation Control in pre-device mode.
+3. Keep Sections 01–03 formally open for their deferred Layer 4 obligations.
+4. Do not couple production AI/server/sensor authority into the Mobile UI.
 
 ## Development Rule
 
