@@ -3,7 +3,6 @@ import {
 } from 'expo-audio';
 
 import * as ImagePicker from 'expo-image-picker';
-import * as Notifications from 'expo-notifications';
 
 import {
   AppPermissionId,
@@ -11,8 +10,45 @@ import {
   PermissionService,
 } from '../../../contracts/PermissionService';
 import {
+  supportsNativeNotificationModule,
+} from '../../notifications/services/notificationRuntimeSupport';
+import {
   normalizePermissionRecord,
+  NativePermissionResult,
 } from '../normalizePermissionRecord';
+
+const unsupportedNotificationPermission:
+  NativePermissionResult = {
+    granted: false,
+    status: 'unavailable',
+    canAskAgain: false,
+  };
+
+async function getNotificationPermission():
+  Promise<NativePermissionResult> {
+  if (!supportsNativeNotificationModule()) {
+    return unsupportedNotificationPermission;
+  }
+
+  const Notifications =
+    await import('expo-notifications');
+
+  return Notifications
+    .getPermissionsAsync();
+}
+
+async function requestNotificationPermission():
+  Promise<NativePermissionResult> {
+  if (!supportsNativeNotificationModule()) {
+    return unsupportedNotificationPermission;
+  }
+
+  const Notifications =
+    await import('expo-notifications');
+
+  return Notifications
+    .requestPermissionsAsync();
+}
 
 export class NativePermissionService
   implements PermissionService
@@ -34,8 +70,7 @@ export class NativePermissionService
       ImagePicker
         .getMediaLibraryPermissionsAsync(),
 
-      Notifications
-        .getPermissionsAsync(),
+      getNotificationPermission(),
     ]);
 
     return [
@@ -92,8 +127,7 @@ export class NativePermissionService
 
     return normalizePermissionRecord(
       id,
-      await Notifications
-        .requestPermissionsAsync(),
+      await requestNotificationPermission(),
     );
   }
 }
