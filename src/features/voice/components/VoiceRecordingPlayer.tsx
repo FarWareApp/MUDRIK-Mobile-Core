@@ -5,15 +5,17 @@ import {
   Text,
   View,
 } from 'react-native';
-
 import {
   useAudioPlayer,
   useAudioPlayerStatus,
 } from 'expo-audio';
 
-import {
-  useTheme,
-} from '../../../design-system/theme/ThemeProvider';
+import { useLocale } from '../../../core/localization/LocaleProvider';
+import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typography } from '../../../design-system/tokens/typography';
+import { formatVoiceDurationSeconds } from '../formatters/formatVoiceDuration';
 
 type Props = {
   uri: string;
@@ -23,14 +25,12 @@ export function VoiceRecordingPlayer({
   uri,
 }: Props) {
   const { colors } = useTheme();
+  const { t } = useLocale();
 
-  const player =
-    useAudioPlayer(uri);
+  const player = useAudioPlayer(uri);
+  const status = useAudioPlayerStatus(player);
 
-  const status =
-    useAudioPlayerStatus(player);
-
-  const toggle = () => {
+  const toggle = async () => {
     if (status.playing) {
       player.pause();
       return;
@@ -38,10 +38,9 @@ export function VoiceRecordingPlayer({
 
     if (
       status.duration > 0 &&
-      status.currentTime >=
-        status.duration
+      status.currentTime >= status.duration
     ) {
-      player.seekTo(0);
+      await player.seekTo(0);
     }
 
     player.play();
@@ -52,8 +51,8 @@ export function VoiceRecordingPlayer({
       style={[
         styles.container,
         {
-          backgroundColor:
-            colors.surfaceElevated,
+          backgroundColor: colors.surfaceElevated,
+          borderColor: colors.border,
         },
       ]}
     >
@@ -61,98 +60,85 @@ export function VoiceRecordingPlayer({
         accessibilityRole="button"
         accessibilityLabel={
           status.playing
-            ? 'Pause recording'
-            : 'Play recording'
+            ? t('voicePauseRecording')
+            : t('voicePlayRecording')
         }
-        onPress={toggle}
-        style={[
+        onPress={() => {
+          void toggle();
+        }}
+        style={({ pressed }) => [
           styles.button,
           {
-            backgroundColor:
-              colors.accent,
+            backgroundColor: colors.accent,
+            opacity: pressed ? 0.86 : 1,
+            transform: [{ scale: pressed ? 0.97 : 1 }],
           },
         ]}
       >
         <Text
+          importantForAccessibility="no"
           style={{
             color: colors.accentText,
             fontWeight: '700',
+            fontSize: 17,
           }}
         >
-          {status.playing
-            ? 'Ⅱ'
-            : '▶'}
+          {status.playing ? 'Ⅱ' : '▶'}
         </Text>
       </Pressable>
 
       <View style={styles.info}>
         <Text
-          style={{
-            color: colors.textPrimary,
-            fontWeight: '600',
-          }}
+          style={[
+            styles.title,
+            { color: colors.textPrimary },
+          ]}
         >
-          Voice recording
+          {t('voiceRecording')}
         </Text>
 
         <Text
-          style={{
-            color:
-              colors.textSecondary,
-            marginTop: 3,
-          }}
+          style={[
+            styles.time,
+            { color: colors.textSecondary },
+          ]}
         >
-          {formatTime(
-            status.currentTime,
-          )}
+          {formatVoiceDurationSeconds(status.currentTime)}
           {' / '}
-          {formatTime(
-            status.duration,
-          )}
+          {formatVoiceDurationSeconds(status.duration)}
         </Text>
       </View>
     </View>
   );
 }
 
-function formatTime(
-  seconds: number,
-): string {
-  const safe =
-    Number.isFinite(seconds)
-      ? Math.max(0, seconds)
-      : 0;
-
-  const minutes =
-    Math.floor(safe / 60);
-
-  const remaining =
-    Math.floor(safe % 60);
-
-  return `${minutes}:${remaining
-    .toString()
-    .padStart(2, '0')}`;
-}
-
 const styles = StyleSheet.create({
   container: {
     minHeight: 72,
-    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
+    padding: spacing.sm,
   },
-
   button: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   info: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: spacing.md,
+  },
+  title: {
+    fontSize: typography.secondary,
+    fontWeight: '600',
+  },
+  time: {
+    marginTop: spacing.xs,
+    fontSize: typography.caption,
+    fontVariant: ['tabular-nums'],
   },
 });

@@ -3,21 +3,17 @@ import {
   useMemo,
   useState,
 } from 'react';
-
 import {
   RecordingPresets,
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
 
-import {
-  MicrophonePermissionService,
-} from '../services/MicrophonePermissionService';
-import {
-  VoiceAudioSessionService,
-} from '../services/VoiceAudioSessionService';
-import {
+import { MicrophonePermissionService } from '../services/MicrophonePermissionService';
+import { VoiceAudioSessionService } from '../services/VoiceAudioSessionService';
+import type {
   MicrophonePermissionState,
+  VoiceRecorderErrorCode,
   VoiceRecorderPhase,
   VoiceRecordingDraft,
 } from '../types';
@@ -28,216 +24,150 @@ const recordingOptions = {
 };
 
 export function useVoiceRecorderController() {
-  const recorder =
-    useAudioRecorder(
-      recordingOptions,
-    );
+  const recorder = useAudioRecorder(recordingOptions);
+  const recorderState = useAudioRecorderState(recorder, 200);
 
-  const recorderState =
-    useAudioRecorderState(
-      recorder,
-      200,
-    );
+  const permissionService = useMemo(
+    () => new MicrophonePermissionService(),
+    [],
+  );
 
-  const permissionService =
-    useMemo(
-      () =>
-        new MicrophonePermissionService(),
-      [],
-    );
+  const audioSession = useMemo(
+    () => new VoiceAudioSessionService(),
+    [],
+  );
 
-  const audioSession =
-    useMemo(
-      () =>
-        new VoiceAudioSessionService(),
-      [],
-    );
-
-  const [phase, setPhase] =
-    useState<VoiceRecorderPhase>(
-      'idle',
-    );
-
+  const [phase, setPhase] = useState<VoiceRecorderPhase>('idle');
   const [permission, setPermission] =
-    useState<MicrophonePermissionState>(
-      'unknown',
-    );
-
+    useState<MicrophonePermissionState>('unknown');
   const [draft, setDraft] =
-    useState<VoiceRecordingDraft | null>(
-      null,
-    );
+    useState<VoiceRecordingDraft | null>(null);
+  const [errorCode, setErrorCode] =
+    useState<VoiceRecorderErrorCode | null>(null);
 
-  const [error, setError] =
-    useState<string | null>(
-      null,
-    );
+  const ensurePermission = useCallback(async () => {
+    let status = await permissionService.getStatus();
 
-  const ensurePermission =
-    useCallback(async () => {
-      let status =
-        await permissionService.getStatus();
+    if (status !== 'granted') {
+      status = await permissionService.request();
+    }
 
-      if (status !== 'granted') {
-        status =
-          await permissionService.request();
-      }
+    setPermission(status);
+    return status === 'granted';
+  }, [permissionService]);
 
-      setPermission(status);
+  const start = useCallback(async () => {
+    if (phase === 'recording' || phase === 'preparing') {
+      return;
+    }
 
-      return status === 'granted';
-    }, [permissionService]);
+    setErrorCode(null);
+    setDraft(null);
+    setPhase('preparing');
 
-  const start =
-    useCallback(async () => {
-      if (
-        phase === 'recording' ||
-        phase === 'preparing'
-      ) {
+    try {
+      const allowed = await ensurePermission();
+
+      if (!allowed) {
+        setPhase('idle');
+        setErrorCode('microphone-permission-denied');
         return;
       }
 
-      setError(null);
-      setDraft(null);
-      setPhase('preparing');
-
-      try {
-        const allowed =
-          await ensurePermission();
-
-        if (!allowed) {
-          setPhase('idle');
-          setError(
-            'Microphone permission denied.',
-          );
-          return;
-        }
-
-        await audioSession
-          .prepareRecording();
-
-        await recorder
-          .prepareToRecordAsync();
-
-        recorder.record();
-
-        setPhase('recording');
-      } catch (caught) {
-        setPhase('error');
-
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : 'Unable to start recording.',
-        );
-      }
-    }, [
-      audioSession,
-      ensurePermission,
-      phase,
-      recorder,
-    ]);
-
-  const pause =
-    useCallback(() => {
-      if (phase !== 'recording') {
-        return;
-      }
-
-      recorder.pause();
-      setPhase('paused');
-    }, [
-      phase,
-      recorder,
-    ]);
-
-  const resume =
-    useCallback(() => {
-      if (phase !== 'paused') {
-        return;
-      }
-
+      await audioSession.prepareRecording();
+      await recorder.prepareToRecordAsync();
       recorder.record();
       setPhase('recording');
-    }, [
-      phase,
-      recorder,
-    ]);
+    } catch {
+      setPhase('error');
+      setErrorCode('recording-start-failed');
+    }
+  }, [
+    audioSession,
+    ensurePermission,
+    phase,
+    recorder,
+  ]);
 
-  const stop =
-    useCallback(async () => {
-      if (
-        phase !== 'recording' &&
-        phase !== 'paused'
-      ) {
+  const pause = useCallback(() => {
+    if (phase !== 'recording') {
+      return;
+    }
+
+    recorder.pause();
+    setPhase('paused');
+  }, [phase, recorder]);
+
+  const resume = useCallback(() => {
+    if (phase !== 'paused') {
+      return;
+    }
+
+    recorder.record();
+    setPhase('recording');
+  }, [phase, recorder]);
+
+  const stop = useCallback(async () => {
+    if (phase !== 'recording' && phase !== 'paused') {
+      return;
+    }
+
+    try {
+      await recorder.stop();
+
+      const uri = recorder.uri;
+
+      if (!uri) {
+        setPhase('error');
+        setErrorCode('recording-uri-unavailable');
         return;
       }
 
-      try {
-        await recorder.stop();
+      setDraft({
+        uri,
+        durationMs: recorderState.durationMillis,
+        createdAt: Date.now(),
+      });
 
-        const uri =
-          recorder.uri;
+      await audioSession.preparePlayback();
+      setPhase('stopped');
+    } catch {
+      setPhase('error');
+      setErrorCode('recording-stop-failed');
+    }
+  }, [
+    audioSession,
+    phase,
+    recorder,
+    recorderState.durationMillis,
+  ]);
 
-        if (!uri) {
-          throw new Error(
-            'Recording URI is unavailable.',
-          );
-        }
+  const discard = useCallback(() => {
+    setDraft(null);
+    setErrorCode(null);
+    setPhase('idle');
+  }, []);
 
-        setDraft({
-          uri,
-          durationMs:
-            recorderState.durationMillis,
-          createdAt: Date.now(),
-        });
+  const dismissError = useCallback(() => {
+    setErrorCode(null);
 
-        await audioSession
-          .preparePlayback();
-
-        setPhase('stopped');
-      } catch (caught) {
-        setPhase('error');
-
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : 'Unable to stop recording.',
-        );
-      }
-    }, [
-      audioSession,
-      phase,
-      recorder,
-      recorderState.durationMillis,
-    ]);
-
-  const discard =
-    useCallback(() => {
-      setDraft(null);
-      setError(null);
-      setPhase('idle');
-    }, []);
+    if (phase === 'error') {
+      setPhase(draft ? 'stopped' : 'idle');
+    }
+  }, [draft, phase]);
 
   return {
     phase,
     permission,
     draft,
-    error,
-
-    durationMs:
-      recorderState.durationMillis,
-
-    isRecording:
-      recorderState.isRecording,
-
+    errorCode,
+    durationMs: recorderState.durationMillis,
+    isRecording: recorderState.isRecording,
     start,
     pause,
     resume,
     stop,
     discard,
-
-    dismissError: () =>
-      setError(null),
+    dismissError,
   };
 }
