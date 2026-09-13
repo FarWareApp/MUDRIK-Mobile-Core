@@ -72,7 +72,7 @@ function createDatabase(
 }
 
 test(
-  'fresh database migrates sequentially from version 0 through version 6',
+  'fresh database migrates sequentially from version 0 through version 7',
   async () => {
     const state = createDatabase(0);
 
@@ -80,11 +80,11 @@ test(
 
     assert.equal(
       state.getVersion(),
-      6,
+      7,
     );
     assert.equal(
       state.executed.length,
-      6,
+      7,
     );
 
     assert.deepEqual(
@@ -99,13 +99,32 @@ test(
         'PRAGMA user_version = 4;',
         'PRAGMA user_version = 5;',
         'PRAGMA user_version = 6;',
+        'PRAGMA user_version = 7;',
       ],
+    );
+
+    const privacySchema = state.executed[6][0];
+    assert.match(
+      privacySchema,
+      /CREATE TABLE IF NOT EXISTS observation_privacy_state/,
+    );
+    assert.match(
+      privacySchema,
+      /'ambient_off'/,
+    );
+    assert.match(
+      privacySchema,
+      /default_passive_observation_off/,
+    );
+    assert.doesNotMatch(
+      privacySchema,
+      /app_settings/,
     );
   },
 );
 
 test(
-  'existing version 4 database applies only migrations 5 and 6',
+  'existing version 4 database applies only migrations 5 through 7',
   async () => {
     const state = createDatabase(4);
 
@@ -113,11 +132,11 @@ test(
 
     assert.equal(
       state.getVersion(),
-      6,
+      7,
     );
     assert.equal(
       state.executed.length,
-      2,
+      3,
     );
     assert.equal(
       state.executed[0].at(-1),
@@ -127,17 +146,41 @@ test(
       state.executed[1].at(-1),
       'PRAGMA user_version = 6;',
     );
+    assert.equal(
+      state.executed[2].at(-1),
+      'PRAGMA user_version = 7;',
+    );
+  },
+);
+
+test(
+  'version 6 upgrades only the dedicated observation privacy schema',
+  async () => {
+    const state = createDatabase(6);
+
+    await runMigrations(state.database);
+
+    assert.equal(state.getVersion(), 7);
+    assert.equal(state.executed.length, 1);
+    assert.match(
+      state.executed[0][0],
+      /observation_privacy_state/,
+    );
+    assert.equal(
+      state.executed[0].at(-1),
+      'PRAGMA user_version = 7;',
+    );
   },
 );
 
 test(
   'database newer than supported schema is rejected before any migration',
   async () => {
-    const state = createDatabase(7);
+    const state = createDatabase(8);
 
     await assert.rejects(
       runMigrations(state.database),
-      /newer than supported version 6/,
+      /newer than supported version 7/,
     );
 
     assert.equal(
@@ -146,7 +189,7 @@ test(
     );
     assert.equal(
       state.getVersion(),
-      7,
+      8,
     );
   },
 );
@@ -155,10 +198,10 @@ test(
   'failed migration does not execute that migration user_version update',
   async () => {
     const state = createDatabase(
-      5,
+      6,
       {
         failSchemaContaining:
-          'CREATE TABLE IF NOT EXISTS diagnostic_events',
+          'CREATE TABLE IF NOT EXISTS observation_privacy_state',
       },
     );
 
@@ -169,7 +212,7 @@ test(
 
     assert.equal(
       state.getVersion(),
-      5,
+      6,
     );
     assert.equal(
       state.executed.length,
