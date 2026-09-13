@@ -35,6 +35,14 @@ export const translations = {
     deleteConversation: 'حذف المحادثة',
     deleteConversationMessage:
       'هل تريد حذف هذه المحادثة نهائيًا؟',
+    untitledConversation: 'محادثة جديدة',
+    openConversation: 'فتح المحادثة',
+    pinConversation: 'تثبيت المحادثة',
+    unpinConversation: 'إلغاء تثبيت المحادثة',
+    archiveConversation: 'أرشفة المحادثة',
+    restoreConversation: 'استعادة المحادثة',
+    deleteConversationAction: 'حذف المحادثة',
+    clearSearch: 'مسح البحث',
     cancel: 'إلغاء',
     delete: 'حذف',
   },
@@ -76,6 +84,18 @@ export const translations = {
     deleteConversation: 'Unterhaltung löschen',
     deleteConversationMessage:
       'Diese Unterhaltung endgültig löschen?',
+    untitledConversation: 'Neue Unterhaltung',
+    openConversation: 'Unterhaltung öffnen',
+    pinConversation: 'Unterhaltung anheften',
+    unpinConversation:
+      'Unterhaltung lösen',
+    archiveConversation:
+      'Unterhaltung archivieren',
+    restoreConversation:
+      'Unterhaltung wiederherstellen',
+    deleteConversationAction:
+      'Unterhaltung löschen',
+    clearSearch: 'Suche löschen',
     cancel: 'Abbrechen',
     delete: 'Löschen',
   },
@@ -117,6 +137,14 @@ export const translations = {
     deleteConversation: 'Delete conversation',
     deleteConversationMessage:
       'Delete this conversation permanently?',
+    untitledConversation: 'New conversation',
+    openConversation: 'Open conversation',
+    pinConversation: 'Pin conversation',
+    unpinConversation: 'Unpin conversation',
+    archiveConversation: 'Archive conversation',
+    restoreConversation: 'Restore conversation',
+    deleteConversationAction: 'Delete conversation',
+    clearSearch: 'Clear search',
     cancel: 'Cancel',
     delete: 'Delete',
   },
