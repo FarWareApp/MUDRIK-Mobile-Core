@@ -67,18 +67,30 @@ export function QuickActionMenu({
   ];
 
   return (
-    <View style={styles.container}>
+    <View
+      pointerEvents="box-none"
+      style={styles.container}
+    >
       {actions.map((action) => (
         <Pressable
           key={action.key}
           accessibilityRole="button"
           accessibilityLabel={action.label}
           onPress={action.onPress}
-          style={[
+          style={({ pressed }) => [
             styles.action,
             {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
+              backgroundColor: pressed
+                ? colors.surfacePressed
+                : colors.surface,
+              borderColor: pressed
+                ? colors.accentSoft
+                : colors.border,
+              opacity: pressed ? 0.9 : 1,
+              shadowColor: colors.shadow,
+              transform: [
+                { scale: pressed ? 0.98 : 1 },
+              ],
             },
           ]}
         >
@@ -102,10 +114,12 @@ export function QuickActionMenu({
             ]}
           >
             <Text
-              style={{
-                color: colors.textPrimary,
-                fontSize: 18,
-              }}
+              style={[
+                styles.symbol,
+                {
+                  color: colors.textPrimary,
+                },
+              ]}
             >
               {action.symbol}
             </Text>
@@ -120,25 +134,32 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     right: 18,
-    bottom: 86,
-    gap: 8,
+    bottom: 88,
+    gap: 10,
     zIndex: 30,
     alignItems: 'flex-end',
   },
 
   action: {
-    minHeight: 48,
+    minHeight: 50,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
     paddingLeft: 16,
     paddingRight: 6,
+    elevation: 5,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
   },
 
   label: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     marginRight: 10,
   },
 
@@ -148,5 +169,11 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  symbol: {
+    fontSize: 18,
+    lineHeight: 21,
+    fontWeight: '700',
   },
 });
