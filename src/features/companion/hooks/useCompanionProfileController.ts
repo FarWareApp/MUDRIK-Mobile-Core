@@ -69,7 +69,7 @@ export function useCompanionProfileController(
       async (
         next:
           CompanionProfile,
-      ): Promise<boolean> => {
+      ): Promise<string | null> => {
         setSaving(true);
 
         try {
@@ -77,11 +77,11 @@ export function useCompanionProfileController(
             next.displayName.trim();
 
           if (!displayName) {
-            setError(
-              'Companion name cannot be empty.',
-            );
+            const message =
+              'Companion name cannot be empty.';
 
-            return false;
+            setError(message);
+            return message;
           }
 
           const updated:
@@ -106,13 +106,13 @@ export function useCompanionProfileController(
           setProfile(updated);
           setError(null);
 
-          return true;
+          return null;
         } catch {
-          setError(
-            'Unable to save companion profile.',
-          );
+          const message =
+            'Unable to save companion profile.';
 
-          return false;
+          setError(message);
+          return message;
         } finally {
           setSaving(false);
         }
