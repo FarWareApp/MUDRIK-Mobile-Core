@@ -2,13 +2,12 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-
 import {
+  KeyboardAvoidingView,
   Modal,
-  Pressable,
+  Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -22,19 +21,24 @@ import type {
   CompanionProfile,
   CompanionVoicePreference,
 } from '../../../contracts/Companion';
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
+import { useLocale } from '../../../core/localization/LocaleProvider';
+import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typography } from '../../../design-system/tokens/typography';
 
-import {
-  useTheme,
-} from '../../../design-system/theme/ThemeProvider';
+import { CompanionEditorHeader } from './CompanionEditorHeader';
+import { CompanionNumericStepper } from './CompanionNumericStepper';
+import { CompanionOptionGroup } from './CompanionOptionGroup';
+import { CompanionToggleRow } from './CompanionToggleRow';
 
 type Props = {
   visible: boolean;
   profile: CompanionProfile;
   saving: boolean;
   onCancel: () => void;
-  onSave: (
-    profile: CompanionProfile,
-  ) => void;
+  onSave: (profile: CompanionProfile) => void;
 };
 
 export function CompanionProfileEditorModal({
@@ -44,242 +48,182 @@ export function CompanionProfileEditorModal({
   onCancel,
   onSave,
 }: Props) {
-  const { colors } =
-    useTheme();
-
-  const [draft, setDraft] =
-    useState(profile);
+  const { colors, mode } = useTheme();
+  const { reducedMotion } = useAccessibility();
+  const { isRTL, t } = useLocale();
+  const [draft, setDraft] = useState(profile);
 
   useEffect(() => {
     if (visible) {
       setDraft(profile);
     }
-  }, [
-    profile,
-    visible,
-  ]);
+  }, [profile, visible]);
+
+  const presentationOptions: readonly (
+    readonly [CompanionPresentation, string]
+  )[] = [
+    ['male', t('companionPresentationMale')],
+    ['female', t('companionPresentationFemale')],
+  ];
+
+  const voiceOptions: readonly (
+    readonly [CompanionVoicePreference, string]
+  )[] = [
+    ['auto', t('companionVoiceAuto')],
+    ['male', t('companionVoiceMale')],
+    ['female', t('companionVoiceFemale')],
+  ];
+
+  const interactionOptions: readonly (
+    readonly [CompanionInteractionStyle, string]
+  )[] = [
+    ['balanced', t('companionStyleBalanced')],
+    ['warm', t('companionStyleWarm')],
+    ['calm', t('companionStyleCalm')],
+    ['direct', t('companionStyleDirect')],
+  ];
+
+  const personalityOptions: readonly (
+    readonly [CompanionPersonalityPreset, string]
+  )[] = [
+    ['balanced', t('companionPersonalityBalanced')],
+    ['professional', t('companionPersonalityProfessional')],
+    ['calm', t('companionPersonalityCalm')],
+    ['friendly', t('companionPersonalityFriendly')],
+    ['minimal', t('companionPersonalityMinimal')],
+    ['coach', t('companionPersonalityCoach')],
+    ['study_partner', t('companionPersonalityStudy')],
+    ['creative_partner', t('companionPersonalityCreative')],
+  ];
+
+  const presenceOptions: readonly (
+    readonly [CompanionPresenceLevel, string]
+  )[] = [
+    ['silent', t('companionPresenceSilent')],
+    ['normal', t('companionPresenceNormal')],
+    ['helpful', t('companionPresenceHelpful')],
+    ['active', t('companionPresenceActive')],
+  ];
 
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={reducedMotion ? 'none' : 'slide'}
       onRequestClose={onCancel}
     >
-      <View
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={[
           styles.screen,
-          {
-            backgroundColor:
-              colors.background,
-          },
+          { backgroundColor: colors.background },
         ]}
       >
-        <View style={styles.header}>
-          <Pressable
-            onPress={onCancel}
-          >
-            <Text
-              style={{
-                color:
-                  colors.textSecondary,
-              }}
-            >
-              Cancel
-            </Text>
-          </Pressable>
-
-          <Text
-            style={[
-              styles.title,
-              {
-                color:
-                  colors.textPrimary,
-              },
-            ]}
-          >
-            Companion
-          </Text>
-
-          <Pressable
-            disabled={saving}
-            onPress={() =>
-              onSave(draft)
-            }
-          >
-            <Text
-              style={{
-                color:
-                  colors.accent,
-                fontWeight: '700',
-                opacity:
-                  saving
-                    ? 0.5
-                    : 1,
-              }}
-            >
-              Save
-            </Text>
-          </Pressable>
-        </View>
+        <CompanionEditorHeader
+          saving={saving}
+          onCancel={onCancel}
+          onSave={() => onSave(draft)}
+        />
 
         <ScrollView
-          contentContainerStyle={
-            styles.content
-          }
+          contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <ToggleRow
-            title="Companion enabled"
-            description="Turn the companion presentation layer on or off."
+          <CompanionToggleRow
+            title={t('companionEnabled')}
+            description={t('companionEnabledDescription')}
             value={draft.enabled}
+            disabled={saving}
             onChange={(enabled) =>
-              setDraft(
-                (current) => ({
-                  ...current,
-                  enabled,
-                }),
-              )
+              setDraft((current) => ({
+                ...current,
+                enabled,
+              }))
             }
           />
 
           <TextInput
-            value={
-              draft.displayName
+            accessibilityLabel={t('companionName')}
+            value={draft.displayName}
+            onChangeText={(displayName) =>
+              setDraft((current) => ({
+                ...current,
+                displayName,
+              }))
             }
-            onChangeText={(
-              displayName,
-            ) =>
-              setDraft(
-                (current) => ({
-                  ...current,
-                  displayName,
-                }),
-              )
-            }
-            placeholder="Name"
-            placeholderTextColor={
-              colors.textSecondary
-            }
+            editable={!saving}
+            keyboardAppearance={mode}
+            placeholder={t('companionName')}
+            placeholderTextColor={colors.textSecondary}
             maxLength={60}
+            returnKeyType="done"
             style={[
               styles.input,
               {
-                color:
-                  colors.textPrimary,
-                borderColor:
-                  colors.border,
+                color: colors.textPrimary,
+                borderColor: colors.border,
+                backgroundColor: colors.surfaceInput,
+                textAlign: isRTL ? 'right' : 'left',
               },
             ]}
           />
 
-          <OptionGroup
-            title="Presentation"
-            value={
-              draft.presentation
-            }
-            options={[
-              ['male', 'Male'],
-              ['female', 'Female'],
-            ]}
+          <CompanionOptionGroup
+            title={t('companionPresentation')}
+            value={draft.presentation}
+            options={presentationOptions}
             onChange={(presentation) =>
-              setDraft(
-                (current) => ({
-                  ...current,
-                  presentation:
-                    presentation as CompanionPresentation,
-                }),
-              )
+              setDraft((current) => ({
+                ...current,
+                presentation,
+              }))
             }
           />
 
-          <OptionGroup
-            title="Voice preference"
-            value={
-              draft.voicePreference
-            }
-            options={[
-              ['auto', 'Auto'],
-              ['male', 'Male'],
-              ['female', 'Female'],
-            ]}
+          <CompanionOptionGroup
+            title={t('companionVoicePreference')}
+            value={draft.voicePreference}
+            options={voiceOptions}
             onChange={(voicePreference) =>
-              setDraft(
-                (current) => ({
-                  ...current,
-                  voicePreference:
-                    voicePreference as CompanionVoicePreference,
-                }),
-              )
+              setDraft((current) => ({
+                ...current,
+                voicePreference,
+              }))
             }
           />
 
-          <OptionGroup
-            title="Interaction style"
-            value={
-              draft.interactionStyle
-            }
-            options={[
-              ['balanced', 'Balanced'],
-              ['warm', 'Warm'],
-              ['calm', 'Calm'],
-              ['direct', 'Direct'],
-            ]}
+          <CompanionOptionGroup
+            title={t('companionInteractionStyle')}
+            value={draft.interactionStyle}
+            options={interactionOptions}
             onChange={(interactionStyle) =>
-              setDraft(
-                (current) => ({
-                  ...current,
-                  interactionStyle:
-                    interactionStyle as CompanionInteractionStyle,
-                }),
-              )
+              setDraft((current) => ({
+                ...current,
+                interactionStyle,
+              }))
             }
           />
 
-          <OptionGroup
-            title="Personality preset"
-            value={
-              draft.personalityPreset
-            }
-            options={[
-              ['balanced', 'Balanced'],
-              ['professional', 'Professional'],
-              ['calm', 'Calm'],
-              ['friendly', 'Friendly'],
-              ['minimal', 'Minimal'],
-              ['coach', 'Coach'],
-              ['study_partner', 'Study'],
-              ['creative_partner', 'Creative'],
-            ]}
+          <CompanionOptionGroup
+            title={t('companionPersonalityPreset')}
+            value={draft.personalityPreset}
+            options={personalityOptions}
             onChange={(personalityPreset) =>
-              setDraft(
-                (current) => ({
-                  ...current,
-                  personalityPreset:
-                    personalityPreset as CompanionPersonalityPreset,
-                }),
-              )
+              setDraft((current) => ({
+                ...current,
+                personalityPreset,
+              }))
             }
           />
 
-          <OptionGroup
-            title="Presence level"
-            value={
-              draft.presenceLevel
-            }
-            options={[
-              ['silent', 'Silent'],
-              ['normal', 'Normal'],
-              ['helpful', 'Helpful'],
-              ['active', 'Active'],
-            ]}
+          <CompanionOptionGroup
+            title={t('companionPresenceLevel')}
+            value={draft.presenceLevel}
+            options={presenceOptions}
             onChange={(presenceLevel) =>
-              setDraft(
-                (current) => ({
-                  ...current,
-                  presenceLevel:
-                    presenceLevel as CompanionPresenceLevel,
-                }),
-              )
+              setDraft((current) => ({
+                ...current,
+                presenceLevel,
+              }))
             }
           />
 
@@ -287,531 +231,148 @@ export function CompanionProfileEditorModal({
             <Text
               style={[
                 styles.groupTitle,
-                {
-                  color:
-                    colors.textSecondary,
-                },
+                { color: colors.textSecondary },
               ]}
             >
-              Personality dimensions
+              {t('companionPersonalityDimensions')}
             </Text>
 
-            <DimensionStepper
-              label="Warmth"
+            <CompanionNumericStepper
+              label={t('companionDimensionWarmth')}
               value={draft.warmth}
+              minimum={0}
+              maximum={100}
+              step={5}
+              displayValue={`${draft.warmth}`}
               onChange={(warmth) =>
-                setDraft(
-                  (current) => ({
-                    ...current,
-                    warmth,
-                  }),
-                )
+                setDraft((current) => ({
+                  ...current,
+                  warmth,
+                }))
               }
             />
 
-            <DimensionStepper
-              label="Directness"
+            <CompanionNumericStepper
+              label={t('companionDimensionDirectness')}
               value={draft.directness}
+              minimum={0}
+              maximum={100}
+              step={5}
+              displayValue={`${draft.directness}`}
               onChange={(directness) =>
-                setDraft(
-                  (current) => ({
-                    ...current,
-                    directness,
-                  }),
-                )
+                setDraft((current) => ({
+                  ...current,
+                  directness,
+                }))
               }
             />
 
-            <DimensionStepper
-              label="Humor"
+            <CompanionNumericStepper
+              label={t('companionDimensionHumor')}
               value={draft.humor}
+              minimum={0}
+              maximum={100}
+              step={5}
+              displayValue={`${draft.humor}`}
               onChange={(humor) =>
-                setDraft(
-                  (current) => ({
-                    ...current,
-                    humor,
-                  }),
-                )
+                setDraft((current) => ({
+                  ...current,
+                  humor,
+                }))
               }
             />
 
-            <DimensionStepper
-              label="Initiative"
+            <CompanionNumericStepper
+              label={t('companionDimensionInitiative')}
               value={draft.initiative}
+              minimum={0}
+              maximum={100}
+              step={5}
+              displayValue={`${draft.initiative}`}
               onChange={(initiative) =>
-                setDraft(
-                  (current) => ({
-                    ...current,
-                    initiative,
-                  }),
-                )
+                setDraft((current) => ({
+                  ...current,
+                  initiative,
+                }))
               }
             />
 
-            <DimensionStepper
-              label="Verbosity"
+            <CompanionNumericStepper
+              label={t('companionDimensionVerbosity')}
               value={draft.verbosity}
+              minimum={0}
+              maximum={100}
+              step={5}
+              displayValue={`${draft.verbosity}`}
               onChange={(verbosity) =>
-                setDraft(
-                  (current) => ({
-                    ...current,
-                    verbosity,
-                  }),
-                )
+                setDraft((current) => ({
+                  ...current,
+                  verbosity,
+                }))
               }
             />
           </View>
 
-          <RateStepper
-            value={draft.speakingRate}
-            onChange={(speakingRate) =>
-              setDraft(
-                (current) => ({
+          <View style={styles.group}>
+            <CompanionNumericStepper
+              label={t('companionSpeakingRate')}
+              value={draft.speakingRate}
+              minimum={0.5}
+              maximum={2}
+              step={0.1}
+              displayValue={`${draft.speakingRate.toFixed(1)}×`}
+              onChange={(next) =>
+                setDraft((current) => ({
                   ...current,
-                  speakingRate,
-                }),
-              )
-            }
-          />
+                  speakingRate: Number(next.toFixed(1)),
+                }))
+              }
+            />
+          </View>
 
-          <ToggleRow
-            title="Captions"
-            description="Show conversation captions."
-            value={draft.showCaptions}
-            onChange={(showCaptions) =>
-              setDraft(
-                (current) => ({
+          <View style={styles.group}>
+            <CompanionToggleRow
+              title={t('companionCaptions')}
+              description={t('companionCaptionsDescription')}
+              value={draft.showCaptions}
+              disabled={saving}
+              onChange={(showCaptions) =>
+                setDraft((current) => ({
                   ...current,
                   showCaptions,
-                }),
-              )
-            }
-          />
+                }))
+              }
+            />
+          </View>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
-type OptionGroupProps = {
-  title: string;
-  value: string;
-  options:
-    readonly (
-      readonly [string, string]
-    )[];
-  onChange:
-    (value: string) => void;
-};
-
-function OptionGroup({
-  title,
-  value,
-  options,
-  onChange,
-}: OptionGroupProps) {
-  const { colors } =
-    useTheme();
-
-  return (
-    <View style={styles.group}>
-      <Text
-        style={[
-          styles.groupTitle,
-          {
-            color:
-              colors.textSecondary,
-          },
-        ]}
-      >
-        {title}
-      </Text>
-
-      <View style={styles.options}>
-        {options.map(
-          ([key, label]) => {
-            const selected =
-              value === key;
-
-            return (
-              <Pressable
-                key={key}
-                accessibilityRole="button"
-                accessibilityState={{
-                  selected,
-                }}
-                onPress={() =>
-                  onChange(key)
-                }
-                style={[
-                  styles.option,
-                  {
-                    backgroundColor:
-                      selected
-                        ? colors.accent
-                        : colors.surfaceElevated,
-                  },
-                ]}
-              >
-                <Text
-                  style={{
-                    color:
-                      selected
-                        ? colors.accentText
-                        : colors.textPrimary,
-                    fontWeight:
-                      selected
-                        ? '700'
-                        : '500',
-                  }}
-                >
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          },
-        )}
-      </View>
-    </View>
-  );
-}
-
-type ToggleRowProps = {
-  title: string;
-  description: string;
-  value: boolean;
-  onChange: (value: boolean) => void;
-};
-
-function ToggleRow({
-  title,
-  description,
-  value,
-  onChange,
-}: ToggleRowProps) {
-  const { colors } =
-    useTheme();
-
-  return (
-    <View
-      style={[
-        styles.switchRow,
-        {
-          borderColor:
-            colors.border,
-        },
-      ]}
-    >
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            color:
-              colors.textPrimary,
-            fontWeight: '600',
-          }}
-        >
-          {title}
-        </Text>
-
-        <Text
-          style={{
-            color:
-              colors.textSecondary,
-            marginTop: 3,
-            fontSize: 12,
-          }}
-        >
-          {description}
-        </Text>
-      </View>
-
-      <Switch
-        value={value}
-        onValueChange={onChange}
-      />
-    </View>
-  );
-}
-
-type DimensionStepperProps = {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-};
-
-function DimensionStepper({
-  label,
-  value,
-  onChange,
-}: DimensionStepperProps) {
-  return (
-    <NumericStepper
-      label={label}
-      value={value}
-      minimum={0}
-      maximum={100}
-      step={5}
-      displayValue={`${value}`}
-      onChange={onChange}
-    />
-  );
-}
-
-type RateStepperProps = {
-  value: number;
-  onChange: (value: number) => void;
-};
-
-function RateStepper({
-  value,
-  onChange,
-}: RateStepperProps) {
-  return (
-    <View style={styles.group}>
-      <NumericStepper
-        label="Speaking rate"
-        value={value}
-        minimum={0.5}
-        maximum={2}
-        step={0.1}
-        displayValue={`${value.toFixed(1)}×`}
-        onChange={(next) =>
-          onChange(
-            Number(next.toFixed(1)),
-          )
-        }
-      />
-    </View>
-  );
-}
-
-type NumericStepperProps = {
-  label: string;
-  value: number;
-  minimum: number;
-  maximum: number;
-  step: number;
-  displayValue: string;
-  onChange: (value: number) => void;
-};
-
-function NumericStepper({
-  label,
-  value,
-  minimum,
-  maximum,
-  step,
-  displayValue,
-  onChange,
-}: NumericStepperProps) {
-  const { colors } =
-    useTheme();
-
-  const decrease =
-    Math.max(
-      minimum,
-      value - step,
-    );
-
-  const increase =
-    Math.min(
-      maximum,
-      value + step,
-    );
-
-  return (
-    <View
-      style={[
-        styles.stepperRow,
-        {
-          borderColor:
-            colors.border,
-        },
-      ]}
-    >
-      <Text
-        style={[
-          styles.stepperLabel,
-          {
-            color:
-              colors.textPrimary,
-          },
-        ]}
-      >
-        {label}
-      </Text>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Decrease ${label}`}
-        disabled={value <= minimum}
-        onPress={() =>
-          onChange(decrease)
-        }
-        style={[
-          styles.stepperButton,
-          {
-            backgroundColor:
-              colors.surfaceElevated,
-            opacity:
-              value <= minimum
-                ? 0.4
-                : 1,
-          },
-        ]}
-      >
-        <Text
-          style={{
-            color:
-              colors.textPrimary,
-            fontSize: 18,
-          }}
-        >
-          −
-        </Text>
-      </Pressable>
-
-      <Text
-        style={[
-          styles.stepperValue,
-          {
-            color:
-              colors.textSecondary,
-          },
-        ]}
-      >
-        {displayValue}
-      </Text>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Increase ${label}`}
-        disabled={value >= maximum}
-        onPress={() =>
-          onChange(increase)
-        }
-        style={[
-          styles.stepperButton,
-          {
-            backgroundColor:
-              colors.surfaceElevated,
-            opacity:
-              value >= maximum
-                ? 0.4
-                : 1,
-          },
-        ]}
-      >
-        <Text
-          style={{
-            color:
-              colors.textPrimary,
-            fontSize: 18,
-          }}
-        >
-          +
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-const styles =
-  StyleSheet.create({
-    screen: {
-      flex: 1,
-    },
-
-    header: {
-      minHeight: 64,
-      paddingHorizontal: 18,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent:
-        'space-between',
-    },
-
-    title: {
-      fontSize: 18,
-      fontWeight: '700',
-    },
-
-    content: {
-      padding: 18,
-      paddingBottom: 50,
-    },
-
-    input: {
-      minHeight: 48,
-      marginTop: 20,
-      borderWidth: 1,
-      borderRadius: 14,
-      paddingHorizontal: 14,
-      fontSize: 15,
-    },
-
-    group: {
-      marginTop: 24,
-    },
-
-    groupTitle: {
-      marginBottom: 9,
-      fontSize: 12,
-      fontWeight: '700',
-      textTransform:
-        'uppercase',
-    },
-
-    options: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-    },
-
-    option: {
-      minHeight: 42,
-      borderRadius: 21,
-      justifyContent:
-        'center',
-      paddingHorizontal: 17,
-    },
-
-    switchRow: {
-      minHeight: 70,
-      marginTop: 18,
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 10,
-    },
-
-    stepperRow: {
-      minHeight: 52,
-      flexDirection: 'row',
-      alignItems: 'center',
-      borderBottomWidth: 1,
-    },
-
-    stepperLabel: {
-      flex: 1,
-      fontSize: 14,
-      fontWeight: '600',
-    },
-
-    stepperButton: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    stepperValue: {
-      minWidth: 54,
-      textAlign: 'center',
-      fontVariant: [
-        'tabular-nums',
-      ],
-    },
-  });
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  content: {
+    padding: spacing.xl,
+    paddingBottom: spacing.huge,
+  },
+  input: {
+    minHeight: 48,
+    marginTop: spacing.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.lg,
+    fontSize: typography.secondary,
+    writingDirection: 'auto',
+  },
+  group: {
+    marginTop: spacing.xl,
+  },
+  groupTitle: {
+    marginBottom: spacing.sm,
+    fontSize: typography.caption,
+    fontWeight: '700',
+  },
+});

@@ -1,5 +1,4 @@
-import React from 'react';
-
+import React, { PropsWithChildren } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -10,23 +9,18 @@ import {
 import type {
   CompanionSessionPhase,
 } from '../../../contracts/Companion';
-
-import {
-  useTheme,
-} from '../../../design-system/theme/ThemeProvider';
+import { useLocale } from '../../../core/localization/LocaleProvider';
+import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
+import { spacing } from '../../../design-system/tokens/spacing';
 
 type Props = {
-  phase:
-    CompanionSessionPhase;
-
+  phase: CompanionSessionPhase;
   enabled?: boolean;
-
   onStart: () => void;
   onStop: () => void;
-
   onPause: () => void;
   onResume: () => void;
-
   onInterrupt: () => void;
   onRecover: () => void;
 };
@@ -41,10 +35,12 @@ export function CompanionSessionControls({
   onInterrupt,
   onRecover,
 }: Props) {
+  const { t } = useLocale();
+
   if (phase === 'idle') {
     return (
       <Control
-        label="Start session"
+        label={t('startCompanionSession')}
         primary
         disabled={!enabled}
         onPress={onStart}
@@ -56,34 +52,30 @@ export function CompanionSessionControls({
     return (
       <View style={styles.row}>
         <Control
-          label="Resume"
+          label={t('resumeCompanionSession')}
           primary
           disabled={!enabled}
           onPress={onResume}
         />
-
         <Control
-          label="End"
+          label={t('endCompanionSession')}
           onPress={onStop}
         />
       </View>
     );
   }
 
-  if (
-    phase === 'interrupted'
-  ) {
+  if (phase === 'interrupted') {
     return (
       <View style={styles.row}>
         <Control
-          label="Continue"
+          label={t('continueCompanionSession')}
           primary
           disabled={!enabled}
           onPress={onRecover}
         />
-
         <Control
-          label="End"
+          label={t('endCompanionSession')}
           onPress={onStop}
         />
       </View>
@@ -93,7 +85,7 @@ export function CompanionSessionControls({
   if (phase === 'error') {
     return (
       <Control
-        label="End session"
+        label={t('endCompanionSession')}
         onPress={onStop}
       />
     );
@@ -102,31 +94,29 @@ export function CompanionSessionControls({
   return (
     <View style={styles.row}>
       <Control
-        label="Pause"
+        label={t('pauseCompanionSession')}
         disabled={!enabled}
         onPress={onPause}
       />
-
       <Control
-        label="Interrupt"
+        label={t('interruptCompanionSession')}
         disabled={!enabled}
         onPress={onInterrupt}
       />
-
       <Control
-        label="End"
+        label={t('endCompanionSession')}
         onPress={onStop}
       />
     </View>
   );
 }
 
-type ControlProps = {
+type ControlProps = PropsWithChildren<{
   label: string;
   primary?: boolean;
   disabled?: boolean;
   onPress: () => void;
-};
+}>;
 
 function Control({
   label,
@@ -134,37 +124,42 @@ function Control({
   disabled = false,
   onPress,
 }: ControlProps) {
-  const { colors } =
-    useTheme();
+  const { colors } = useTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{
-        disabled,
-      }}
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={[
+      style={({ pressed }) => [
         styles.control,
         {
-          backgroundColor:
-            primary
-              ? colors.accent
+          backgroundColor: primary
+            ? colors.accent
+            : pressed
+              ? colors.surfacePressed
               : colors.surfaceElevated,
-          opacity:
-            disabled
-              ? 0.45
+          borderColor: primary
+            ? colors.accent
+            : colors.border,
+          opacity: disabled
+            ? 0.44
+            : pressed
+              ? 0.86
               : 1,
+          transform: [
+            { scale: pressed && !disabled ? 0.98 : 1 },
+          ],
         },
       ]}
     >
       <Text
         style={{
-          color:
-            primary
-              ? colors.accentText
-              : colors.textPrimary,
+          color: primary
+            ? colors.accentText
+            : colors.textPrimary,
           fontWeight: '700',
         }}
       >
@@ -174,21 +169,18 @@ function Control({
   );
 }
 
-const styles =
-  StyleSheet.create({
-    row: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent:
-        'center',
-      gap: 9,
-    },
-
-    control: {
-      minHeight: 46,
-      borderRadius: 23,
-      justifyContent:
-        'center',
-      paddingHorizontal: 18,
-    },
-  });
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  control: {
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+});
