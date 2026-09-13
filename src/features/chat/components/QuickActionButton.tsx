@@ -24,14 +24,33 @@ export function QuickActionButton({
       accessibilityLabel="Quick actions"
       accessibilityState={{ expanded }}
       onPress={onPress}
-      style={[
+      style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: colors.accent,
+          backgroundColor: expanded
+            ? colors.surface
+            : colors.accent,
+          borderColor: expanded
+            ? colors.border
+            : colors.accent,
+          opacity: pressed ? 0.86 : 1,
+          shadowColor: colors.shadow,
+          transform: [
+            { scale: pressed ? 0.96 : 1 },
+          ],
         },
       ]}
     >
-      <Text style={styles.text}>
+      <Text
+        style={[
+          styles.text,
+          {
+            color: expanded
+              ? colors.textPrimary
+              : colors.accentText,
+          },
+        ]}
+      >
         {expanded ? '×' : '+'}
       </Text>
     </Pressable>
@@ -43,19 +62,25 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 18,
     bottom: 20,
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 40,
-    elevation: 6,
+    elevation: 8,
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
   },
 
   text: {
-    color: '#FFFFFF',
-    fontSize: 29,
-    lineHeight: 31,
-    fontWeight: '400',
+    fontSize: 30,
+    lineHeight: 32,
+    fontWeight: '500',
   },
 });
