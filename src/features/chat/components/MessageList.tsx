@@ -8,10 +8,17 @@ import {
 
 import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { spacing } from '../../../design-system/tokens/spacing';
+import {
+  buildMessageListItems,
+} from '../list/buildMessageListItems';
+import type {
+  MessageListItem,
+} from '../list/buildMessageListItems';
 import { isNearMessageListEnd } from '../scroll/isNearMessageListEnd';
 import type { ChatMessage } from '../types';
 import { EmptyChatState } from './EmptyChatState';
 import { MessageBubble } from './MessageBubble';
+import { MessageDateSeparator } from './MessageDateSeparator';
 
 type Props = {
   messages: ChatMessage[];
@@ -20,9 +27,12 @@ type Props = {
 export function MessageList({
   messages,
 }: Props) {
-  const listRef = useRef<FlatList<ChatMessage>>(null);
+  const listRef = useRef<FlatList<MessageListItem>>(null);
   const shouldFollowEndRef = useRef(true);
   const { reducedMotion } = useAccessibility();
+
+  const items = buildMessageListItems(messages);
+  const now = Date.now();
 
   const handleScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
@@ -43,11 +53,24 @@ export function MessageList({
   return (
     <FlatList
       ref={listRef}
-      data={messages}
+      data={items}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <MessageBubble message={item} />
-      )}
+      renderItem={({ item }) => {
+        if (item.kind === 'date') {
+          return (
+            <MessageDateSeparator
+              createdAt={item.createdAt}
+              now={now}
+            />
+          );
+        }
+
+        return (
+          <MessageBubble
+            message={item.message}
+          />
+        );
+      }}
       ListEmptyComponent={EmptyChatState}
       contentContainerStyle={[
         styles.content,
