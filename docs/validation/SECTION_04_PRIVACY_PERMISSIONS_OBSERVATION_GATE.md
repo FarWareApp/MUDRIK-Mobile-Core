@@ -2,9 +2,32 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
 
-Section 04 enforces the user's observation/privacy intent below AI, personality and presentation layers. Physical OS/sensor behavior remains subject to the recorded Layer 4 deferral, but deterministic policy, persistence, registry truth and adversarial tests are mandatory now.
+Section 04 enforces the user's observation/privacy intent below AI, personality and presentation layers. Physical OS/sensor behavior remains subject to the recorded Layer 4 deferral. Layers 1–3 and the automation-only portions of Layer 5 are accepted on the exact candidate recorded below.
+
+## Accepted Pre-Device Evidence
+
+Accepted candidate:
+
+`0bfc86e83bdca2bf79ad1ff061709a08889501c4`
+
+Evidence:
+
+- Mobile Core Validation run #192 / ID `34773109075`: **SUCCESS**;
+- CodeQL Security Analysis run #85 / ID `34773109004`: **SUCCESS**;
+- Mobile/Security/Identity/Privacy regressions: **151/151 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- full Git-history secret scan: **PASS**.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_04_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_04_DEFECTS.md`
+
+No unresolved Blocker, Critical or High defect is known in the accepted Section 04 pre-device scope.
 
 ## Scope
 
@@ -24,6 +47,7 @@ Section 04 implements:
 - preservation across restart/model restart/device handoff/room change/new conversation;
 - privacy-state persistence outside ordinary resettable app settings;
 - privacy-safe audit events;
+- deterministic privacy-indicator model for UI surfaces;
 - adversarial tests proving no model/background/handoff path silently widens observation authority.
 
 ## Non-goals
@@ -43,7 +67,7 @@ No emergency override is enabled by default in Section 04.
 
 ## Layer 1 — Specification and Static Correctness
 
-Required PASS evidence:
+Accepted pre-device evidence proves:
 
 - `MUDRIK_OBSERVATION_PRIVACY.md` remains authoritative;
 - privacy policy is enforced below AI/model/personality;
@@ -54,11 +78,13 @@ Required PASS evidence:
 - direct user interaction is distinguished from passive observation;
 - MUDRIK only claims/control its own sensor use;
 - TypeScript/lint/CodeQL pass;
-- no new secret/dependency regression.
+- no new secret/dependency High/Critical regression.
+
+Status: **PASS — PRE-DEVICE**.
 
 ## Layer 2 — Unit and Component Verification
 
-Mandatory deterministic tests include:
+Deterministic regression coverage includes:
 
 - `active -> stop_visual -> visual_off`;
 - broad privacy command -> `privacy_lock`;
@@ -78,29 +104,36 @@ Mandatory deterministic tests include:
 - empty/stale/unknown registry is `unverifiable`, not falsely "off";
 - active sensor conflicting with privacy policy is reported as a policy violation;
 - privacy persistence survives ordinary settings reset;
-- malformed persisted state fails closed.
+- malformed persisted state fails closed;
+- privacy audit accepts only a strict scalar metadata surface;
+- privacy indicators expose active/unverifiable/policy-violation status without inventing sensor truth.
+
+Status: **PASS — PRE-DEVICE**.
 
 ## Layer 3 — Integration, Security and Adversarial Verification
 
-Required adversarial cases:
+Adversarial coverage includes:
 
 - model/tool attempts to reactivate without explicit user request;
-- background task tries to reopen a passive sensor;
-- device handoff to a new trusted/untrusted surface while privacy lock is active;
-- OS permission revoked while app state is stale;
+- background/lifecycle paths cannot reopen passive authority;
+- device handoff while privacy lock is active;
+- OS permission/trust mismatch represented as violation/deny;
 - registry event arrives out of order;
 - forged sensor state uses same sequence with different data;
 - runtime registry becomes stale/unavailable;
 - app/settings reset attempts to erase privacy lock;
 - direct microphone interaction while broad passive monitoring is off;
-- direct camera/attachment interaction does not create passive observation authority;
 - active camera discovered while `visual_off/privacy_lock` is set;
-- unknown sensor type/state input;
-- malformed timestamps/IDs;
+- unknown/malformed sensor state input;
+- malformed timestamps/IDs and nested reactivation input;
 - privacy command persistence succeeds but sensor stop fails;
-- restart after a stop command restores the restrictive persisted policy, not `active`.
+- persistence failure while broadening denies the broadening;
+- restart after a stop command re-enforces restrictive sensor shutdown;
+- audit attempts to smuggle raw sensor payload fields are rejected.
 
-Any uncertainty or enforcement failure must preserve the restrictive policy and surface an explicit non-success state.
+Any uncertainty or enforcement failure preserves restrictive policy and surfaces an explicit non-success state.
+
+Status: **PASS — PRE-DEVICE**.
 
 ## Layer 4 — Real Device / Sensor / OS Verification
 
@@ -125,15 +158,17 @@ Before final closure verify at minimum:
 
 Mock-only evidence cannot close sensor shutdown, OS permission, hardware indicator or handoff obligations.
 
+Status: **OPEN / DEFERRED**.
+
 ## Layer 5 — Release / Independent Review / Evidence
 
-Before pre-device completion:
+Automation-only pre-device requirements are complete:
 
 - exact candidate SHA recorded;
 - Mobile Core Validation green;
 - CodeQL green;
 - Section 04 regression/adversarial tests green;
-- no unresolved Critical/High defect in Section 04 scope;
+- no unresolved Critical/High defect in pre-device scope;
 - persistence/migration evidence recorded;
 - policy-versus-runtime violation handling reviewed;
 - privacy audit/redaction reviewed;
@@ -145,6 +180,8 @@ Before final production closure:
 - independent privacy/security review covers sensor authority and reactivation paths;
 - production sensor adapters prove stop/deny behavior;
 - final candidate is revalidated after real-device fixes.
+
+Status: **PRE-DEVICE PASS / FINAL RELEASE OPEN**.
 
 ## Core Acceptance Rule
 
