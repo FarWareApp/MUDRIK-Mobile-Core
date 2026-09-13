@@ -18,192 +18,171 @@ Every section uses five validation layers:
 
 The owner elected to defer physical phone/hardware validation until the broader pre-device implementation program is substantially complete. This changes scheduling only; it does **not** waive Layer 4 or authorize production/freeze tags for deferred sections.
 
-## Current Branch and Repository
+## Repository
 
 - Repository: `FarWareApp/MUDRIK-Mobile-Core`
 - Branch: `mudrik-core-v1`
 - Repository visibility: **public**
-- Branch/ruleset enforcement: **not currently protected**
-- Production repository-governance requirements: `docs/validation/REPOSITORY_PROTECTION_REQUIREMENTS.md`
+- Android application ID: `com.farwareapp.mudrik`
+- Production AI/server transport remains decoupled from Mobile UI until the appropriate gates authorize it.
 
-`CODEOWNERS` exists for security-sensitive paths, but it remains advisory until GitHub rules enforce review/status checks.
-
-## Current Section State
+## Section State Summary
 
 ### Section 01 — Mobile Core Freeze
 
-Status:
-
 `OPEN — PHYSICAL ANDROID LAYER 4 DEFERRED`
 
-The Mobile Core implementation, hardening and automated pre-device gates are strong and operational. It is **not frozen** and must not receive `MOBILE-CORE-FROZEN` until the mandatory physical-device matrix passes.
+Automated/pre-device Mobile Core hardening is strong, but the core is **not finally frozen**. `MOBILE-CORE-FROZEN` remains forbidden until the mandatory physical Android matrix passes.
 
-Permanent Android application ID:
+Reference APK evidence before deferral:
 
-`com.farwareapp.mudrik`
-
-Device-validation assets:
-
-- `eas.json` with `device-validation` internal APK profile;
-- `scripts/section01-device-preflight.mjs`;
-- `yarn device:preflight`;
-- `docs/validation/SECTION_01_ANDROID_DEVICE_RUNBOOK.md`;
-- `docs/validation/SECTION_01_DEVICE_EVIDENCE_RECORD.md`;
-- manual `.github/workflows/android-device-validation-apk.yml`.
-
-Reference app-owned APK build proven before deferral:
-
-- candidate: `acecb662e6bac231e18a62bccc45197794bda172`;
+- candidate `acecb662e6bac231e18a62bccc45197794bda172`;
 - Mobile Core Validation run #93 / ID `34708290715`: SUCCESS;
 - Android Device Validation APK run #2 / ID `34708290677`: SUCCESS.
 
-The historical APK is reference evidence only. When physical testing starts, rebuild from the then-current exact candidate SHA.
-
-Important closed defect:
-
-`S01-DATA-001` — High / Closed. Project-only attachments could previously be misclassified as orphans and deleted. Ownership cleanup now protects message, draft and project links, with regression coverage.
+Important closed defect: `S01-DATA-001` — High / Closed. Project-only attachments are protected from orphan cleanup.
 
 ### Section 02 — Platform Security Foundation
 
-Status:
+`PRE-DEVICE COMPLETE — OPEN / LAYER 4 DEFERRED`
 
-`PRE-DEVICE COMPLETE — OPEN / LAYER 4 REAL-ENVIRONMENT VALIDATION DEFERRED`
-
-Validated security candidate:
+Accepted candidate:
 
 `256d55f2b93f33468d3c98d9e3a8192e2c584e1f`
 
 Evidence:
 
-- Mobile Core Validation run #133 / ID `34714989382`: SUCCESS;
-- CodeQL Security Analysis run #26 / ID `34714989334`: SUCCESS;
-- regressions at acceptance: **57/57 PASS**;
+- Mobile Core Validation #133 / `34714989382`: SUCCESS;
+- CodeQL #26 / `34714989334`: SUCCESS;
+- regressions: **57/57 PASS**;
 - Expo Doctor: **21/21 PASS**;
 - Computer Agent Phase 0: **10/10 PASS**;
 - dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
-- full Git-history secret scan: PASS.
+- full-history secret scan: PASS.
 
-Implemented security foundation includes:
+The section includes default-deny capability policy, exhaustive risk classification, scoped filesystem/network/background/elevation authority, strict runtime validation, secret-reference boundaries, secure-storage contracts, redacted security events, CodeQL/dependency/secret gates and repository security controls.
 
-- canonical capability registry with no wildcard authority;
-- exhaustive capability risk classification;
-- deterministic default-deny authorization outside AI/model control;
-- runtime validation of untrusted request/grant objects;
-- revoked/expired grant rejection;
-- non-root workspace scopes for filesystem/git/terminal authority;
-- exact-host network allowlists;
-- explicit background/elevation scopes;
-- traversal/encoding/ambiguous-path rejection;
-- secret-reference boundary;
-- secure-storage contract;
-- privacy-safe security-event schema/redaction;
-- CodeQL SAST;
-- dependency/secret gates;
-- Dependabot;
-- CODEOWNERS;
-- vulnerability-reporting policy;
-- threat-model/review templates;
-- APK provenance foundation.
-
-Important closed defect:
-
-`S02-AUTH-001` — High / Closed. An early unscoped capability policy could imply background/elevated authority. Missing scope now fails toward foreground/no-elevation, and high-authority capabilities require explicit narrow scope.
-
-Evidence:
-
-- `docs/validation/SECTION_02_PLATFORM_SECURITY_GATE.md`
-- `docs/validation/SECTION_02_AUTOMATED_EVIDENCE.md`
-- `docs/validation/SECTION_02_DEFECTS.md`
+Important closed defect: `S02-AUTH-001` — High / Closed.
 
 ### Section 03 — Account Identity, Authentication and Device Trust
 
-Status:
-
 `PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
 
-Validated pre-device candidate:
+Accepted candidate:
 
 `5726fc059698ebb36590f8980c862f83099fb00b`
 
 Evidence:
 
-- Mobile Core Validation run #159 / ID `34766097157`: **SUCCESS**;
-- CodeQL Security Analysis run #52 / ID `34766097108`: **SUCCESS**;
-- Mobile / Security / Identity regressions: **101/101 PASS**;
+- Mobile Core Validation #159 / `34766097157`: SUCCESS;
+- CodeQL #52 / `34766097108`: SUCCESS;
+- regressions: **101/101 PASS**;
 - Expo Doctor: **21/21 PASS**;
 - Computer Agent Phase 0: **10/10 PASS**;
 - dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
-- full Git-history secret scan: **PASS**.
+- full-history secret scan: PASS.
 
-Implemented pre-device identity foundation:
-
-- strict typed account/device/session/device-key/refresh/challenge identifiers;
-- passkey-first architecture aligned to current public-key authentication standards;
-- explicit authentication-assurance levels rather than a boolean authenticated state;
-- deterministic step-up policy;
-- high-risk authentication freshness bounds;
-- critical operations require recent phishing-resistant authentication and explicit approval boundaries;
-- access sessions bound exactly to account/device/device-key and capped to a short lifetime;
-- revoked/expired/reauth-required/suspected-reuse session states fail closed;
-- device trust binds account/device/key/public-key thumbprint;
-- hardware-backed metadata never overrides revoked/suspended/pending state;
-- device-key provider exposes signing/public metadata only and no private-key export API;
-- refresh-family rotation and generation-reuse detection;
-- one-time pairing challenges with exact account/source/target/key/time binding;
-- standard versus privileged pairing assurance requirements;
-- scoped session/device/global revocation policy;
-- one-time purpose/account/session/nonce-bound authentication challenges;
-- privacy-safe session inventory with strict field allowlist;
-- identity lifecycle security-event types and stronger authenticator/recovery-secret redaction;
-- account recovery threat model that forbids recovery becoming a weaker universal bypass.
-
-No unresolved Critical/High Section 03 defect is known in the accepted pre-device scope.
-
-Detailed evidence:
-
-- `docs/architecture/MUDRIK_IDENTITY_AUTH_DEVICE_TRUST.md`
-- `docs/architecture/MUDRIK_ACCOUNT_RECOVERY_THREAT_MODEL.md`
-- `docs/validation/SECTION_03_IDENTITY_AUTH_DEVICE_TRUST_GATE.md`
-- `docs/validation/SECTION_03_AUTOMATED_EVIDENCE.md`
-- `docs/validation/SECTION_03_DEFECTS.md`
-
-Layer 4 still mandatory later:
-
-- real passkey/WebAuthn registration/login;
-- Android hardware-backed/non-exportable device keys where supported;
-- iOS/desktop equivalents when in release scope;
-- production-like token/session persistence;
-- persistent backend refresh rotation/reuse detection;
-- real two-device pairing;
-- remote sign-out/revoke with target online and offline;
-- key rotation/reinstall/migration behavior;
-- recovery implementation and abuse simulations;
-- clock-skew/network-failure behavior;
-- independent auth/device security review or penetration test.
+Implemented boundaries include typed account/device/session/key identities, passkey-first assurance, step-up policy, short-lived device/key-bound sessions, refresh-family reuse detection, one-time pairing, scoped revocation, challenge binding, device trust and privacy-safe inventory/audit schemas.
 
 ### Section 04 — Privacy, Permissions and Observation Control
 
-Status:
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`0bfc86e83bdca2bf79ad1ff061709a08889501c4`
+
+Evidence:
+
+- Mobile Core Validation #192 / `34773109075`: SUCCESS;
+- CodeQL #85 / `34773109004`: SUCCESS;
+- regressions: **151/151 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- full-history secret scan: PASS.
+
+Implemented boundaries include observation privacy state machine, natural-language privacy fast path, dedicated V7 privacy persistence, fail-closed recovery, live monotonic Sensor-State Registry, activation policy, truth resolver, restart/handoff reconciliation, privacy audit events and UI indicator model.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_04_PRIVACY_PERMISSIONS_OBSERVATION_GATE.md`
+- `docs/validation/SECTION_04_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_04_DEFECTS.md`
+
+### Section 05 — Voice Runtime
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`504c42e1902665858a61ce9df6e3fbcab844b67c`
+
+Evidence:
+
+- Mobile Core Validation ID `34776183455`: SUCCESS;
+- CodeQL ID `34776183457`: SUCCESS;
+- regressions: **215/215 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- full-history secret scan: PASS.
+
+The authoritative runtime lives in `src/core/voice`. It includes streaming STT/TTS contracts, VAD ordering, turn generation/replay protection, barge-in, privacy-bound microphone activation, provider-neutral routing/failover boundaries, cancellation, end-of-turn logic, latency evidence and privacy-safe audit events.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_05_VOICE_RUNTIME_GATE.md`
+- `docs/validation/SECTION_05_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_05_DEFECTS.md`
+
+### Section 06 — Smart Companion
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`97ac1435eee06a96e4de1b2797baa5ec90a0c3e0`
+
+Evidence:
+
+- Mobile Core Validation #284 / `34781835325`: SUCCESS;
+- CodeQL #177 / `34781835439`: SUCCESS;
+- regressions: **239/239 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- full-history secret scan: PASS;
+- no known unresolved Critical/High Section 06 defect.
+
+Implemented boundaries include one primary companion identity, strict provider-neutral profile validation, bounded personality/presence configuration, V8 non-destructive persistence, monotonic revision protection, consistent text/voice/avatar identity projection, memory-policy reference-only binding and explicit zero execution/sensor/memory/disclosure authority.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_06_SMART_COMPANION_GATE.md`
+- `docs/validation/SECTION_06_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_06_DEFECTS.md`
+
+### Section 07 — Cross-Device Presence
 
 `PRE-DEVICE IMPLEMENTATION — ACTIVE`
 
+Section 07 is now the only active implementation section.
+
 Primary objectives:
 
-- implement the observation privacy state machine;
-- create a truthful live Sensor-State Registry;
-- make `visual_off`, `ambient_off` and `privacy_lock` enforceable below AI/personality;
-- make stop/privacy commands immediate and sticky across restart/handoff/context changes;
-- require explicit re-enable and real OS permission checks;
-- separate camera, microphone, location, presence and health observation boundaries;
-- expose privacy-safe indicators/status;
-- prove device handoff cannot silently restore observation;
-- fail toward a more private state when sensor/control state cannot be verified.
+- trusted-surface/device presence model;
+- one logical companion session with one primary interactive surface;
+- deterministic presence confidence and surface ranking;
+- device trust/privacy classification before presentation;
+- explicit user pinning and handoff control;
+- replay/stale/conflicting presence update protection;
+- private-content suppression on shared/untrusted surfaces;
+- handoff that preserves session/profile/task/privacy state without granting new authority;
+- prevention of multiple surfaces simultaneously owning microphone/spoken-output turn-taking;
+- safe offline/reconnect behavior without split-brain companion identities.
 
-Authoritative architecture:
-
-`docs/architecture/MUDRIK_OBSERVATION_PRIVACY.md`
-
-No production sensor authority will be coupled merely to satisfy pre-device tests.
+Physical multi-device handoff tests remain Layer 4 and will be deferred under the recorded exception. Section 07 pre-device work must use simulated/contract-level trusted devices and must not pretend real hardware handoff has passed.
 
 ## UI/UX Detail Preservation Rule
 
@@ -211,169 +190,69 @@ Authoritative detail ledger:
 
 `docs/architecture/MUDRIK_UI_UX_DETAIL_REGISTRY.md`
 
-MUDRIK must preserve small interaction and visual details with the same discipline used for major architecture. A large feature is not considered complete if the small product details around it were silently lost.
+Small product details are mandatory product contract. This includes the text-entry box, its geometry, the intended attachment paperclip (`📎`), image/video/file attachment flows, draft tray, message bubbles, message timestamps, send/stop/retry/error states, keyboard/safe-area behavior, floating quick actions, RTL/LTR and accessibility.
 
-Mandatory tracked details include, among others:
+Known chat gaps remain explicitly tracked rather than forgotten:
 
-- the text-entry box and its exact visual/interaction behavior;
-- the intended attachment paperclip (`📎`) affordance;
-- image, video and document/file attachment flows;
-- pre-send attachment tray behavior;
-- message bubbles and their alignment/spacing/RTL behavior;
-- message timestamps;
-- sending/stop/retry/error states;
-- keyboard/safe-area behavior;
-- floating quick actions;
-- accessibility states;
-- every later user-requested modification to these surfaces.
+- current attachment control is `＋`, while paperclip presentation is `INTENDED/MISSING`;
+- `ChatMessage.createdAt` exists, while bubble timestamp rendering is `MISSING/INTENDED`.
 
-Known current differences are intentionally recorded rather than forgotten: the composer currently renders `＋` for attachments while the intended product affordance is a paperclip, and `ChatMessage.createdAt` exists while timestamp rendering is currently missing from `MessageBubble`.
-
-UI-affecting refactors must audit the registry before closure. `CURRENT`, `INTENDED`, `MISSING`, `PARTIAL`, `DEFERRED`, `VERIFY` and `VERIFIED` statuses are used so deferred work cannot be mistaken for optional work.
+Deferred UI items are not optional and will be implemented in their correct active scope.
 
 ## Mobile Core Architecture Rule
 
-The app-first boundary remains mandatory:
-
-- Mobile UI is presentation/interaction, not the authority layer;
-- chat accepts input and renders output without depending on output source;
-- production AI/provider/server transport remains decoupled from Mobile UI until Mobile Core physical freeze obligations are satisfied;
-- modules retain one responsibility where practical;
-- future server/AI/agent systems must not silently weaken Mobile privacy or permission behavior.
-
-## Computer Agent Direction
-
-Target topology:
-
-`MUDRIK Mobile/Web -> protected Control Plane -> outbound Computer Agent`
-
-The browser/phone sends high-level tasks. The local Computer Agent executes only inside deterministic capability policy. No raw unauthenticated remote shell is exposed.
-
-Future autonomous work loop:
-
-`Understand -> Inspect -> Research -> Plan -> Implement -> Build -> Test -> Diagnose -> Repair -> Re-test -> Review -> Finish`
-
-Completion is based on verification evidence, not code generation alone.
-
-## High-Assurance Control Plane Direction
-
-The future server is a high-assurance, low-latency real-time control plane, not a generic relay. Required properties include:
-
-- protected edge/regional gateways;
-- persistent authenticated outbound device channels;
-- encrypted transport;
-- independently validated sensitive commands;
-- nonce/expiry/sequence/replay protection;
-- durable task/event delivery;
-- idempotency and duplicate-execution defense;
-- reconnect/resume;
-- rate/resource limits;
-- kill/revoke controls;
-- compartmentalized identity/authorization/execution boundaries;
-- durable source-of-truth state;
-- failover/recovery/load/latency acceptance tests.
-
-Relevant architecture:
-
-- `docs/architecture/MUDRIK_HIGH_ASSURANCE_CONTROL_PLANE.md`
-- `docs/architecture/MUDRIK_CONTROL_PLANE_THREAT_MODEL.md`
-- `docs/validation/SECTION_14_CONTROL_PLANE_ACCEPTANCE_GATE.md`
-
-The Control Plane does not replace the Computer Agent's local permission boundary.
-
-## Privacy and Companion Principles
-
-MUDRIK must truthfully report current observation state. Commands such as "لا تراقبني" / "غمّض عيونك" change the underlying observation state, not only avatar animation. Disabled passive observation must not silently reactivate after restart, handoff, room change or model restart.
-
-Relevant architecture:
-
-- `docs/architecture/MUDRIK_OBSERVATION_PRIVACY.md`
-- `docs/architecture/MUDRIK_SMART_COMPANION.md`
-- `docs/architecture/MUDRIK_VOICE_INTERACTION.md`
-- `docs/architecture/MUDRIK_AMBIENT_DEVICE_MEDIA_ORCHESTRATION.md`
-- `docs/architecture/MUDRIK_SMART_DEVICE_FINDING.md`
-- `docs/architecture/MUDRIK_EMERGENCY_GUARDIAN.md`
-
-AI/personality/prompt state never grants sensor/tool authority.
-
-## Security Principles
-
-Authoritative baseline:
-
-- `docs/architecture/MUDRIK_SECURITY_BASELINE.md`
-- `docs/architecture/MUDRIK_SECURITY_ASSURANCE_PROGRAM.md`
-- `docs/architecture/MUDRIK_THREAT_MODEL_TEMPLATE.md`
-- `docs/validation/SECURITY_REVIEW_CHECKLIST.md`
-
-Core rules:
-
-- Zero Trust;
-- least privilege;
-- deny by default;
-- defense in depth;
-- fail secure;
-- compartmentalize compromise;
+- app-first architecture remains mandatory;
+- UI is presentation/interaction, not authority;
+- chat remains source-agnostic;
 - AI/model output is untrusted input, never authority;
-- production secrets/private keys are not committed;
-- security telemetry is minimized/redacted;
-- sensitive actions require deterministic policy;
-- security incidents are not hidden merely to protect brand reputation;
-- user protection and lawful incident response take priority.
+- companion/personality never grants tool/sensor/memory/disclosure authority;
+- every module should retain one clear responsibility;
+- later server/AI/agent integration must not weaken Mobile privacy/security boundaries.
 
 ## Dependency / Tooling Posture
 
 Current stack includes Expo SDK 57, React Native, TypeScript, SQLite and Expo Router.
 
-Validation toolchain includes:
+Validation includes frozen Yarn dependencies, ESLint `9.39.5`, `eslint-config-expo 57.0.2`, TypeScript, Expo Doctor `1.20.4`, Node 22, CodeQL JS/TS, dependency audit, full-history secret scan and pinned GitHub Actions.
 
-- frozen Yarn lockfile;
-- ESLint `9.39.5` + `eslint-config-expo 57.0.2` due current Expo/React plugin compatibility constraints;
-- TypeScript;
-- Expo Doctor `1.20.4` pinned in CI;
-- Node 22 in CI;
-- CodeQL JS/TS;
-- dependency audit;
-- full-history secret scan;
-- pinned GitHub Actions in trust-sensitive workflows.
-
-Known reviewed Moderate transitive advisories remain visible:
+Known reviewed Moderate transitive advisories remain:
 
 - `uuid@7.0.3` through Expo configuration tooling;
 - `decode-uri-component@0.2.2` through `expo-router -> query-string`.
 
-No incompatible override is accepted merely to silence an audit warning.
+No incompatible override is accepted merely to silence an advisory.
 
 ## Physical Validation Debt
 
-Because physical testing is deferred, no section with hardware/OS/production-like obligations may be represented as fully closed until those obligations are executed.
+No section with physical/OS/provider/real-network obligations is finally closed while Layer 4 is deferred.
+
+The owner does **not** need to stop current implementation work to test the phone now. When the deferred physical phase starts:
+
+1. rebuild artifacts from the then-current exact candidate SHAs;
+2. execute every section's Layer 4 matrix;
+3. record PASS/FAIL/BLOCKED evidence;
+4. classify and repair every failure;
+5. add automated regression coverage where feasible;
+6. rerun full CI/CodeQL/security gates;
+7. only then authorize final freeze/release tags.
 
 Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19 are completed or explicitly proven not applicable.
 
-When deferred testing begins:
-
-1. rebuild every test artifact/service from exact current candidate SHAs;
-2. execute each section's Layer 4 matrix;
-3. record PASS/FAIL/BLOCKED evidence;
-4. classify every failure;
-5. add automated regression coverage where feasible;
-6. fix and retest the failure plus adjacent cases;
-7. rerun full CI/SAST/security gates;
-8. only then authorize freeze/release tags.
-
 ## Next Work
 
-1. Continue Section 04 privacy/policy/coordinator adversarial verification and close every failure before acceptance.
-2. Keep UI/UX detail changes tracked in `MUDRIK_UI_UX_DETAIL_REGISTRY.md`; do not silently implement or discard them outside the correct active scope.
-3. Keep Sections 01–03 formally open for their deferred Layer 4 obligations.
-4. Do not couple production AI/server/sensor authority into the Mobile UI.
+1. Execute Section 07 Cross-Device Presence from contracts/policy first, not hardware-specific UI.
+2. Preserve Sections 01–06 as open for their deferred Layer 4 obligations.
+3. Keep UI/UX detail changes registered and do not silently drop future intended work.
+4. Do not couple production AI/server/sensor authority merely to satisfy pre-device tests.
 
 ## Development Rule
 
-For every major section:
+For every section:
 
-1. implement the defined scope;
-2. run all applicable validation layers;
-3. fix failures rather than suppress them;
-4. record exact evidence and defects;
-5. update this status summary;
-6. create stable milestone tags only when all required gates, including deferred physical gates, are satisfied.
+1. define scope and explicit non-goals;
+2. implement deterministic contracts/policy before adapters/UI where appropriate;
+3. run unit/component and integration/adversarial gates;
+4. fix failures rather than suppress them;
+5. record exact evidence and defects;
+6. keep deferred physical obligations explicit;
+7. create stable milestone/freeze tags only when all required gates have actually passed.
