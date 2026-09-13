@@ -75,6 +75,55 @@ export interface StreamingTtsProvider {
   ): Promise<StreamingTtsSession>;
 }
 
+const SESSION_ID = /^voice_[A-Za-z0-9_-]{16,80}$/;
+const UTTERANCE_ID = /^utt_[A-Za-z0-9_-]{16,80}$/;
+const PAYLOAD_REF = /^audio_[A-Za-z0-9._:@\/-]{8,160}$/;
+
+export function validateStreamingTtsChunkMetadata(
+  input: unknown,
+): StreamingTtsChunkMetadata | null {
+  if (
+    typeof input !== 'object' ||
+    input === null ||
+    Array.isArray(input)
+  ) {
+    return null;
+  }
+
+  const record = input as Record<string, unknown>;
+  const allowedKeys = new Set([
+    'sessionId',
+    'utteranceId',
+    'sequence',
+    'payloadRef',
+    'isFinal',
+  ]);
+
+  if (
+    Object.keys(record).some((key) => !allowedKeys.has(key)) ||
+    typeof record.sessionId !== 'string' ||
+    !SESSION_ID.test(record.sessionId) ||
+    typeof record.utteranceId !== 'string' ||
+    !UTTERANCE_ID.test(record.utteranceId) ||
+    typeof record.sequence !== 'number' ||
+    !Number.isSafeInteger(record.sequence) ||
+    record.sequence < 0 ||
+    typeof record.payloadRef !== 'string' ||
+    !PAYLOAD_REF.test(record.payloadRef) ||
+    typeof record.isFinal !== 'boolean'
+  ) {
+    return null;
+  }
+
+  return Object.freeze({
+    sessionId: record.sessionId,
+    utteranceId: record.utteranceId,
+    sequence: record.sequence,
+    payloadRef: record.payloadRef,
+    isFinal: record.isFinal,
+  });
+}
+
 export function normalizeVoiceProviderFailure(
   input: unknown,
 ): VoiceProviderFailure {
