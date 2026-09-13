@@ -6,6 +6,10 @@ const composer = fs.readFileSync(
   'src/features/chat/components/MessageComposer.tsx',
   'utf8',
 );
+const composerSurface = fs.readFileSync(
+  'src/features/chat/components/composer/ComposerSurface.tsx',
+  'utf8',
+);
 const attachmentButton = fs.readFileSync(
   'src/features/chat/components/composer/ComposerAttachmentButton.tsx',
   'utf8',
@@ -20,6 +24,10 @@ const textInput = fs.readFileSync(
 );
 const translations = fs.readFileSync(
   'src/core/localization/translations.ts',
+  'utf8',
+);
+const colorTokens = fs.readFileSync(
+  'src/design-system/tokens/colors.ts',
   'utf8',
 );
 
@@ -40,6 +48,28 @@ test(
 );
 
 test(
+  'composer surface owns the input shell polish',
+  () => {
+    assert.match(composerSurface, /surfaceInput/);
+    assert.match(composerSurface, /focusedSurface/);
+    assert.match(composerSurface, /shadowColor/);
+    assert.match(composerSurface, /elevation:/);
+
+    for (const token of [
+      'surfaceInput',
+      'surfacePressed',
+      'accentSoft',
+      'shadow',
+    ]) {
+      assert.match(
+        colorTokens,
+        new RegExp(`${token}:`),
+      );
+    }
+  },
+);
+
+test(
   'attachment affordance is an explicit paperclip with a bounded count badge',
   () => {
     assert.match(attachmentButton, /📎/u);
@@ -50,10 +80,13 @@ test(
 );
 
 test(
-  'composer action targets stay at least 44 by 44',
+  'composer action targets stay at least 44 by 44 with pressed-state polish',
   () => {
     assert.match(actionButton, /width:\s*44/);
     assert.match(actionButton, /height:\s*44/);
+    assert.match(actionButton, /surfacePressed/);
+    assert.match(actionButton, /transform:/);
+    assert.match(actionButton, /shadowOpacity/);
   },
 );
 
@@ -62,6 +95,8 @@ test(
   () => {
     assert.match(textInput, /multiline/);
     assert.match(textInput, /maxLength=\{12000\}/);
+    assert.match(textInput, /keyboardAppearance=\{mode\}/);
+    assert.match(textInput, /textAlignVertical:\s*'top'/);
     assert.match(textInput, /writingDirection:\s*'auto'/);
   },
 );
