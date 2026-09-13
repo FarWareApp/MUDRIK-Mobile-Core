@@ -1,4 +1,5 @@
 import React, {
+  useEffect,
   useState,
 } from 'react';
 
@@ -18,7 +19,7 @@ import {
   SafeAreaView,
 } from 'react-native-safe-area-context';
 
-import {
+import type {
   CompanionRepository,
 } from '../../contracts/CompanionRepository';
 
@@ -67,6 +68,19 @@ export function CompanionScreen({
 
   const session =
     useCompanionSessionController();
+
+  useEffect(() => {
+    if (
+      !profile.profile.enabled
+      && session.phase !== 'idle'
+    ) {
+      session.stop();
+    }
+  }, [
+    profile.profile.enabled,
+    session.phase,
+    session.stop,
+  ]);
 
   if (profile.loading) {
     return (
@@ -191,9 +205,9 @@ export function CompanionScreen({
                   'center',
               }}
             >
-              Companion session is ready.
-              Intelligence and speech providers
-              will connect later.
+              {profile.profile.enabled
+                ? 'Companion session is ready. Intelligence and speech providers will connect later.'
+                : 'Companion is disabled. Enable it in Companion settings to start a session.'}
             </Text>
           </View>
         )}
@@ -204,6 +218,10 @@ export function CompanionScreen({
           <CompanionSessionControls
             phase={
               session.phase
+            }
+            enabled={
+              profile.profile
+                .enabled
             }
             onStart={
               session.start
@@ -237,6 +255,9 @@ export function CompanionScreen({
         >
           {profile.profile
             .interactionStyle}
+          {' · '}
+          {profile.profile
+            .presenceLevel}
           {' · '}
           {profile.profile
             .voicePreference}
