@@ -56,6 +56,22 @@ function parseNullableProbability(value: unknown): number | null | undefined {
     : undefined;
 }
 
+function parseGeneration(value: unknown): number | null {
+  if (value === undefined) {
+    return 0;
+  }
+
+  if (
+    typeof value !== 'number' ||
+    !Number.isSafeInteger(value) ||
+    value < 0
+  ) {
+    return null;
+  }
+
+  return value;
+}
+
 function parseLanguageTags(value: unknown): readonly string[] | null {
   if (!Array.isArray(value) || value.length > MAX_LANGUAGE_TAGS) {
     return null;
@@ -135,11 +151,8 @@ export function validateStreamingSpeechSegment(
     return reject('invalid_identity');
   }
 
-  if (
-    typeof record.generation !== 'number' ||
-    !Number.isSafeInteger(record.generation) ||
-    record.generation < 0
-  ) {
+  const generation = parseGeneration(record.generation);
+  if (generation === null) {
     return reject('invalid_generation');
   }
 
@@ -222,7 +235,7 @@ export function validateStreamingSpeechSegment(
 
   const segment: StreamingSpeechSegment = Object.freeze({
     sessionId: record.sessionId,
-    generation: record.generation,
+    generation,
     segmentId: record.segmentId,
     sequence: record.sequence,
     kind: record.kind,
