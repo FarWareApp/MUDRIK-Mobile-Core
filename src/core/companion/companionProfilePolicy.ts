@@ -159,7 +159,7 @@ function isProfileReference(
 
 function normalizeLanguages(
   value: unknown,
-): string[] | null {
+): readonly string[] | null {
   if (
     !Array.isArray(value)
     || value.length > 8
@@ -188,7 +188,7 @@ function normalizeLanguages(
     }
   }
 
-  return result;
+  return Object.freeze(result);
 }
 
 function reject(
@@ -367,12 +367,6 @@ export function validateCompanionProfile(
   return Object.freeze({
     accepted: true,
     reason: 'accepted',
-    profile: Object.freeze({
-      ...profile,
-      preferredLanguages:
-        Object.freeze([
-          ...preferredLanguages,
-        ]) as unknown as string[],
-    }),
+    profile: Object.freeze(profile),
   });
 }
