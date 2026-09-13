@@ -5,7 +5,18 @@ import {
   Text,
 } from 'react-native';
 
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import {
+  useLocale,
+} from '../../../core/localization/LocaleProvider';
+import {
+  useTheme,
+} from '../../../design-system/theme/ThemeProvider';
+import {
+  radius,
+} from '../../../design-system/tokens/radius';
+import {
+  spacing,
+} from '../../../design-system/tokens/spacing';
 
 type Props = {
   expanded: boolean;
@@ -16,39 +27,45 @@ export function QuickActionButton({
   expanded,
   onPress,
 }: Props) {
+  const { t, isRTL } = useLocale();
   const { colors } = useTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Quick actions"
+      accessibilityLabel={
+        t(
+          expanded
+            ? 'closeQuickActions'
+            : 'quickActions',
+        )
+      }
       accessibilityState={{ expanded }}
+      hitSlop={4}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        isRTL
+          ? styles.buttonRTL
+          : styles.buttonLTR,
         {
-          backgroundColor: expanded
-            ? colors.surface
-            : colors.accent,
-          borderColor: expanded
-            ? colors.border
-            : colors.accent,
-          opacity: pressed ? 0.86 : 1,
+          backgroundColor:
+            colors.accent,
           shadowColor: colors.shadow,
+          opacity: pressed ? 0.9 : 1,
           transform: [
-            { scale: pressed ? 0.96 : 1 },
+            {
+              scale: pressed ? 0.96 : 1,
+            },
           ],
         },
       ]}
     >
       <Text
+        importantForAccessibility="no"
         style={[
-          styles.text,
-          {
-            color: expanded
-              ? colors.textPrimary
-              : colors.accentText,
-          },
+          styles.glyph,
+          { color: colors.accentText },
         ]}
       >
         {expanded ? '×' : '+'}
@@ -60,27 +77,30 @@ export function QuickActionButton({
 const styles = StyleSheet.create({
   button: {
     position: 'absolute',
-    right: 18,
-    bottom: 20,
+    bottom: spacing.xl,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 40,
-    elevation: 8,
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 6,
     },
+    elevation: 7,
+    zIndex: 50,
   },
-
-  text: {
+  buttonLTR: {
+    right: spacing.lg,
+  },
+  buttonRTL: {
+    left: spacing.lg,
+  },
+  glyph: {
     fontSize: 30,
     lineHeight: 32,
-    fontWeight: '500',
+    fontWeight: '400',
   },
 });

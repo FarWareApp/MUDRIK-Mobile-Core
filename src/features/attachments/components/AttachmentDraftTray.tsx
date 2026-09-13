@@ -1,19 +1,30 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
 import type {
   AttachmentRecord,
 } from '../../../contracts/Attachment';
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
-import { radius } from '../../../design-system/tokens/radius';
-import { spacing } from '../../../design-system/tokens/spacing';
+import {
+  useLocale,
+} from '../../../core/localization/LocaleProvider';
+import {
+  useTheme,
+} from '../../../design-system/theme/ThemeProvider';
+import {
+  radius,
+} from '../../../design-system/tokens/radius';
+import {
+  spacing,
+} from '../../../design-system/tokens/spacing';
 
-import { AttachmentDraftItem } from './AttachmentDraftItem';
+import {
+  AttachmentDraftItem,
+} from './AttachmentDraftItem';
 
 type Props = {
   attachments: AttachmentRecord[];
@@ -28,6 +39,7 @@ export function AttachmentDraftTray({
   busy,
   onRemove,
 }: Props) {
+  const { t } = useLocale();
   const { colors } = useTheme();
 
   if (
@@ -41,39 +53,51 @@ export function AttachmentDraftTray({
     <View
       style={[
         styles.wrapper,
-        { backgroundColor: colors.background },
+        {
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
+        },
       ]}
     >
       <ScrollView
+        contentContainerStyle={
+          styles.content
+        }
         horizontal
+        keyboardShouldPersistTaps="handled"
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.content}
       >
-        {attachments.map((attachment) => (
-          <AttachmentDraftItem
-            key={attachment.id}
-            attachment={attachment}
-            disabled={busy}
-            onRemove={onRemove}
-          />
-        ))}
+        {attachments.map(
+          (attachment) => (
+            <AttachmentDraftItem
+              key={attachment.id}
+              attachment={attachment}
+              disabled={busy}
+              onRemove={onRemove}
+            />
+          ),
+        )}
 
         {busy && (
           <View
             accessibilityRole="progressbar"
+            accessibilityLabel={
+              t('addingAttachment')
+            }
             style={[
-              styles.busy,
+              styles.loadingItem,
               {
-                backgroundColor: colors.surfaceElevated,
-                borderColor: colors.border,
+                backgroundColor:
+                  colors.surfaceElevated,
+                borderColor:
+                  colors.border,
               },
             ]}
           >
-            <Text
-              style={{ color: colors.textSecondary }}
-            >
-              …
-            </Text>
+            <ActivityIndicator
+              color={colors.accent}
+              size="small"
+            />
           </View>
         )}
       </ScrollView>
@@ -83,18 +107,21 @@ export function AttachmentDraftTray({
 
 const styles = StyleSheet.create({
   wrapper: {
+    borderTopWidth:
+      StyleSheet.hairlineWidth,
     paddingTop: spacing.sm,
   },
   content: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
   },
-  busy: {
-    width: 56,
+  loadingItem: {
+    width: 72,
     height: 92,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },

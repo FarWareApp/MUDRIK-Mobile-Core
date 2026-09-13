@@ -1,4 +1,8 @@
 import {
+  ChatTranslationKey,
+  chatTranslations,
+} from './chatTranslations';
+import {
   AppLocale,
   TranslationKey as BaseTranslationKey,
   translations,
@@ -10,6 +14,7 @@ import {
 
 export type TranslationKey =
   | BaseTranslationKey
+  | ChatTranslationKey
   | VoiceTranslationKey;
 
 export const translationCatalog: Record<
@@ -18,14 +23,17 @@ export const translationCatalog: Record<
 > = {
   ar: {
     ...translations.ar,
+    ...chatTranslations.ar,
     ...voiceTranslations.ar,
   },
   de: {
     ...translations.de,
+    ...chatTranslations.de,
     ...voiceTranslations.de,
   },
   en: {
     ...translations.en,
+    ...chatTranslations.en,
     ...voiceTranslations.en,
   },
 };

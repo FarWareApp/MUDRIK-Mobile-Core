@@ -3,7 +3,6 @@ import React, {
   useState,
 } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -24,6 +23,7 @@ import { useAppSettings } from '../../core/settings/AppSettingsProvider';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { AttachmentImportService } from '../attachments/AttachmentImportService';
 import { AttachmentDraftTray } from '../attachments/components/AttachmentDraftTray';
+import { AttachmentSourceSheet } from '../attachments/components/AttachmentSourceSheet';
 import { useAttachmentDraftController } from '../attachments/hooks/useAttachmentDraftController';
 import { AttachmentFileStore } from '../attachments/storage/AttachmentFileStore';
 import { useActiveConversation } from '../conversations/ActiveConversationProvider';
@@ -33,6 +33,7 @@ import { ChatErrorBanner } from './components/ChatErrorBanner';
 import { ChatHeader } from './components/ChatHeader';
 import { MessageComposer } from './components/MessageComposer';
 import { MessageList } from './components/MessageList';
+import { QuickActionBackdrop } from './components/QuickActionBackdrop';
 import { QuickActionButton } from './components/QuickActionButton';
 import { QuickActionMenu } from './components/QuickActionMenu';
 import { SendingIndicator } from './components/SendingIndicator';
@@ -48,6 +49,12 @@ type Props = {
   attachmentImportService: AttachmentImportService;
   attachmentFileStore: AttachmentFileStore;
 };
+
+type QuickRoute =
+  | '/conversations'
+  | '/projects'
+  | '/companion'
+  | '/settings';
 
 export function ChatScreen({
   transport,
@@ -70,6 +77,11 @@ export function ChatScreen({
   const [
     quickActionsOpen,
     setQuickActionsOpen,
+  ] = useState(false);
+
+  const [
+    attachmentSourceOpen,
+    setAttachmentSourceOpen,
   ] = useState(false);
 
   const effectiveDraftRepository =
@@ -126,43 +138,28 @@ export function ChatScreen({
       fileStore: attachmentFileStore,
     });
 
-  const openAttachmentMenu = () => {
-    Alert.alert(
-      'Add attachment',
-      undefined,
-      [
-        {
-          text: 'Camera',
-          onPress: () => {
-            void attachmentDraft.takePhoto();
-          },
-        },
-        {
-          text: 'Photos & Videos',
-          onPress: () => {
-            void attachmentDraft.pickMedia();
-          },
-        },
-        {
-          text: 'Files',
-          onPress: () => {
-            void attachmentDraft.pickDocuments();
-          },
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ],
-    );
+  const openAttachmentSources = () => {
+    setQuickActionsOpen(false);
+    setAttachmentSourceOpen(true);
+  };
+
+  const takePhoto = () => {
+    setAttachmentSourceOpen(false);
+    void attachmentDraft.takePhoto();
+  };
+
+  const pickMedia = () => {
+    setAttachmentSourceOpen(false);
+    void attachmentDraft.pickMedia();
+  };
+
+  const pickFiles = () => {
+    setAttachmentSourceOpen(false);
+    void attachmentDraft.pickDocuments();
   };
 
   const navigate = (
-    route:
-      | '/conversations'
-      | '/projects'
-      | '/companion'
-      | '/settings',
+    route: QuickRoute,
   ) => {
     setQuickActionsOpen(false);
     router.push(route);
@@ -187,6 +184,7 @@ export function ChatScreen({
       >
         <ChatHeader
           onNewConversation={() => {
+            setQuickActionsOpen(false);
             void newConversation();
           }}
         />
@@ -209,6 +207,13 @@ export function ChatScreen({
               {sending && (
                 <SendingIndicator />
               )}
+
+              <QuickActionBackdrop
+                visible={quickActionsOpen}
+                onPress={() => {
+                  setQuickActionsOpen(false);
+                }}
+              />
 
               <QuickActionMenu
                 visible={quickActionsOpen}
@@ -265,6 +270,17 @@ export function ChatScreen({
               }}
             />
 
+            <AttachmentSourceSheet
+              visible={attachmentSourceOpen}
+              disabled={attachmentDraft.busy}
+              onDismiss={() => {
+                setAttachmentSourceOpen(false);
+              }}
+              onCamera={takePhoto}
+              onMedia={pickMedia}
+              onFiles={pickFiles}
+            />
+
             <MessageComposer
               value={draft}
               sending={sending}
@@ -278,11 +294,14 @@ export function ChatScreen({
                 await attachmentDraft.reload();
               }}
               onStop={stop}
-              onAttachmentsPress={openAttachmentMenu}
+              onAttachmentsPress={
+                openAttachmentSources
+              }
               attachmentCount={
                 attachmentDraft.attachments.length
               }
               onVoicePress={() => {
+                setQuickActionsOpen(false);
                 router.push('/voice');
               }}
             />

@@ -6,9 +6,21 @@ import {
   View,
 } from 'react-native';
 
-import { useLocale } from '../../../core/localization/LocaleProvider';
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
-import { spacing } from '../../../design-system/tokens/spacing';
+import {
+  useLocale,
+} from '../../../core/localization/LocaleProvider';
+import {
+  useTheme,
+} from '../../../design-system/theme/ThemeProvider';
+import {
+  radius,
+} from '../../../design-system/tokens/radius';
+import {
+  spacing,
+} from '../../../design-system/tokens/spacing';
+import {
+  typography,
+} from '../../../design-system/tokens/typography';
 
 type Props = {
   onNewConversation: () => void;
@@ -17,26 +29,30 @@ type Props = {
 export function ChatHeader({
   onNewConversation,
 }: Props) {
+  const { t, isRTL } = useLocale();
   const { colors } = useTheme();
-  const { isRTL, t } = useLocale();
 
   return (
     <View
       style={[
-        styles.container,
+        styles.header,
+        isRTL && styles.headerRTL,
         {
-          borderBottomColor: colors.border,
-          flexDirection: isRTL ? 'row-reverse' : 'row',
+          borderBottomColor:
+            colors.border,
         },
       ]}
     >
-      <View style={styles.titleContainer}>
+      <View style={styles.titleGroup}>
         <Text
+          numberOfLines={1}
           style={[
             styles.title,
             {
               color: colors.textPrimary,
-              textAlign: isRTL ? 'right' : 'left',
+              textAlign: isRTL
+                ? 'right'
+                : 'left',
             },
           ]}
         >
@@ -44,11 +60,14 @@ export function ChatHeader({
         </Text>
 
         <Text
+          numberOfLines={1}
           style={[
             styles.subtitle,
             {
               color: colors.textSecondary,
-              textAlign: isRTL ? 'right' : 'left',
+              textAlign: isRTL
+                ? 'right'
+                : 'left',
             },
           ]}
         >
@@ -58,23 +77,38 @@ export function ChatHeader({
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('newConversation')}
-        hitSlop={10}
+        accessibilityLabel={
+          t('newConversation')
+        }
+        hitSlop={4}
         onPress={onNewConversation}
-        style={[
+        style={({ pressed }) => [
           styles.newButton,
           {
-            backgroundColor: colors.surfaceElevated,
+            backgroundColor: pressed
+              ? colors.surfacePressed
+              : colors.surfaceElevated,
+            borderColor: pressed
+              ? colors.accentSoft
+              : colors.border,
+            transform: [
+              {
+                scale: pressed
+                  ? 0.96
+                  : 1,
+              },
+            ],
           },
         ]}
       >
         <Text
-          style={{
-            color: colors.textPrimary,
-            fontSize: 23,
-          }}
+          importantForAccessibility="no"
+          style={[
+            styles.newGlyph,
+            { color: colors.accent },
+          ]}
         >
-          ＋
+          +
         </Text>
       </Pressable>
     </View>
@@ -82,34 +116,45 @@ export function ChatHeader({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    minHeight: 68,
+  header: {
+    minHeight: 64,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: spacing.sm,
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
   },
-
-  titleContainer: {
+  headerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  titleGroup: {
     flex: 1,
-    justifyContent: 'center',
   },
-
   title: {
-    fontSize: 20,
+    fontSize: typography.heading,
+    lineHeight: 23,
     fontWeight: '800',
   },
-
   subtitle: {
-    marginTop: 2,
-    fontSize: 12,
+    marginTop: 1,
+    fontSize: typography.caption,
+    lineHeight: 16,
+    fontWeight: '500',
   },
-
   newButton: {
-    width: 42,
-    height: 42,
+    width: 46,
+    height: 46,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 21,
+  },
+  newGlyph: {
+    fontSize: 25,
+    lineHeight: 27,
+    fontWeight: '500',
   },
 });
