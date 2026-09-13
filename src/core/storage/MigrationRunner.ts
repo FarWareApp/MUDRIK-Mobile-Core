@@ -6,7 +6,7 @@ type SchemaVersionRow = {
   user_version: number;
 };
 
-const LATEST_SCHEMA_VERSION = 6;
+const LATEST_SCHEMA_VERSION = 7;
 
 const migrationV1 = `
   CREATE TABLE IF NOT EXISTS conversations (
@@ -302,6 +302,38 @@ const migrationV6 = `
   );
 `;
 
+const migrationV7 = `
+  CREATE TABLE IF NOT EXISTS observation_privacy_state (
+    id INTEGER PRIMARY KEY NOT NULL
+      CHECK (id = 1),
+
+    state TEXT NOT NULL
+      CHECK (
+        state IN (
+          'active',
+          'visual_off',
+          'ambient_off',
+          'privacy_lock'
+        )
+      ),
+
+    reason TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+
+  INSERT OR IGNORE INTO observation_privacy_state (
+    id,
+    state,
+    reason,
+    updated_at
+  ) VALUES (
+    1,
+    'ambient_off',
+    'default_passive_observation_off',
+    0
+  );
+`;
+
 async function getSchemaVersion(
   database: SQLiteDatabase,
 ): Promise<number> {
@@ -317,115 +349,86 @@ async function getSchemaVersion(
 async function migrateToV1(
   database: SQLiteDatabase,
 ): Promise<void> {
-  await database
-    .withExclusiveTransactionAsync(
-      async (transaction) => {
-        await transaction.execAsync(
-          migrationV1,
-        );
-
-        await transaction.execAsync(
-          'PRAGMA user_version = 1;',
-        );
-      },
-    );
+  await database.withExclusiveTransactionAsync(
+    async (transaction) => {
+      await transaction.execAsync(migrationV1);
+      await transaction.execAsync('PRAGMA user_version = 1;');
+    },
+  );
 }
 
 async function migrateToV2(
   database: SQLiteDatabase,
 ): Promise<void> {
-  await database
-    .withExclusiveTransactionAsync(
-      async (transaction) => {
-        await transaction.execAsync(
-          migrationV2,
-        );
-
-        await transaction.execAsync(
-          'PRAGMA user_version = 2;',
-        );
-      },
-    );
+  await database.withExclusiveTransactionAsync(
+    async (transaction) => {
+      await transaction.execAsync(migrationV2);
+      await transaction.execAsync('PRAGMA user_version = 2;');
+    },
+  );
 }
 
 async function migrateToV3(
   database: SQLiteDatabase,
 ): Promise<void> {
-  await database
-    .withExclusiveTransactionAsync(
-      async (transaction) => {
-        await transaction.execAsync(
-          migrationV3,
-        );
-
-        await transaction.execAsync(
-          'PRAGMA user_version = 3;',
-        );
-      },
-    );
+  await database.withExclusiveTransactionAsync(
+    async (transaction) => {
+      await transaction.execAsync(migrationV3);
+      await transaction.execAsync('PRAGMA user_version = 3;');
+    },
+  );
 }
 
 async function migrateToV4(
   database: SQLiteDatabase,
 ): Promise<void> {
-  await database
-    .withExclusiveTransactionAsync(
-      async (transaction) => {
-        await transaction.execAsync(
-          migrationV4,
-        );
-
-        await transaction.execAsync(
-          'PRAGMA user_version = 4;',
-        );
-      },
-    );
+  await database.withExclusiveTransactionAsync(
+    async (transaction) => {
+      await transaction.execAsync(migrationV4);
+      await transaction.execAsync('PRAGMA user_version = 4;');
+    },
+  );
 }
 
 async function migrateToV5(
   database: SQLiteDatabase,
 ): Promise<void> {
-  await database
-    .withExclusiveTransactionAsync(
-      async (transaction) => {
-        await transaction.execAsync(
-          migrationV5,
-        );
-
-        await transaction.execAsync(
-          'PRAGMA user_version = 5;',
-        );
-      },
-    );
+  await database.withExclusiveTransactionAsync(
+    async (transaction) => {
+      await transaction.execAsync(migrationV5);
+      await transaction.execAsync('PRAGMA user_version = 5;');
+    },
+  );
 }
 
 async function migrateToV6(
   database: SQLiteDatabase,
 ): Promise<void> {
-  await database
-    .withExclusiveTransactionAsync(
-      async (transaction) => {
-        await transaction.execAsync(
-          migrationV6,
-        );
+  await database.withExclusiveTransactionAsync(
+    async (transaction) => {
+      await transaction.execAsync(migrationV6);
+      await transaction.execAsync('PRAGMA user_version = 6;');
+    },
+  );
+}
 
-        await transaction.execAsync(
-          'PRAGMA user_version = 6;',
-        );
-      },
-    );
+async function migrateToV7(
+  database: SQLiteDatabase,
+): Promise<void> {
+  await database.withExclusiveTransactionAsync(
+    async (transaction) => {
+      await transaction.execAsync(migrationV7);
+      await transaction.execAsync('PRAGMA user_version = 7;');
+    },
+  );
 }
 
 export async function runMigrations(
   database: SQLiteDatabase,
 ): Promise<void> {
-  let version =
-    await getSchemaVersion(database);
+  let version = await getSchemaVersion(database);
 
-  if (
-    version >
-    LATEST_SCHEMA_VERSION
-  ) {
+  if (version > LATEST_SCHEMA_VERSION) {
     throw new Error(
       `Database schema ${version} is newer than supported version ${LATEST_SCHEMA_VERSION}`,
     );
@@ -461,10 +464,12 @@ export async function runMigrations(
     version = 6;
   }
 
-  if (
-    version !==
-    LATEST_SCHEMA_VERSION
-  ) {
+  if (version < 7) {
+    await migrateToV7(database);
+    version = 7;
+  }
+
+  if (version !== LATEST_SCHEMA_VERSION) {
     throw new Error(
       `Database migration incomplete: ${version}`,
     );
