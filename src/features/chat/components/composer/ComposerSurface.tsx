@@ -26,18 +26,37 @@ export function ComposerSurface({
         styles.wrapper,
         {
           backgroundColor: colors.background,
-          borderTopColor: colors.border,
+          borderTopColor: focused
+            ? colors.accentSoft
+            : colors.border,
         },
       ]}
     >
       <View
         style={[
           styles.surface,
+          focused && styles.focusedSurface,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: colors.surfaceInput,
             borderColor: focused
               ? colors.accent
               : colors.border,
+            shadowColor: colors.shadow,
+            shadowOpacity: focused
+              ? 0.32
+              : 0.18,
+            shadowRadius: focused
+              ? 18
+              : 10,
+            shadowOffset: {
+              width: 0,
+              height: focused
+                ? 8
+                : 4,
+            },
+            elevation: focused
+              ? 8
+              : 3,
           },
         ]}
       >
@@ -51,18 +70,21 @@ const styles = StyleSheet.create({
   wrapper: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   surface: {
-    minHeight: 58,
-    maxHeight: 154,
+    minHeight: 64,
+    maxHeight: 166,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: spacing.xs,
-    borderWidth: 1,
+    gap: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
+  focusedSurface: {
+    borderWidth: 1,
   },
 });
