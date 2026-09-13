@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 
-import {
+import type {
   CompanionSessionPhase,
 } from '../../../contracts/Companion';
 
@@ -18,6 +18,8 @@ import {
 type Props = {
   phase:
     CompanionSessionPhase;
+
+  enabled?: boolean;
 
   onStart: () => void;
   onStop: () => void;
@@ -31,6 +33,7 @@ type Props = {
 
 export function CompanionSessionControls({
   phase,
+  enabled = true,
   onStart,
   onStop,
   onPause,
@@ -43,6 +46,7 @@ export function CompanionSessionControls({
       <Control
         label="Start session"
         primary
+        disabled={!enabled}
         onPress={onStart}
       />
     );
@@ -54,6 +58,7 @@ export function CompanionSessionControls({
         <Control
           label="Resume"
           primary
+          disabled={!enabled}
           onPress={onResume}
         />
 
@@ -73,6 +78,7 @@ export function CompanionSessionControls({
         <Control
           label="Continue"
           primary
+          disabled={!enabled}
           onPress={onRecover}
         />
 
@@ -97,11 +103,13 @@ export function CompanionSessionControls({
     <View style={styles.row}>
       <Control
         label="Pause"
+        disabled={!enabled}
         onPress={onPause}
       />
 
       <Control
         label="Interrupt"
+        disabled={!enabled}
         onPress={onInterrupt}
       />
 
@@ -116,12 +124,14 @@ export function CompanionSessionControls({
 type ControlProps = {
   label: string;
   primary?: boolean;
+  disabled?: boolean;
   onPress: () => void;
 };
 
 function Control({
   label,
   primary = false,
+  disabled = false,
   onPress,
 }: ControlProps) {
   const { colors } =
@@ -130,6 +140,10 @@ function Control({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{
+        disabled,
+      }}
+      disabled={disabled}
       onPress={onPress}
       style={[
         styles.control,
@@ -138,6 +152,10 @@ function Control({
             primary
               ? colors.accent
               : colors.surfaceElevated,
+          opacity:
+            disabled
+              ? 0.45
+              : 1,
         },
       ]}
     >
