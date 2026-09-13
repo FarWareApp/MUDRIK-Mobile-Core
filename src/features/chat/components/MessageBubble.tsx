@@ -10,8 +10,9 @@ import { resolveTextDirection } from '../../../core/localization/TextDirectionRe
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { ChatMessage } from '../types';
+import type { ChatMessage } from '../types';
 import { MessageAttachmentList } from './MessageAttachmentList';
+import { MessageTimestamp } from './MessageTimestamp';
 
 type Props = {
   message: ChatMessage;
@@ -25,11 +26,10 @@ export function MessageBubble({
 
   const isUser = message.role === 'user';
 
-  const direction =
-    resolveTextDirection(
-      message.text,
-      isRTL ? 'rtl' : 'ltr',
-    );
+  const direction = resolveTextDirection(
+    message.text,
+    isRTL ? 'rtl' : 'ltr',
+  );
 
   return (
     <View
@@ -39,7 +39,6 @@ export function MessageBubble({
           alignSelf: isUser
             ? 'flex-end'
             : 'flex-start',
-
           backgroundColor: isUser
             ? colors.accent
             : colors.surfaceElevated,
@@ -47,9 +46,7 @@ export function MessageBubble({
       ]}
     >
       <MessageAttachmentList
-        attachments={
-          message.attachments ?? []
-        }
+        attachments={message.attachments ?? []}
       />
 
       {message.text.length > 0 && (
@@ -62,16 +59,20 @@ export function MessageBubble({
                 ? colors.accentText
                 : colors.textPrimary,
               writingDirection: direction,
-              textAlign:
-                direction === 'rtl'
-                  ? 'right'
-                  : 'left',
+              textAlign: direction === 'rtl'
+                ? 'right'
+                : 'left',
             },
           ]}
         >
           {message.text}
         </Text>
       )}
+
+      <MessageTimestamp
+        createdAt={message.createdAt}
+        isUser={isUser}
+      />
     </View>
   );
 }
@@ -84,7 +85,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     marginVertical: spacing.xs,
   },
-
   text: {
     fontSize: 16,
     lineHeight: 23,
