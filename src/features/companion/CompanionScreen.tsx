@@ -5,6 +5,7 @@ import React, {
 
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -278,9 +279,18 @@ export function CompanionScreen({
         }
         onSave={(next) => {
           void (async () => {
-            await profile.save(
-              next,
-            );
+            const failure =
+              await profile.save(
+                next,
+              );
+
+            if (failure) {
+              Alert.alert(
+                'Companion',
+                failure,
+              );
+              return;
+            }
 
             setEditing(false);
           })();
