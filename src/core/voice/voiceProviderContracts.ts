@@ -85,6 +85,22 @@ const SESSION_ID = /^voice_[A-Za-z0-9_-]{16,80}$/;
 const UTTERANCE_ID = /^utt_[A-Za-z0-9_-]{16,80}$/;
 const PAYLOAD_REF = /^audio_[A-Za-z0-9._:@\/-]{8,160}$/;
 
+function parseGeneration(value: unknown): number | null {
+  if (value === undefined) {
+    return 0;
+  }
+
+  if (
+    typeof value !== 'number' ||
+    !Number.isSafeInteger(value) ||
+    value < 0
+  ) {
+    return null;
+  }
+
+  return value;
+}
+
 export function validateStreamingTtsChunkMetadata(
   input: unknown,
 ): StreamingTtsChunkMetadata | null {
@@ -110,9 +126,6 @@ export function validateStreamingTtsChunkMetadata(
     Object.keys(record).some((key) => !allowedKeys.has(key)) ||
     typeof record.sessionId !== 'string' ||
     !SESSION_ID.test(record.sessionId) ||
-    typeof record.generation !== 'number' ||
-    !Number.isSafeInteger(record.generation) ||
-    record.generation < 0 ||
     typeof record.utteranceId !== 'string' ||
     !UTTERANCE_ID.test(record.utteranceId) ||
     typeof record.sequence !== 'number' ||
@@ -125,9 +138,14 @@ export function validateStreamingTtsChunkMetadata(
     return null;
   }
 
+  const generation = parseGeneration(record.generation);
+  if (generation === null) {
+    return null;
+  }
+
   return Object.freeze({
     sessionId: record.sessionId,
-    generation: record.generation,
+    generation,
     utteranceId: record.utteranceId,
     sequence: record.sequence,
     payloadRef: record.payloadRef,
