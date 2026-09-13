@@ -1,3 +1,4 @@
+import { sanitizeSecurityMetadata } from '../security/securityEvent';
 import type { StreamingSpeechSegment } from './streamingSpeech';
 
 export type VoiceProviderStatus =
@@ -23,12 +24,14 @@ export type VoiceProviderFailure = Readonly<{
 
 export type StreamingSttRequest = Readonly<{
   sessionId: string;
+  generation: number;
   languageHints: readonly string[];
   customVocabulary: readonly string[];
 }>;
 
 export interface StreamingSttSession {
   readonly sessionId: string;
+  readonly generation: number;
   pushAudioChunk(chunkRef: string): Promise<void>;
   finishInput(): Promise<void>;
   cancel(): Promise<void>;
@@ -45,6 +48,7 @@ export interface StreamingSttProvider {
 
 export type StreamingTtsRequest = Readonly<{
   sessionId: string;
+  generation: number;
   utteranceId: string;
   text: string;
   languageHint: string | null;
@@ -54,6 +58,7 @@ export type StreamingTtsRequest = Readonly<{
 
 export type StreamingTtsChunkMetadata = Readonly<{
   sessionId: string;
+  generation: number;
   utteranceId: string;
   sequence: number;
   payloadRef: string;
@@ -62,6 +67,7 @@ export type StreamingTtsChunkMetadata = Readonly<{
 
 export interface StreamingTtsSession {
   readonly sessionId: string;
+  readonly generation: number;
   readonly utteranceId: string;
   cancel(): Promise<void>;
 }
@@ -93,6 +99,7 @@ export function validateStreamingTtsChunkMetadata(
   const record = input as Record<string, unknown>;
   const allowedKeys = new Set([
     'sessionId',
+    'generation',
     'utteranceId',
     'sequence',
     'payloadRef',
@@ -103,6 +110,9 @@ export function validateStreamingTtsChunkMetadata(
     Object.keys(record).some((key) => !allowedKeys.has(key)) ||
     typeof record.sessionId !== 'string' ||
     !SESSION_ID.test(record.sessionId) ||
+    typeof record.generation !== 'number' ||
+    !Number.isSafeInteger(record.generation) ||
+    record.generation < 0 ||
     typeof record.utteranceId !== 'string' ||
     !UTTERANCE_ID.test(record.utteranceId) ||
     typeof record.sequence !== 'number' ||
@@ -117,6 +127,7 @@ export function validateStreamingTtsChunkMetadata(
 
   return Object.freeze({
     sessionId: record.sessionId,
+    generation: record.generation,
     utteranceId: record.utteranceId,
     sequence: record.sequence,
     payloadRef: record.payloadRef,
@@ -173,9 +184,12 @@ export function normalizeVoiceProviderFailure(
 
   const safeMessage =
     typeof record.providerSafeMessage === 'string'
-      ? record.providerSafeMessage
-          .replace(/[\u0000-\u001F\u007F]/g, ' ')
-          .slice(0, 240)
+      ? String(
+          sanitizeSecurityMetadata({
+            providerMessage:
+              record.providerSafeMessage,
+          }).providerMessage,
+        ).slice(0, 240)
       : null;
 
   return Object.freeze({
