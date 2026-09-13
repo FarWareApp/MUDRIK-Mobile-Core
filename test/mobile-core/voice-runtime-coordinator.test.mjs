@@ -14,6 +14,7 @@ const sessionModule = loadTypeScriptModule(
 
 const SESSION = 'voice_0123456789abcdef';
 const SEGMENT = 'seg_0123456789abcdef';
+const UTTERANCE = 'utt_0123456789abcdef';
 
 function activity(overrides = {}) {
   return {
@@ -42,6 +43,18 @@ function finalTranscript(overrides = {}) {
   };
 }
 
+function ttsChunk(overrides = {}) {
+  return {
+    sessionId: SESSION,
+    generation: 0,
+    utteranceId: UTTERANCE,
+    sequence: 0,
+    payloadRef: 'audio_local:chunk-001',
+    isFinal: false,
+    ...overrides,
+  };
+}
+
 function bargeEvidence(overrides = {}) {
   return {
     inputAuthorized: true,
@@ -63,6 +76,31 @@ const finalizeMetrics = {
   hasLexicalContent: true,
   hypothesisStability: 0.95,
 };
+
+function moveToProcessing(coordinator) {
+  coordinator.start();
+  coordinator.onActivity(
+    activity({ speechActive: true }),
+    finalizeMetrics,
+  );
+  coordinator.onActivity(
+    activity({ sequence: 1, atMs: 900, speechActive: false }),
+    finalizeMetrics,
+  );
+  const transcript = coordinator.onTranscript(finalTranscript());
+  assert.equal(transcript.accepted, true);
+  assert.equal(transcript.state.phase, 'processing');
+}
+
+function moveToAssistantSpeaking(coordinator) {
+  moveToProcessing(coordinator);
+  coordinator.markResponseReady();
+  assert.equal(coordinator.beginTts(UTTERANCE).accepted, true);
+  assert.equal(coordinator.onTtsChunk(ttsChunk()).accepted, true);
+  const started = coordinator.confirmTtsPlaybackStarted();
+  assert.equal(started.accepted, true);
+  assert.equal(started.state.phase, 'assistant_speaking');
+}
 
 test('coordinator drives validated VAD through listening speaking and finalizing', () => {
   const coordinator = new coordinatorModule.VoiceRuntimeCoordinator(SESSION);
@@ -168,20 +206,52 @@ test('wrong-phase final transcript cannot poison the speech registry', () => {
   assert.equal(corrected.speechDecision.reason, 'accepted');
 });
 
+test('TTS cannot start without accepted first audio and cannot complete before final chunk', () => {
+  const coordinator = new coordinatorModule.VoiceRuntimeCoordinator(SESSION);
+  moveToProcessing(coordinator);
+
+  assert.equal(
+    coordinator.confirmTtsPlaybackStarted().reason,
+    'tts_not_prepared',
+  );
+  assert.equal(coordinator.beginTts(UTTERANCE).accepted, true);
+
+  const beforeAudio = coordinator.confirmTtsPlaybackStarted();
+  assert.equal(beforeAudio.accepted, false);
+  assert.equal(beforeAudio.reason, 'tts_rejected');
+  assert.equal(beforeAudio.ttsReason, 'first_audio_required');
+  assert.equal(beforeAudio.state.phase, 'processing');
+
+  assert.equal(coordinator.onTtsChunk(ttsChunk()).accepted, true);
+  const started = coordinator.confirmTtsPlaybackStarted();
+  assert.equal(started.accepted, true);
+  assert.equal(started.state.phase, 'assistant_speaking');
+
+  const tooEarly = coordinator.confirmTtsPlaybackComplete();
+  assert.equal(tooEarly.accepted, false);
+  assert.equal(tooEarly.ttsReason, 'final_chunk_required');
+  assert.equal(tooEarly.state.phase, 'assistant_speaking');
+
+  const final = coordinator.onTtsChunk(
+    ttsChunk({
+      sequence: 1,
+      payloadRef: 'audio_local:chunk-002',
+      isFinal: true,
+    }),
+  );
+  assert.equal(final.accepted, true);
+  assert.equal(final.ttsState.finalChunkAccepted, true);
+
+  const completed = coordinator.confirmTtsPlaybackComplete();
+  assert.equal(completed.accepted, true);
+  assert.equal(completed.ttsState.phase, 'playback_complete');
+  assert.equal(completed.state.phase, 'listening');
+  assert.deepEqual(completed.actions, ['start_input']);
+});
+
 test('coordinator rejects unqualified barge-in without changing TTS state', () => {
   const coordinator = new coordinatorModule.VoiceRuntimeCoordinator(SESSION);
-  coordinator.start();
-  coordinator.onActivity(
-    activity({ speechActive: true }),
-    finalizeMetrics,
-  );
-  coordinator.onActivity(
-    activity({ sequence: 1, atMs: 900, speechActive: false }),
-    finalizeMetrics,
-  );
-  coordinator.onTranscript(finalTranscript());
-  coordinator.markResponseReady();
-  coordinator.markTtsStarted();
+  moveToAssistantSpeaking(coordinator);
 
   const echo = coordinator.bargeIn(
     bargeEvidence({
@@ -198,22 +268,12 @@ test('coordinator rejects unqualified barge-in without changing TTS state', () =
 
 test('barge-in invalidates old generation before listening resumes', () => {
   const coordinator = new coordinatorModule.VoiceRuntimeCoordinator(SESSION);
-  coordinator.start();
-  coordinator.onActivity(
-    activity({ speechActive: true }),
-    finalizeMetrics,
-  );
-  coordinator.onActivity(
-    activity({ sequence: 1, atMs: 900, speechActive: false }),
-    finalizeMetrics,
-  );
-  coordinator.onTranscript(finalTranscript());
-  coordinator.markResponseReady();
-  assert.equal(coordinator.markTtsStarted().state.phase, 'assistant_speaking');
+  moveToAssistantSpeaking(coordinator);
 
   const barge = coordinator.bargeIn(bargeEvidence());
   assert.equal(barge.accepted, true);
   assert.equal(barge.bargeInDecisionReason, 'interrupt');
+  assert.equal(barge.ttsState.phase, 'cancelled');
   assert.equal(barge.state.phase, 'cancelling');
   assert.deepEqual(barge.actions, [
     'stop_tts',
@@ -259,6 +319,19 @@ test('barge-in cannot be forged outside assistant speaking phase', () => {
   assert.equal(forged.reason, 'barge_in_rejected');
   assert.equal(forged.bargeInDecisionReason, 'assistant_not_speaking');
   assert.equal(forged.state.phase, 'listening');
+});
+
+test('cancel stops a prepared TTS stream even before playback begins', () => {
+  const coordinator = new coordinatorModule.VoiceRuntimeCoordinator(SESSION);
+  moveToProcessing(coordinator);
+  coordinator.beginTts(UTTERANCE);
+  coordinator.onTtsChunk(ttsChunk());
+
+  const cancelled = coordinator.cancel();
+  assert.equal(cancelled.accepted, true);
+  assert.equal(cancelled.state.phase, 'cancelling');
+  assert.equal(cancelled.ttsState.phase, 'cancelled');
+  assert.equal(cancelled.actions.includes('stop_tts'), true);
 });
 
 test('reset increments generation so generation-zero events can never revive', () => {
