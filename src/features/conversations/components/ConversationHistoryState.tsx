@@ -9,6 +9,9 @@ import {
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typography } from '../../../design-system/tokens/typography';
 
 type Props = {
   mode:
@@ -29,10 +32,99 @@ export function ConversationHistoryState({
   if (mode === 'loading') {
     return (
       <View style={styles.container}>
-        <ActivityIndicator
-          color={colors.accent}
-        />
+        <View
+          style={[
+            styles.stateCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              shadowColor: colors.shadow,
+            },
+          ]}
+        >
+          <ActivityIndicator
+            color={colors.accent}
+          />
 
+          <Text
+            style={[
+              styles.body,
+              {
+                color: colors.textSecondary,
+              },
+            ]}
+          >
+            {t('loadingConversations')}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (mode === 'error') {
+    return (
+      <View style={styles.container}>
+        <View
+          style={[
+            styles.stateCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.error,
+              shadowColor: colors.shadow,
+            },
+          ]}
+        >
+          <Text
+            accessibilityRole="alert"
+            style={[
+              styles.body,
+              {
+                color: colors.textPrimary,
+              },
+            ]}
+          >
+            {t('conversationHistoryFailed')}
+          </Text>
+
+          {onRetry && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onRetry}
+              style={({ pressed }) => [
+                styles.retry,
+                {
+                  backgroundColor: colors.accent,
+                  opacity: pressed ? 0.86 : 1,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color: colors.accentText,
+                  fontWeight: '700',
+                }}
+              >
+                {t('retry')}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View
+        style={[
+          styles.stateCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            shadowColor: colors.shadow,
+          },
+        ]}
+      >
         <Text
           style={[
             styles.body,
@@ -41,62 +133,9 @@ export function ConversationHistoryState({
             },
           ]}
         >
-          {t('loadingConversations')}
+          {t('noConversations')}
         </Text>
       </View>
-    );
-  }
-
-  if (mode === 'error') {
-    return (
-      <View style={styles.container}>
-        <Text
-          style={[
-            styles.body,
-            {
-              color: colors.textPrimary,
-            },
-          ]}
-        >
-          {t('conversationHistoryFailed')}
-        </Text>
-
-        {onRetry && (
-          <Pressable
-            onPress={onRetry}
-            style={[
-              styles.retry,
-              {
-                backgroundColor: colors.accent,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: colors.accentText,
-                fontWeight: '700',
-              }}
-            >
-              {t('retry')}
-            </Text>
-          </Pressable>
-        )}
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <Text
-        style={[
-          styles.body,
-          {
-            color: colors.textSecondary,
-          },
-        ]}
-      >
-        {t('noConversations')}
-      </Text>
     </View>
   );
 }
@@ -106,19 +145,38 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.xxl,
+  },
+
+  stateCard: {
+    width: '100%',
+    maxWidth: 340,
+    minHeight: 132,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.lg,
+    padding: spacing.xxl,
+    elevation: 1,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
   },
 
   body: {
-    fontSize: 15,
+    fontSize: typography.secondary,
+    lineHeight: 20,
     textAlign: 'center',
   },
 
   retry: {
-    marginTop: 16,
-    minHeight: 42,
-    paddingHorizontal: 20,
+    marginTop: spacing.lg,
+    minHeight: 44,
+    paddingHorizontal: spacing.xl,
     justifyContent: 'center',
-    borderRadius: 21,
+    borderRadius: radius.pill,
   },
 });
