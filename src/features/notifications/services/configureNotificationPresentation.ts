@@ -1,6 +1,15 @@
-import * as Notifications from 'expo-notifications';
+import {
+  supportsNativeNotificationModule,
+} from './notificationRuntimeSupport';
 
-export function configureNotificationPresentation(): void {
+export async function configureNotificationPresentation(): Promise<void> {
+  if (!supportsNativeNotificationModule()) {
+    return;
+  }
+
+  const Notifications =
+    await import('expo-notifications');
+
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
