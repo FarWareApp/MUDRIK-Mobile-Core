@@ -5,11 +5,14 @@ import {
 } from 'react';
 
 import {
-  CompanionProfile,
   createDefaultCompanionProfile,
 } from '../../../contracts/Companion';
 
-import {
+import type {
+  CompanionProfile,
+} from '../../../contracts/Companion';
+
+import type {
   CompanionRepository,
 } from '../../../contracts/CompanionRepository';
 
@@ -70,8 +73,15 @@ export function useCompanionProfileController(
         setSaving(true);
 
         try {
-          const updated = {
+          const updated:
+            CompanionProfile = {
             ...next,
+            companionId:
+              profile.companionId,
+            createdAt:
+              profile.createdAt,
+            revision:
+              profile.revision + 1,
             updatedAt:
               Date.now(),
           };
@@ -91,7 +101,12 @@ export function useCompanionProfileController(
           setSaving(false);
         }
       },
-      [repository],
+      [
+        profile.companionId,
+        profile.createdAt,
+        profile.revision,
+        repository,
+      ],
     );
 
   const reset =
