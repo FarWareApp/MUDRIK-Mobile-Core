@@ -19,7 +19,7 @@ function normalizeText(value: string): string {
     .toLowerCase();
 }
 
-const PHRASES: ReadonlyArray<readonly [string, ObservationPrivacyEvent]> = [
+const RAW_PHRASES: readonly (readonly [string, ObservationPrivacyEvent])[] = [
   ['غمض عيونك', 'stop_visual'],
   ['سكر عيونك', 'stop_visual'],
   ['لا تشوفني', 'stop_visual'],
@@ -46,7 +46,15 @@ const PHRASES: ReadonlyArray<readonly [string, ObservationPrivacyEvent]> = [
   ['augen zu', 'stop_visual'],
   ['augen auf', 'resume_visual'],
   ['überwachung wieder aktivieren', 'unlock_privacy'],
-].map(([phrase, event]) => [normalizeText(phrase), event] as const);
+];
+
+const PHRASES: readonly (readonly [string, ObservationPrivacyEvent])[] =
+  RAW_PHRASES.map(
+    ([phrase, event]): readonly [string, ObservationPrivacyEvent] => [
+      normalizeText(phrase),
+      event,
+    ],
+  );
 
 export function detectPrivacyIntent(value: unknown): PrivacyIntent | null {
   if (typeof value !== 'string' || value.length === 0 || value.length > 512) {
