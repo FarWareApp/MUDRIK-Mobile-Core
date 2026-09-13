@@ -1,7 +1,7 @@
 import React from 'react';
 import {
+  Pressable,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -11,40 +11,43 @@ import { spacing } from '../../../design-system/tokens/spacing';
 import { typography } from '../../../design-system/tokens/typography';
 
 type Props = {
-  label: string;
+  title: string;
   description?: string;
-  value: boolean;
-  disabled?: boolean;
-  onChange: (value: boolean) => void;
+  accessibilityLabel: string;
+  onPress: () => void;
 };
 
-export function SettingToggleRow({
-  label,
+export function SettingsNavigationRow({
+  title,
   description,
-  value,
-  disabled = false,
-  onChange,
+  accessibilityLabel,
+  onPress,
 }: Props) {
   const { colors } = useTheme();
 
   return (
-    <View
-      style={[
-        styles.row,
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.container,
         {
           borderBottomColor: colors.border,
-          opacity: disabled ? 0.6 : 1,
+          backgroundColor: pressed
+            ? colors.surfacePressed
+            : 'transparent',
         },
       ]}
     >
-      <View style={styles.text}>
+      <View style={styles.copy}>
         <Text
           style={[
-            styles.label,
+            styles.title,
             { color: colors.textPrimary },
           ]}
         >
-          {label}
+          {title}
         </Text>
 
         {description ? (
@@ -59,31 +62,33 @@ export function SettingToggleRow({
         ) : null}
       </View>
 
-      <Switch
-        accessibilityLabel={label}
-        accessibilityState={{ disabled }}
-        disabled={disabled}
-        value={value}
-        onValueChange={onChange}
-      />
-    </View>
+      <Text
+        importantForAccessibility="no"
+        style={[
+          styles.chevron,
+          { color: colors.textSecondary },
+        ]}
+      >
+        ›
+      </Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    minHeight: 68,
+  container: {
+    minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  text: {
+  copy: {
     flex: 1,
-    paddingRight: spacing.lg,
+    paddingRight: spacing.md,
   },
-  label: {
+  title: {
     fontSize: typography.secondary,
     fontWeight: '600',
   },
@@ -91,5 +96,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     fontSize: typography.caption,
     lineHeight: 17,
+  },
+  chevron: {
+    fontSize: 22,
   },
 });

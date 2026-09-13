@@ -6,9 +6,11 @@ import {
   View,
 } from 'react-native';
 
-import {
-  useTheme,
-} from '../../design-system/theme/ThemeProvider';
+import { useLocale } from '../../core/localization/LocaleProvider';
+import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { radius } from '../../design-system/tokens/radius';
+import { spacing } from '../../design-system/tokens/spacing';
+import { typography } from '../../design-system/tokens/typography';
 
 type Props = {
   message: string;
@@ -22,6 +24,7 @@ export function InlineErrorBanner({
   onDismiss,
 }: Props) {
   const { colors } = useTheme();
+  const { t } = useLocale();
 
   return (
     <View
@@ -37,20 +40,25 @@ export function InlineErrorBanner({
       <Text
         style={[
           styles.message,
-          {
-            color: colors.textPrimary,
-          },
+          { color: colors.textPrimary },
         ]}
       >
         {message}
       </Text>
 
-      {onRetry && (
+      {onRetry ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Retry"
+          accessibilityLabel={t('retry')}
           onPress={onRetry}
-          style={styles.action}
+          style={({ pressed }) => [
+            styles.action,
+            {
+              backgroundColor: pressed
+                ? colors.surfacePressed
+                : 'transparent',
+            },
+          ]}
         >
           <Text
             style={{
@@ -58,19 +66,27 @@ export function InlineErrorBanner({
               fontWeight: '700',
             }}
           >
-            Retry
+            {t('retry')}
           </Text>
         </Pressable>
-      )}
+      ) : null}
 
-      {onDismiss && (
+      {onDismiss ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Dismiss error"
+          accessibilityLabel={t('dismissError')}
           onPress={onDismiss}
-          style={styles.action}
+          style={({ pressed }) => [
+            styles.action,
+            {
+              backgroundColor: pressed
+                ? colors.surfacePressed
+                : 'transparent',
+            },
+          ]}
         >
           <Text
+            importantForAccessibility="no"
             style={{
               color: colors.textSecondary,
               fontSize: 18,
@@ -79,34 +95,33 @@ export function InlineErrorBanner({
             ×
           </Text>
         </Pressable>
-      )}
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 14,
-    marginBottom: 8,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
     minHeight: 48,
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 12,
+    paddingLeft: spacing.md,
+    overflow: 'hidden',
   },
-
   message: {
     flex: 1,
-    fontSize: 12,
+    fontSize: typography.caption,
     lineHeight: 17,
   },
-
   action: {
     minWidth: 44,
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: spacing.sm,
   },
 });
