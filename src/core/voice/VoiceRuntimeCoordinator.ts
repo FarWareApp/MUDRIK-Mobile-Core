@@ -15,6 +15,11 @@ import {
   validateStreamingSpeechSegment,
 } from './streamingSpeech';
 import {
+  TtsStreamLifecycle,
+  type TtsLifecycleReason,
+  type TtsLifecycleState,
+} from './TtsStreamLifecycle';
+import {
   validateVoiceActivityEvent,
 } from './voiceActivityEvent';
 import {
@@ -39,6 +44,9 @@ export type VoiceCoordinatorReason =
   | 'partial_not_executable'
   | 'wrong_phase'
   | 'barge_in_rejected'
+  | 'tts_not_prepared'
+  | 'tts_already_prepared'
+  | 'tts_rejected'
   | 'transition_rejected';
 
 export type VoiceCoordinatorResult = Readonly<{
@@ -50,6 +58,8 @@ export type VoiceCoordinatorResult = Readonly<{
   activityDecision: VoiceActivityDecision | null;
   speechDecision: SpeechRegistryDecision | null;
   bargeInDecisionReason: BargeInDecisionReason | null;
+  ttsState: TtsLifecycleState | null;
+  ttsReason: TtsLifecycleReason | null;
 }>;
 
 const SESSION_ID = /^voice_[A-Za-z0-9_-]{16,80}$/;
@@ -63,6 +73,8 @@ function result(
   activityDecision: VoiceActivityDecision | null = null,
   speechDecision: SpeechRegistryDecision | null = null,
   bargeInDecisionReason: BargeInDecisionReason | null = null,
+  ttsState: TtsLifecycleState | null = null,
+  ttsReason: TtsLifecycleReason | null = null,
 ): VoiceCoordinatorResult {
   return Object.freeze({
     accepted,
@@ -73,13 +85,30 @@ function result(
     activityDecision,
     speechDecision,
     bargeInDecisionReason,
+    ttsState,
+    ttsReason,
   });
+}
+
+function withStopTts(
+  actions: readonly VoiceRuntimeAction[],
+): readonly VoiceRuntimeAction[] {
+  if (actions.includes('stop_tts')) {
+    return actions;
+  }
+
+  const withoutNone = actions.filter((action) => action !== 'none');
+  return Object.freeze([
+    'stop_tts' as const,
+    ...withoutNone,
+  ]);
 }
 
 export class VoiceRuntimeCoordinator {
   private state: VoiceSessionState = INITIAL_VOICE_SESSION_STATE;
   private activityRegistry: VoiceActivityRegistry;
   private speechRegistry: SpeechSegmentRegistry;
+  private ttsLifecycle: TtsStreamLifecycle | null = null;
 
   constructor(private readonly sessionId: string) {
     if (!SESSION_ID.test(sessionId)) {
@@ -109,6 +138,7 @@ export class VoiceRuntimeCoordinator {
       this.sessionId,
       this.state.generation,
     );
+    this.ttsLifecycle = null;
   }
 
   private applyTransition(
@@ -148,7 +178,27 @@ export class VoiceRuntimeCoordinator {
   }
 
   cancel(): VoiceCoordinatorResult {
-    return this.applyTransition('cancel');
+    const hadTts = this.ttsLifecycle !== null;
+    const ttsState = this.ttsLifecycle?.cancel().state ?? null;
+    this.ttsLifecycle = null;
+
+    const transitioned = this.applyTransition('cancel');
+    if (!hadTts) {
+      return transitioned;
+    }
+
+    return result(
+      transitioned.accepted,
+      transitioned.reason,
+      transitioned.state,
+      withStopTts(transitioned.actions),
+      null,
+      null,
+      null,
+      null,
+      ttsState,
+      'accepted',
+    );
   }
 
   completeCancellation(): VoiceCoordinatorResult {
@@ -215,6 +265,23 @@ export class VoiceRuntimeCoordinator {
       );
     }
 
+    if (!this.ttsLifecycle) {
+      return result(
+        false,
+        'tts_not_prepared',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        qualification.reason,
+      );
+    }
+
+    const ttsCancelled = this.ttsLifecycle.cancel();
+    const ttsState = ttsCancelled.state;
+    this.ttsLifecycle = null;
+
     const transitioned = this.applyTransition('barge_in');
     return result(
       transitioned.accepted,
@@ -225,15 +292,57 @@ export class VoiceRuntimeCoordinator {
       null,
       null,
       qualification.reason,
+      ttsState,
+      ttsCancelled.reason,
     );
   }
 
   fail(): VoiceCoordinatorResult {
-    return this.applyTransition('fail');
+    const hadTts = this.ttsLifecycle !== null;
+    const ttsState = this.ttsLifecycle?.fail().state ?? null;
+    this.ttsLifecycle = null;
+
+    const transitioned = this.applyTransition('fail');
+    if (!hadTts) {
+      return transitioned;
+    }
+
+    return result(
+      transitioned.accepted,
+      transitioned.reason,
+      transitioned.state,
+      withStopTts(transitioned.actions),
+      null,
+      null,
+      null,
+      null,
+      ttsState,
+      'accepted',
+    );
   }
 
   reset(): VoiceCoordinatorResult {
-    return this.applyTransition('reset');
+    const hadTts = this.ttsLifecycle !== null;
+    const ttsState = this.ttsLifecycle?.cancel().state ?? null;
+    this.ttsLifecycle = null;
+
+    const transitioned = this.applyTransition('reset');
+    if (!hadTts) {
+      return transitioned;
+    }
+
+    return result(
+      transitioned.accepted,
+      transitioned.reason,
+      transitioned.state,
+      withStopTts(transitioned.actions),
+      null,
+      null,
+      null,
+      null,
+      ttsState,
+      'accepted',
+    );
   }
 
   onActivity(
@@ -367,11 +476,222 @@ export class VoiceRuntimeCoordinator {
     return this.applyTransition('response_ready');
   }
 
-  markTtsStarted(): VoiceCoordinatorResult {
-    return this.applyTransition('tts_start');
+  beginTts(utteranceId: unknown): VoiceCoordinatorResult {
+    if (this.state.phase !== 'processing') {
+      return result(false, 'wrong_phase', this.state);
+    }
+
+    if (this.ttsLifecycle) {
+      return result(
+        false,
+        'tts_already_prepared',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        null,
+        this.ttsLifecycle.getState(),
+      );
+    }
+
+    if (typeof utteranceId !== 'string') {
+      return result(false, 'invalid_input', this.state);
+    }
+
+    try {
+      this.ttsLifecycle = new TtsStreamLifecycle(
+        this.sessionId,
+        this.state.generation,
+        utteranceId,
+      );
+    } catch {
+      return result(false, 'invalid_input', this.state);
+    }
+
+    return result(
+      true,
+      'no_state_change',
+      this.state,
+      ['none'],
+      null,
+      null,
+      null,
+      null,
+      this.ttsLifecycle.getState(),
+    );
   }
 
-  markResponseComplete(): VoiceCoordinatorResult {
-    return this.applyTransition('response_complete');
+  onTtsChunk(input: unknown): VoiceCoordinatorResult {
+    if (!this.ttsLifecycle) {
+      return result(false, 'tts_not_prepared', this.state);
+    }
+
+    if (
+      this.state.phase !== 'processing' &&
+      this.state.phase !== 'assistant_speaking'
+    ) {
+      return result(
+        false,
+        'wrong_phase',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        null,
+        this.ttsLifecycle.getState(),
+      );
+    }
+
+    const ttsResult = this.ttsLifecycle.acceptChunk(input);
+    if (!ttsResult.accepted) {
+      return result(
+        false,
+        'tts_rejected',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        null,
+        ttsResult.state,
+        ttsResult.reason,
+      );
+    }
+
+    return result(
+      true,
+      'no_state_change',
+      this.state,
+      ['none'],
+      null,
+      null,
+      null,
+      null,
+      ttsResult.state,
+      ttsResult.reason,
+    );
+  }
+
+  confirmTtsPlaybackStarted(): VoiceCoordinatorResult {
+    if (!this.ttsLifecycle) {
+      return result(false, 'tts_not_prepared', this.state);
+    }
+
+    if (
+      this.state.phase !== 'processing' &&
+      this.state.phase !== 'assistant_speaking'
+    ) {
+      return result(
+        false,
+        'wrong_phase',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        null,
+        this.ttsLifecycle.getState(),
+      );
+    }
+
+    const ttsResult = this.ttsLifecycle.confirmPlaybackStarted();
+    if (!ttsResult.accepted) {
+      return result(
+        false,
+        'tts_rejected',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        null,
+        ttsResult.state,
+        ttsResult.reason,
+      );
+    }
+
+    if (this.state.phase === 'assistant_speaking') {
+      return result(
+        true,
+        'no_state_change',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        null,
+        ttsResult.state,
+        ttsResult.reason,
+      );
+    }
+
+    const transitioned = this.applyTransition('tts_start');
+    return result(
+      transitioned.accepted,
+      transitioned.reason,
+      transitioned.state,
+      transitioned.actions,
+      null,
+      null,
+      null,
+      null,
+      ttsResult.state,
+      ttsResult.reason,
+    );
+  }
+
+  confirmTtsPlaybackComplete(): VoiceCoordinatorResult {
+    if (!this.ttsLifecycle) {
+      return result(false, 'tts_not_prepared', this.state);
+    }
+
+    if (this.state.phase !== 'assistant_speaking') {
+      return result(
+        false,
+        'wrong_phase',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        null,
+        this.ttsLifecycle.getState(),
+      );
+    }
+
+    const ttsResult = this.ttsLifecycle.confirmPlaybackComplete();
+    if (!ttsResult.accepted) {
+      return result(
+        false,
+        'tts_rejected',
+        this.state,
+        ['none'],
+        null,
+        null,
+        null,
+        null,
+        ttsResult.state,
+        ttsResult.reason,
+      );
+    }
+
+    const transitioned = this.applyTransition('response_complete');
+    const completedState = ttsResult.state;
+    this.ttsLifecycle = null;
+
+    return result(
+      transitioned.accepted,
+      transitioned.reason,
+      transitioned.state,
+      transitioned.actions,
+      null,
+      null,
+      null,
+      null,
+      completedState,
+      ttsResult.reason,
+    );
   }
 }
