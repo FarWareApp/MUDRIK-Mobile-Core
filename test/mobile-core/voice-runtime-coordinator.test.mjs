@@ -42,6 +42,19 @@ function finalTranscript(overrides = {}) {
   };
 }
 
+function bargeEvidence(overrides = {}) {
+  return {
+    inputAuthorized: true,
+    speechActive: true,
+    speechDurationMs: 280,
+    vadConfidence: 0.95,
+    echoState: 'clear',
+    hasLexicalEvidence: true,
+    hypothesisStability: 0.92,
+    ...overrides,
+  };
+}
+
 const finalizeMetrics = {
   vadSpeechActive: false,
   speechDurationMs: 800,
@@ -155,6 +168,34 @@ test('wrong-phase final transcript cannot poison the speech registry', () => {
   assert.equal(corrected.speechDecision.reason, 'accepted');
 });
 
+test('coordinator rejects unqualified barge-in without changing TTS state', () => {
+  const coordinator = new coordinatorModule.VoiceRuntimeCoordinator(SESSION);
+  coordinator.start();
+  coordinator.onActivity(
+    activity({ speechActive: true }),
+    finalizeMetrics,
+  );
+  coordinator.onActivity(
+    activity({ sequence: 1, atMs: 900, speechActive: false }),
+    finalizeMetrics,
+  );
+  coordinator.onTranscript(finalTranscript());
+  coordinator.markResponseReady();
+  coordinator.markTtsStarted();
+
+  const echo = coordinator.bargeIn(
+    bargeEvidence({
+      echoState: 'possible_echo',
+      hasLexicalEvidence: false,
+    }),
+  );
+  assert.equal(echo.accepted, false);
+  assert.equal(echo.reason, 'barge_in_rejected');
+  assert.equal(echo.bargeInDecisionReason, 'echo_not_disambiguated');
+  assert.equal(echo.state.phase, 'assistant_speaking');
+  assert.deepEqual(echo.actions, ['none']);
+});
+
 test('barge-in invalidates old generation before listening resumes', () => {
   const coordinator = new coordinatorModule.VoiceRuntimeCoordinator(SESSION);
   coordinator.start();
@@ -170,8 +211,9 @@ test('barge-in invalidates old generation before listening resumes', () => {
   coordinator.markResponseReady();
   assert.equal(coordinator.markTtsStarted().state.phase, 'assistant_speaking');
 
-  const barge = coordinator.bargeIn();
+  const barge = coordinator.bargeIn(bargeEvidence());
   assert.equal(barge.accepted, true);
+  assert.equal(barge.bargeInDecisionReason, 'interrupt');
   assert.equal(barge.state.phase, 'cancelling');
   assert.deepEqual(barge.actions, [
     'stop_tts',
@@ -206,6 +248,17 @@ test('barge-in invalidates old generation before listening resumes', () => {
   );
   assert.equal(currentVad.accepted, true);
   assert.equal(currentVad.state.phase, 'user_speaking');
+});
+
+test('barge-in cannot be forged outside assistant speaking phase', () => {
+  const coordinator = new coordinatorModule.VoiceRuntimeCoordinator(SESSION);
+  coordinator.start();
+
+  const forged = coordinator.bargeIn(bargeEvidence());
+  assert.equal(forged.accepted, false);
+  assert.equal(forged.reason, 'barge_in_rejected');
+  assert.equal(forged.bargeInDecisionReason, 'assistant_not_speaking');
+  assert.equal(forged.state.phase, 'listening');
 });
 
 test('reset increments generation so generation-zero events can never revive', () => {
