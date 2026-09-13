@@ -2,7 +2,6 @@ import type {
   SensorDeviceTrust,
   SensorPermissionState,
   SensorType,
-  SensorUsage,
 } from './sensorStateRegistry';
 import type { ObservationPrivacyPolicyState } from './observationPrivacyState';
 
