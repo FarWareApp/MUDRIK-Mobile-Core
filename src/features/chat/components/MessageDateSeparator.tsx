@@ -10,32 +10,21 @@ import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { formatMessageDate } from '../formatters/formatMessageDate';
-import { getMessageDateBucket } from '../formatters/getMessageDateBucket';
 
 type Props = {
   createdAt: number;
-  now: number;
 };
 
 export function MessageDateSeparator({
   createdAt,
-  now,
 }: Props) {
   const { colors } = useTheme();
-  const { locale, t } = useLocale();
+  const { locale } = useLocale();
 
-  const bucket = getMessageDateBucket(
+  const label = formatMessageDate(
     createdAt,
-    now,
+    locale,
   );
-
-  const label = bucket === 'today'
-    ? t('today')
-    : bucket === 'yesterday'
-      ? t('yesterday')
-      : bucket === 'dated'
-        ? formatMessageDate(createdAt, locale)
-        : '';
 
   if (label.length === 0) {
     return null;
