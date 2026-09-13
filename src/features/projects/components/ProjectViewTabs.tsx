@@ -26,10 +26,10 @@ export function ProjectViewTabs({
   const { colors } = useTheme();
   const { t } = useLocale();
 
-  const tabs: ReadonlyArray<{
+  const tabs: readonly {
     key: ProjectViewMode;
     label: string;
-  }> = [
+  }[] = [
     {
       key: 'active',
       label: t('activeProjects'),

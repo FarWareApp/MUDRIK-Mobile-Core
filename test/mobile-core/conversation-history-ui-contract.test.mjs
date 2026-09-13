@@ -19,6 +19,15 @@ const translations = fs.readFileSync(
   'utf8',
 );
 
+function countTranslationKey(key) {
+  const pattern = new RegExp(
+    `^\\s*${key}:\\s`,
+    'gm',
+  );
+
+  return translations.match(pattern)?.length ?? 0;
+}
+
 test(
   'conversation list item reuses dedicated presentation responsibilities',
   () => {
@@ -68,7 +77,7 @@ test(
       'deleteConversationAction',
     ]) {
       assert.equal(
-        translations.split(`${key}:`).length - 1,
+        countTranslationKey(key),
         3,
         `${key} must exist in ar, de and en`,
       );
