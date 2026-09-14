@@ -25,6 +25,7 @@ import { diagnosticsService } from '../../../core/diagnostics/DiagnosticsService
 import { AttachmentFileStore } from '../../attachments/storage/AttachmentFileStore';
 import { createConversationId } from '../../conversations/createConversationId';
 import { deriveConversationTitle } from '../../conversations/deriveConversationTitle';
+import type { ChatSendErrorCode } from '../ChatSendErrorCode';
 import { ChatMessage } from '../types';
 
 type MessageIdentity = {
@@ -33,7 +34,7 @@ type MessageIdentity = {
 };
 
 export type ChatSendError = {
-  message: string;
+  code: ChatSendErrorCode;
   failedText: string;
   failedAttachments: AttachmentRecord[];
   retryAppendUserMessage: boolean;
@@ -515,8 +516,7 @@ export function useConversationController({
           }
 
           setError({
-            message:
-              'Unable to complete the message.',
+            code: 'transport-failed',
             failedText: text,
             failedAttachments: attachments,
             retryAppendUserMessage: false,
@@ -544,8 +544,7 @@ export function useConversationController({
         setSending(false);
 
         setError({
-          message:
-            'Unable to save the message locally.',
+          code: 'local-persist-failed',
           failedText: text,
           failedAttachments: attachments,
           retryAppendUserMessage: true,

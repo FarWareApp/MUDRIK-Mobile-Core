@@ -8,6 +8,8 @@ export const chatTranslations = {
     responseInProgress: 'جارٍ تجهيز الرد',
     attachmentUnavailable: 'المرفق غير متاح',
     unavailableOnThisDevice: 'غير متاح على هذا الجهاز',
+    messageSendFailed: 'تعذر إكمال إرسال الرسالة.',
+    messageSaveFailed: 'تعذر حفظ الرسالة محليًا.',
   },
 
   de: {
@@ -19,6 +21,8 @@ export const chatTranslations = {
     responseInProgress: 'Antwort wird vorbereitet',
     attachmentUnavailable: 'Anhang nicht verfügbar',
     unavailableOnThisDevice: 'Auf diesem Gerät nicht verfügbar',
+    messageSendFailed: 'Die Nachricht konnte nicht vollständig gesendet werden.',
+    messageSaveFailed: 'Die Nachricht konnte nicht lokal gespeichert werden.',
   },
 
   en: {
@@ -30,6 +34,8 @@ export const chatTranslations = {
     responseInProgress: 'Response in progress',
     attachmentUnavailable: 'Attachment unavailable',
     unavailableOnThisDevice: 'Unavailable on this device',
+    messageSendFailed: 'Unable to complete the message.',
+    messageSaveFailed: 'Unable to save the message locally.',
   },
 } as const;
 

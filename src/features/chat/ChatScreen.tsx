@@ -19,17 +19,19 @@ import { ConversationRepository } from '../../contracts/ConversationRepository';
 import { DraftRepository } from '../../contracts/DraftRepository';
 import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
+import { useLocale } from '../../core/localization/LocaleProvider';
 import { useAppSettings } from '../../core/settings/AppSettingsProvider';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 import { AttachmentImportService } from '../attachments/AttachmentImportService';
 import { AttachmentDraftTray } from '../attachments/components/AttachmentDraftTray';
 import { AttachmentSourceSheet } from '../attachments/components/AttachmentSourceSheet';
+import { getAttachmentDraftErrorTranslationKey } from '../attachments/getAttachmentDraftErrorTranslationKey';
 import { useAttachmentDraftController } from '../attachments/hooks/useAttachmentDraftController';
 import { AttachmentFileStore } from '../attachments/storage/AttachmentFileStore';
 import { useActiveConversation } from '../conversations/ActiveConversationProvider';
 import { createDraftPersistenceRepository } from './DraftPersistencePolicy';
 import { ChatBootstrapState } from './components/ChatBootstrapState';
-import { ChatErrorBanner } from './components/ChatErrorBanner';
 import { ChatHeader } from './components/ChatHeader';
 import { MessageComposer } from './components/MessageComposer';
 import { MessageList } from './components/MessageList';
@@ -37,6 +39,7 @@ import { QuickActionBackdrop } from './components/QuickActionBackdrop';
 import { QuickActionButton } from './components/QuickActionButton';
 import { QuickActionMenu } from './components/QuickActionMenu';
 import { SendingIndicator } from './components/SendingIndicator';
+import { getChatSendErrorTranslationKey } from './getChatSendErrorTranslationKey';
 import { useConversationController } from './hooks/useConversationController';
 
 type Props = {
@@ -67,6 +70,7 @@ export function ChatScreen({
   attachmentFileStore,
 }: Props) {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const { settings } = useAppSettings();
 
   const {
@@ -242,8 +246,12 @@ export function ChatScreen({
             </View>
 
             {error && (
-              <ChatErrorBanner
-                message={error.message}
+              <InlineErrorBanner
+                message={t(
+                  getChatSendErrorTranslationKey(
+                    error.code,
+                  ),
+                )}
                 onRetry={() => {
                   void retry();
                 }}
@@ -252,10 +260,12 @@ export function ChatScreen({
             )}
 
             {attachmentDraft.error && (
-              <ChatErrorBanner
-                message={
-                  attachmentDraft.error
-                }
+              <InlineErrorBanner
+                message={t(
+                  getAttachmentDraftErrorTranslationKey(
+                    attachmentDraft.error,
+                  ),
+                )}
                 onDismiss={
                   attachmentDraft.dismissError
                 }

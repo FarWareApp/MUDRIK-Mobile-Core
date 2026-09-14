@@ -1,4 +1,8 @@
 import {
+  AttachmentTranslationKey,
+  attachmentTranslations,
+} from './attachmentTranslations';
+import {
   ChatTranslationKey,
   chatTranslations,
 } from './chatTranslations';
@@ -18,6 +22,7 @@ import {
 
 export type TranslationKey =
   | BaseTranslationKey
+  | AttachmentTranslationKey
   | ChatTranslationKey
   | SettingsTranslationKey
   | VoiceTranslationKey;
@@ -28,18 +33,21 @@ export const translationCatalog: Record<
 > = {
   ar: {
     ...translations.ar,
+    ...attachmentTranslations.ar,
     ...chatTranslations.ar,
     ...settingsTranslations.ar,
     ...voiceTranslations.ar,
   },
   de: {
     ...translations.de,
+    ...attachmentTranslations.de,
     ...chatTranslations.de,
     ...settingsTranslations.de,
     ...voiceTranslations.de,
   },
   en: {
     ...translations.en,
+    ...attachmentTranslations.en,
     ...chatTranslations.en,
     ...settingsTranslations.en,
     ...voiceTranslations.en,

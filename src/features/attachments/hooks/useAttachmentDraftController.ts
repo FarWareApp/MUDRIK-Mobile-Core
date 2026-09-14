@@ -21,6 +21,9 @@ import {
 import {
   AttachmentImportService,
 } from '../AttachmentImportService';
+import type {
+  AttachmentDraftErrorCode,
+} from '../AttachmentDraftErrorCode';
 import {
   AttachmentFileStore,
 } from '../storage/AttachmentFileStore';
@@ -41,7 +44,7 @@ type Dependencies = {
 };
 
 function recordAttachmentError(
-  event: string,
+  event: AttachmentDraftErrorCode,
   caught: unknown,
 ): void {
   diagnosticsService.record(
@@ -69,7 +72,7 @@ export function useAttachmentDraftController({
     useState(false);
 
   const [error, setError] =
-    useState<string | null>(null);
+    useState<AttachmentDraftErrorCode | null>(null);
 
   const load = useCallback(async () => {
     await Promise.resolve();
@@ -121,9 +124,7 @@ export function useAttachmentDraftController({
         caught,
       );
 
-      setError(
-        'Unable to restore attachments.',
-      );
+      setError('restore-failed');
     }
   }, [
     conversationId,
@@ -177,9 +178,7 @@ export function useAttachmentDraftController({
             caught,
           );
 
-          setError(
-            'Unable to add attachment.',
-          );
+          setError('import-failed');
         } finally {
           setBusy(false);
         }
@@ -205,9 +204,7 @@ export function useAttachmentDraftController({
           caught,
         );
 
-        setError(
-          'Unable to open photos.',
-        );
+        setError('media-picker-failed');
       }
     }, [
       importPicked,
@@ -227,9 +224,7 @@ export function useAttachmentDraftController({
           caught,
         );
 
-        setError(
-          'Camera permission or capture failed.',
-        );
+        setError('camera-failed');
       }
     }, [
       importPicked,
@@ -249,9 +244,7 @@ export function useAttachmentDraftController({
           caught,
         );
 
-        setError(
-          'Unable to open files.',
-        );
+        setError('document-picker-failed');
       }
     }, [
       importPicked,
@@ -299,9 +292,7 @@ export function useAttachmentDraftController({
             caught,
           );
 
-          setError(
-            'Unable to remove attachment.',
-          );
+          setError('remove-failed');
         }
       },
       [
@@ -318,6 +309,11 @@ export function useAttachmentDraftController({
       setError(null);
     }, []);
 
+  const dismissError =
+    useCallback(() => {
+      setError(null);
+    }, []);
+
   return {
     attachments,
     busy,
@@ -328,9 +324,7 @@ export function useAttachmentDraftController({
     pickDocuments,
     remove,
 
-    dismissError: () =>
-      setError(null),
-
+    dismissError,
     clearLocalState,
     reload: load,
   };
