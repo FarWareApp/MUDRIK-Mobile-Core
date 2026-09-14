@@ -24,7 +24,7 @@ export function ComposerAttachmentButton({
   onPress,
 }: Props) {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const { isRTL, t } = useLocale();
 
   const badgeText =
     attachmentCount > 99
@@ -52,6 +52,9 @@ export function ComposerAttachmentButton({
             importantForAccessibility="no-hide-descendants"
             style={[
               styles.badge,
+              isRTL
+                ? styles.badgeRTL
+                : styles.badgeLTR,
               {
                 backgroundColor:
                   colors.accent,
@@ -85,7 +88,6 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
     top: 1,
-    right: 0,
     minWidth: 18,
     height: 18,
     paddingHorizontal: 4,
@@ -93,6 +95,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  badgeLTR: {
+    right: 0,
+  },
+  badgeRTL: {
+    left: 0,
   },
   badgeText: {
     fontSize: 9,

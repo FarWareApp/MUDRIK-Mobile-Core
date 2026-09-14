@@ -5,9 +5,10 @@ import {
 } from 'react-native';
 
 import { useLocale } from '../../../../core/localization/LocaleProvider';
+import { resolveTextDirection } from '../../../../core/localization/TextDirectionResolver';
 import { useTheme } from '../../../../design-system/theme/ThemeProvider';
 import { spacing } from '../../../../design-system/tokens/spacing';
-import { typography } from '../../../../design-system/tokens/typography';
+import { typeScale } from '../../../../design-system/tokens/typography';
 
 type Props = {
   value: string;
@@ -24,6 +25,10 @@ export function ComposerTextInput({
 }: Props) {
   const { colors, mode } = useTheme();
   const { isRTL, t } = useLocale();
+  const direction = resolveTextDirection(
+    value,
+    isRTL ? 'rtl' : 'ltr',
+  );
 
   return (
     <TextInput
@@ -39,12 +44,17 @@ export function ComposerTextInput({
       placeholder={t('composerPlaceholder')}
       placeholderTextColor={colors.textSecondary}
       selectionColor={colors.accent}
+      cursorColor={colors.accent}
+      underlineColorAndroid="transparent"
       style={[
         styles.input,
         {
           color: colors.textPrimary,
           opacity: editable ? 1 : 0.62,
-          textAlign: isRTL ? 'right' : 'left',
+          textAlign: direction === 'rtl'
+            ? 'right'
+            : 'left',
+          writingDirection: direction,
         },
       ]}
     />
@@ -53,15 +63,13 @@ export function ComposerTextInput({
 
 const styles = StyleSheet.create({
   input: {
+    ...typeScale.input,
     flex: 1,
     minHeight: 44,
     maxHeight: 128,
     paddingHorizontal: spacing.sm,
     paddingTop: 10,
     paddingBottom: 9,
-    fontSize: typography.body,
-    lineHeight: 24,
     textAlignVertical: 'top',
-    writingDirection: 'auto',
   },
 });

@@ -22,11 +22,15 @@ import {
 
 type Props = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
+  fallbackColor?: string;
+  tintColor?: string;
 }>;
 
 export function AdaptiveGlassSurface({
   children,
   style,
+  fallbackColor,
+  tintColor,
 }: Props) {
   const {
     reducedTransparency,
@@ -44,7 +48,7 @@ export function AdaptiveGlassSurface({
       <GlassView
         colorScheme={mode}
         glassEffectStyle="regular"
-        tintColor={colors.surface}
+        tintColor={tintColor ?? colors.surface}
         style={style}
       >
         {children}
@@ -57,7 +61,7 @@ export function AdaptiveGlassSurface({
       style={[
         {
           backgroundColor:
-            colors.surface,
+            fallbackColor ?? colors.surface,
         },
         style,
       ]}

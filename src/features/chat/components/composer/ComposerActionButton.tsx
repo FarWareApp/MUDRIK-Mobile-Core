@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '../../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../../design-system/tokens/motion';
 import { radius } from '../../../../design-system/tokens/radius';
 
 type Props = PropsWithChildren<{
@@ -74,7 +75,7 @@ export function ComposerActionButton({
             {
               scale:
                 pressed && !unavailable
-                  ? 0.95
+                  ? motion.press.scale
                   : 1,
             },
           ],

@@ -20,6 +20,10 @@ export const typeScale = {
     fontSize: typography.body,
     lineHeight: 23,
   },
+  input: {
+    fontSize: typography.body,
+    lineHeight: 24,
+  },
   secondary: {
     fontSize: typography.secondary,
     lineHeight: 20,

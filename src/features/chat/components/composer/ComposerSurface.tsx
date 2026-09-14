@@ -6,6 +6,7 @@ import {
   View,
 } from 'react-native';
 
+import { AdaptiveGlassSurface } from '../../../../design-system/components/AdaptiveGlassSurface';
 import { useTheme } from '../../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../../design-system/tokens/radius';
 import { spacing } from '../../../../design-system/tokens/spacing';
@@ -19,6 +20,9 @@ export function ComposerSurface({
   focused,
 }: Props) {
   const { colors } = useTheme();
+  const surfaceColor = focused
+    ? colors.surface
+    : colors.surfaceInput;
 
   return (
     <View
@@ -30,14 +34,13 @@ export function ComposerSurface({
         },
       ]}
     >
-      <View
+      <AdaptiveGlassSurface
+        fallbackColor={surfaceColor}
+        tintColor={surfaceColor}
         style={[
           styles.surface,
           focused && styles.focusedSurface,
           {
-            backgroundColor: focused
-              ? colors.surface
-              : colors.surfaceInput,
             borderColor: focused
               ? colors.accent
               : colors.border,
@@ -57,7 +60,7 @@ export function ComposerSurface({
         ]}
       >
         {children}
-      </View>
+      </AdaptiveGlassSurface>
     </View>
   );
 }

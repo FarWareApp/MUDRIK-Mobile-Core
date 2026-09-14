@@ -26,6 +26,14 @@ const textInput = fs.readFileSync(
   'src/features/chat/components/composer/ComposerTextInput.tsx',
   'utf8',
 );
+const adaptiveGlassSurface = fs.readFileSync(
+  'src/design-system/components/AdaptiveGlassSurface.tsx',
+  'utf8',
+);
+const typography = fs.readFileSync(
+  'src/design-system/tokens/typography.ts',
+  'utf8',
+);
 const translations = fs.readFileSync(
   'src/core/localization/translations.ts',
   'utf8',
@@ -52,14 +60,26 @@ test(
 );
 
 test(
-  'composer surface owns a restrained single-shell input treatment',
+  'composer surface uses adaptive glass with explicit stable fallback colors',
   () => {
+    assert.match(composerSurface, /AdaptiveGlassSurface/);
     assert.match(composerSurface, /surfaceInput/);
+    assert.match(composerSurface, /fallbackColor=\{surfaceColor\}/);
+    assert.match(composerSurface, /tintColor=\{surfaceColor\}/);
     assert.match(composerSurface, /focusedSurface/);
     assert.match(composerSurface, /shadowColor/);
     assert.match(composerSurface, /elevation:/);
     assert.doesNotMatch(textInput, /borderWidth:/);
     assert.doesNotMatch(textInput, /backgroundColor:/);
+
+    assert.match(
+      adaptiveGlassSurface,
+      /fallbackColor \?\? colors\.surface/,
+    );
+    assert.match(
+      adaptiveGlassSurface,
+      /tintColor \?\? colors\.surface/,
+    );
 
     for (const token of [
       'surfaceInput',
@@ -76,7 +96,7 @@ test(
 );
 
 test(
-  'attachment affordance uses a platform-stable paperclip primitive with a bounded count badge',
+  'attachment affordance uses a platform-stable paperclip and mirrors its badge in RTL',
   () => {
     assert.match(
       attachmentButton,
@@ -90,28 +110,41 @@ test(
     assert.match(paperclipIcon, /borderWidth:\s*2/);
     assert.match(attachmentButton, /attachmentCount > 99/);
     assert.match(attachmentButton, /99\+/);
+    assert.match(attachmentButton, /isRTL/);
+    assert.match(attachmentButton, /badgeRTL/);
+    assert.match(attachmentButton, /badgeLTR/);
   },
 );
 
 test(
-  'composer action targets stay at least 44 by 44 with pressed-state polish',
+  'composer action targets stay at least 44 by 44 and use motion tokens',
   () => {
     assert.match(actionButton, /width:\s*44/);
     assert.match(actionButton, /height:\s*44/);
     assert.match(actionButton, /surfacePressed/);
-    assert.match(actionButton, /transform:/);
+    assert.match(actionButton, /motion\.press\.scale/);
     assert.match(actionButton, /shadowOpacity/);
+    assert.doesNotMatch(actionButton, /\?\s*0\.95/);
   },
 );
 
 test(
-  'composer text input keeps multiline, automatic direction and the 12000 character cap',
+  'composer text input keeps multiline cap while resolving typed text direction',
   () => {
     assert.match(textInput, /multiline/);
     assert.match(textInput, /maxLength=\{12000\}/);
     assert.match(textInput, /keyboardAppearance=\{mode\}/);
+    assert.match(textInput, /resolveTextDirection/);
+    assert.match(textInput, /writingDirection:\s*direction/);
+    assert.match(textInput, /cursorColor=\{colors\.accent\}/);
+    assert.match(textInput, /underlineColorAndroid="transparent"/);
+    assert.match(textInput, /\.\.\.typeScale\.input/);
     assert.match(textInput, /textAlignVertical:\s*'top'/);
-    assert.match(textInput, /writingDirection:\s*'auto'/);
+
+    assert.match(
+      typography,
+      /input:\s*\{[\s\S]*?fontSize:\s*typography\.body,[\s\S]*?lineHeight:\s*24/,
+    );
   },
 );
 
