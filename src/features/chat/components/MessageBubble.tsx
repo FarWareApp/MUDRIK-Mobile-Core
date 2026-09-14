@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 import type { ChatMessage } from '../types';
 import { MessageAttachmentList } from './MessageAttachmentList';
@@ -10,28 +10,30 @@ type Props = {
   message: ChatMessage;
 };
 
-export function MessageBubble({
-  message,
-}: Props) {
-  const isUser = message.role === 'user';
+export const MessageBubble = memo(
+  function MessageBubble({
+    message,
+  }: Props) {
+    const isUser = message.role === 'user';
 
-  return (
-    <MessageBubbleSurface isUser={isUser}>
-      <MessageAttachmentList
-        attachments={message.attachments ?? []}
-      />
+    return (
+      <MessageBubbleSurface isUser={isUser}>
+        <MessageAttachmentList
+          attachments={message.attachments ?? []}
+        />
 
-      {message.text.length > 0 && (
-        <MessageText
-          text={message.text}
+        {message.text.length > 0 && (
+          <MessageText
+            text={message.text}
+            isUser={isUser}
+          />
+        )}
+
+        <MessageTimestamp
+          createdAt={message.createdAt}
           isUser={isUser}
         />
-      )}
-
-      <MessageTimestamp
-        createdAt={message.createdAt}
-        isUser={isUser}
-      />
-    </MessageBubbleSurface>
-  );
-}
+      </MessageBubbleSurface>
+    );
+  },
+);

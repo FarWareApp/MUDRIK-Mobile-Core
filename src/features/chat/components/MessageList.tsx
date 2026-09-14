@@ -1,6 +1,11 @@
-import React, { useRef } from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   FlatList,
+  ListRenderItemInfo,
   NativeScrollEvent,
   NativeSyntheticEvent,
   StyleSheet,
@@ -24,6 +29,30 @@ type Props = {
   messages: ChatMessage[];
 };
 
+function getMessageListItemKey(
+  item: MessageListItem,
+) {
+  return item.id;
+}
+
+function renderMessageListItem({
+  item,
+}: ListRenderItemInfo<MessageListItem>) {
+  if (item.kind === 'date') {
+    return (
+      <MessageDateSeparator
+        createdAt={item.createdAt}
+      />
+    );
+  }
+
+  return (
+    <MessageBubble
+      message={item.message}
+    />
+  );
+}
+
 export function MessageList({
   messages,
 }: Props) {
@@ -31,44 +60,49 @@ export function MessageList({
   const shouldFollowEndRef = useRef(true);
   const { reducedMotion } = useAccessibility();
 
-  const items = buildMessageListItems(messages);
+  const items = useMemo(
+    () => buildMessageListItems(messages),
+    [messages],
+  );
 
-  const handleScroll = (
-    event: NativeSyntheticEvent<NativeScrollEvent>,
-  ) => {
-    const {
-      contentOffset,
-      contentSize,
-      layoutMeasurement,
-    } = event.nativeEvent;
+  const handleScroll = useCallback(
+    (
+      event: NativeSyntheticEvent<NativeScrollEvent>,
+    ) => {
+      const {
+        contentOffset,
+        contentSize,
+        layoutMeasurement,
+      } = event.nativeEvent;
 
-    shouldFollowEndRef.current = isNearMessageListEnd(
-      contentSize.height,
-      layoutMeasurement.height,
-      contentOffset.y,
-    );
-  };
+      shouldFollowEndRef.current =
+        isNearMessageListEnd(
+          contentSize.height,
+          layoutMeasurement.height,
+          contentOffset.y,
+        );
+    },
+    [],
+  );
+
+  const handleContentSizeChange =
+    useCallback(() => {
+      if (
+        messages.length > 0
+        && shouldFollowEndRef.current
+      ) {
+        listRef.current?.scrollToEnd({
+          animated: !reducedMotion,
+        });
+      }
+    }, [messages.length, reducedMotion]);
 
   return (
     <FlatList
       ref={listRef}
       data={items}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => {
-        if (item.kind === 'date') {
-          return (
-            <MessageDateSeparator
-              createdAt={item.createdAt}
-            />
-          );
-        }
-
-        return (
-          <MessageBubble
-            message={item.message}
-          />
-        );
-      }}
+      keyExtractor={getMessageListItemKey}
+      renderItem={renderMessageListItem}
       ListEmptyComponent={EmptyChatState}
       contentContainerStyle={[
         styles.content,
@@ -77,16 +111,7 @@ export function MessageList({
       keyboardShouldPersistTaps="handled"
       onScroll={handleScroll}
       scrollEventThrottle={32}
-      onContentSizeChange={() => {
-        if (
-          messages.length > 0
-          && shouldFollowEndRef.current
-        ) {
-          listRef.current?.scrollToEnd({
-            animated: !reducedMotion,
-          });
-        }
-      }}
+      onContentSizeChange={handleContentSizeChange}
     />
   );
 }

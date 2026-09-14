@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -15,45 +15,47 @@ type Props = {
   createdAt: number;
 };
 
-export function MessageDateSeparator({
-  createdAt,
-}: Props) {
-  const { colors } = useTheme();
-  const { locale } = useLocale();
-
-  const label = formatMessageDate(
+export const MessageDateSeparator = memo(
+  function MessageDateSeparator({
     createdAt,
-    locale,
-  );
+  }: Props) {
+    const { colors } = useTheme();
+    const { locale } = useLocale();
 
-  if (label.length === 0) {
-    return null;
-  }
+    const label = formatMessageDate(
+      createdAt,
+      locale,
+    );
 
-  return (
-    <View style={styles.wrapper}>
-      <View
-        style={[
-          styles.pill,
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <Text
-          accessibilityRole="text"
+    if (label.length === 0) {
+      return null;
+    }
+
+    return (
+      <View style={styles.wrapper}>
+        <View
           style={[
-            styles.label,
-            { color: colors.textSecondary },
+            styles.pill,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.border,
+            },
           ]}
         >
-          {label}
-        </Text>
+          <Text
+            accessibilityRole="text"
+            style={[
+              styles.label,
+              { color: colors.textSecondary },
+            ]}
+          >
+            {label}
+          </Text>
+        </View>
       </View>
-    </View>
-  );
-}
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   wrapper: {
