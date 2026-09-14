@@ -2,13 +2,14 @@ import React from 'react';
 import {
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
+
+import { AttachmentRemoveIcon } from './AttachmentRemoveIcon';
 
 type Props = {
   disabled: boolean;
@@ -50,14 +51,9 @@ export function AttachmentRemoveButton({
           },
         ]}
       >
-        <Text
-          style={[
-            styles.glyph,
-            { color: colors.textPrimary },
-          ]}
-        >
-          ×
-        </Text>
+        <AttachmentRemoveIcon
+          color={colors.textPrimary}
+        />
       </View>
     </Pressable>
   );
@@ -67,7 +63,7 @@ const styles = StyleSheet.create({
   touchTarget: {
     position: 'absolute',
     top: -8,
-    right: -8,
+    end: -8,
     width: 44,
     height: 44,
     alignItems: 'center',
@@ -81,10 +77,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  glyph: {
-    fontSize: 17,
-    lineHeight: 19,
-    fontWeight: '700',
   },
 });
