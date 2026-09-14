@@ -1,2 +1,2 @@
-requestedAt=2026-09-13T21:40:00+02:00
-purpose=standalone-physical-android-layer4-validation
+requestedAt=2026-09-14T10:29:00+02:00
+purpose=post-toolchain-release-apk-validation
