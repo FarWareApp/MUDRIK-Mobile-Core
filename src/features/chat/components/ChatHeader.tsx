@@ -13,6 +13,9 @@ import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
 import {
+  motion,
+} from '../../../design-system/tokens/motion';
+import {
   radius,
 } from '../../../design-system/tokens/radius';
 import {
@@ -21,6 +24,9 @@ import {
 import {
   typography,
 } from '../../../design-system/tokens/typography';
+import {
+  ChatNewConversationIcon,
+} from './ChatNewConversationIcon';
 
 type Props = {
   onNewConversation: () => void;
@@ -94,22 +100,16 @@ export function ChatHeader({
             transform: [
               {
                 scale: pressed
-                  ? 0.96
+                  ? motion.press.scale
                   : 1,
               },
             ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={[
-            styles.newGlyph,
-            { color: colors.accent },
-          ]}
-        >
-          +
-        </Text>
+        <ChatNewConversationIcon
+          color={colors.accent}
+        />
       </Pressable>
     </View>
   );
@@ -151,10 +151,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  newGlyph: {
-    fontSize: 25,
-    lineHeight: 27,
-    fontWeight: '500',
   },
 });
