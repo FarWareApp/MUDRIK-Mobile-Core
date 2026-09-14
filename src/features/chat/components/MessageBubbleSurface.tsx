@@ -6,6 +6,7 @@ import {
   View,
 } from 'react-native';
 
+import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
@@ -18,15 +19,22 @@ export function MessageBubbleSurface({
   children,
   isUser,
 }: Props) {
+  const { isRTL } = useLocale();
   const { colors } = useTheme();
+
+  const shapeStyle = isUser
+    ? isRTL
+      ? styles.userShapeRTL
+      : styles.userShapeLTR
+    : isRTL
+      ? styles.assistantShapeRTL
+      : styles.assistantShapeLTR;
 
   return (
     <View
       style={[
         styles.bubble,
-        isUser
-          ? styles.userShape
-          : styles.assistantShape,
+        shapeStyle,
         {
           alignSelf: isUser
             ? 'flex-end'
@@ -56,10 +64,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     marginVertical: spacing.xs,
   },
-  userShape: {
+  userShapeLTR: {
     borderBottomRightRadius: radius.sm,
   },
-  assistantShape: {
+  userShapeRTL: {
     borderBottomLeftRadius: radius.sm,
+  },
+  assistantShapeLTR: {
+    borderBottomLeftRadius: radius.sm,
+  },
+  assistantShapeRTL: {
+    borderBottomRightRadius: radius.sm,
   },
 });
