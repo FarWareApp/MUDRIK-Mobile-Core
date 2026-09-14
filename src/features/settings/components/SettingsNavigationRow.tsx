@@ -6,9 +6,12 @@ import {
   View,
 } from 'react-native';
 
+import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { typography } from '../../../design-system/tokens/typography';
+
+import { SettingsNavigationChevronIcon } from './SettingsNavigationChevronIcon';
 
 type Props = {
   title: string;
@@ -24,6 +27,7 @@ export function SettingsNavigationRow({
   onPress,
 }: Props) {
   const { colors } = useTheme();
+  const { isRTL } = useLocale();
 
   return (
     <Pressable
@@ -62,15 +66,10 @@ export function SettingsNavigationRow({
         ) : null}
       </View>
 
-      <Text
-        importantForAccessibility="no"
-        style={[
-          styles.chevron,
-          { color: colors.textSecondary },
-        ]}
-      >
-        ›
-      </Text>
+      <SettingsNavigationChevronIcon
+        color={colors.textSecondary}
+        isRTL={isRTL}
+      />
     </Pressable>
   );
 }
@@ -86,7 +85,7 @@ const styles = StyleSheet.create({
   },
   copy: {
     flex: 1,
-    paddingRight: spacing.md,
+    paddingEnd: spacing.md,
   },
   title: {
     fontSize: typography.secondary,
@@ -96,8 +95,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     fontSize: typography.caption,
     lineHeight: 17,
-  },
-  chevron: {
-    fontSize: 22,
   },
 });
