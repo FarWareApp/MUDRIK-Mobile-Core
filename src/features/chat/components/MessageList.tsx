@@ -49,6 +49,7 @@ function renderMessageListItem({
   return (
     <MessageBubble
       message={item.message}
+      groupPosition={item.groupPosition}
     />
   );
 }

@@ -10,31 +10,67 @@ import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
+import type {
+  MessageGroupPosition,
+} from '../list/buildMessageListItems';
 
 type Props = PropsWithChildren<{
   isUser: boolean;
+  groupPosition: MessageGroupPosition;
 }>;
+
+function getGroupSpacingStyle(
+  groupPosition: MessageGroupPosition,
+) {
+  switch (groupPosition) {
+    case 'first':
+      return styles.firstSpacing;
+    case 'middle':
+      return styles.middleSpacing;
+    case 'last':
+      return styles.lastSpacing;
+    default:
+      return styles.singleSpacing;
+  }
+}
 
 export function MessageBubbleSurface({
   children,
   isUser,
+  groupPosition,
 }: Props) {
   const { isRTL } = useLocale();
   const { colors } = useTheme();
 
-  const shapeStyle = isUser
+  const tailStyle = isUser
     ? isRTL
-      ? styles.userShapeRTL
-      : styles.userShapeLTR
+      ? styles.userTailRTL
+      : styles.userTailLTR
     : isRTL
-      ? styles.assistantShapeRTL
-      : styles.assistantShapeLTR;
+      ? styles.assistantTailRTL
+      : styles.assistantTailLTR;
+
+  const groupedWithPrevious =
+    groupPosition === 'middle'
+    || groupPosition === 'last';
+
+  const connectionStyle = groupedWithPrevious
+    ? isUser
+      ? isRTL
+        ? styles.userConnectionRTL
+        : styles.userConnectionLTR
+      : isRTL
+        ? styles.assistantConnectionRTL
+        : styles.assistantConnectionLTR
+    : null;
 
   return (
     <View
       style={[
         styles.bubble,
-        shapeStyle,
+        getGroupSpacingStyle(groupPosition),
+        tailStyle,
+        connectionStyle,
         {
           alignSelf: isUser
             ? 'flex-end'
@@ -62,18 +98,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
+  },
+  singleSpacing: {
     marginVertical: spacing.xs,
   },
-  userShapeLTR: {
+  firstSpacing: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs / 2,
+  },
+  middleSpacing: {
+    marginVertical: spacing.xs / 2,
+  },
+  lastSpacing: {
+    marginTop: spacing.xs / 2,
+    marginBottom: spacing.xs,
+  },
+  userTailLTR: {
     borderBottomRightRadius: radius.sm,
   },
-  userShapeRTL: {
+  userTailRTL: {
     borderBottomLeftRadius: radius.sm,
   },
-  assistantShapeLTR: {
+  assistantTailLTR: {
     borderBottomLeftRadius: radius.sm,
   },
-  assistantShapeRTL: {
+  assistantTailRTL: {
     borderBottomRightRadius: radius.sm,
+  },
+  userConnectionLTR: {
+    borderTopRightRadius: radius.sm,
+  },
+  userConnectionRTL: {
+    borderTopLeftRadius: radius.sm,
+  },
+  assistantConnectionLTR: {
+    borderTopLeftRadius: radius.sm,
+  },
+  assistantConnectionRTL: {
+    borderTopRightRadius: radius.sm,
   },
 });
