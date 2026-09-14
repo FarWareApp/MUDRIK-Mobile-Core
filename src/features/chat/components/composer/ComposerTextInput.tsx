@@ -9,6 +9,9 @@ import { resolveTextDirection } from '../../../../core/localization/TextDirectio
 import { useTheme } from '../../../../design-system/theme/ThemeProvider';
 import { spacing } from '../../../../design-system/tokens/spacing';
 import { typeScale } from '../../../../design-system/tokens/typography';
+import {
+  MAX_MESSAGE_TEXT_LENGTH,
+} from '../../messageTextPolicy';
 
 type Props = {
   value: string;
@@ -39,7 +42,7 @@ export function ComposerTextInput({
       onBlur={() => onFocusChange(false)}
       editable={editable}
       multiline
-      maxLength={12000}
+      maxLength={MAX_MESSAGE_TEXT_LENGTH}
       keyboardAppearance={mode}
       placeholder={t('composerPlaceholder')}
       placeholderTextColor={colors.textSecondary}

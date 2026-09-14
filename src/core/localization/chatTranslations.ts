@@ -10,6 +10,7 @@ export const chatTranslations = {
     unavailableOnThisDevice: 'غير متاح على هذا الجهاز',
     messageSendFailed: 'تعذر إكمال إرسال الرسالة.',
     messageSaveFailed: 'تعذر حفظ الرسالة محليًا.',
+    messageLength: 'طول الرسالة',
   },
 
   de: {
@@ -23,6 +24,7 @@ export const chatTranslations = {
     unavailableOnThisDevice: 'Auf diesem Gerät nicht verfügbar',
     messageSendFailed: 'Die Nachricht konnte nicht vollständig gesendet werden.',
     messageSaveFailed: 'Die Nachricht konnte nicht lokal gespeichert werden.',
+    messageLength: 'Nachrichtenlänge',
   },
 
   en: {
@@ -36,6 +38,7 @@ export const chatTranslations = {
     unavailableOnThisDevice: 'Unavailable on this device',
     messageSendFailed: 'Unable to complete the message.',
     messageSaveFailed: 'Unable to save the message locally.',
+    messageLength: 'Message length',
   },
 } as const;
 

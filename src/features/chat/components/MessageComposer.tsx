@@ -3,8 +3,14 @@ import React, {
 } from 'react';
 
 import {
+  isMessageTextWithinLimit,
+} from '../messageTextPolicy';
+import {
   ComposerAttachmentButton,
 } from './composer/ComposerAttachmentButton';
+import {
+  ComposerCharacterCounter,
+} from './composer/ComposerCharacterCounter';
 import {
   ComposerSendButton,
 } from './composer/ComposerSendButton';
@@ -46,6 +52,7 @@ export function MessageComposer({
       value.trim().length > 0
       || attachmentCount > 0
     )
+    && isMessageTextWithinLimit(value)
     && !sending;
 
   const submit = async () => {
@@ -59,6 +66,11 @@ export function MessageComposer({
   return (
     <ComposerSurface
       focused={focused && !sending}
+      footer={
+        <ComposerCharacterCounter
+          value={value}
+        />
+      }
     >
       <ComposerAttachmentButton
         attachmentCount={attachmentCount}

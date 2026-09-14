@@ -1,5 +1,6 @@
 import React, {
   PropsWithChildren,
+  ReactNode,
 } from 'react';
 import {
   StyleSheet,
@@ -13,11 +14,13 @@ import { spacing } from '../../../../design-system/tokens/spacing';
 
 type Props = PropsWithChildren<{
   focused: boolean;
+  footer?: ReactNode;
 }>;
 
 export function ComposerSurface({
   children,
   focused,
+  footer,
 }: Props) {
   const { colors } = useTheme();
   const surfaceColor = focused
@@ -61,6 +64,8 @@ export function ComposerSurface({
       >
         {children}
       </AdaptiveGlassSurface>
+
+      {footer}
     </View>
   );
 }

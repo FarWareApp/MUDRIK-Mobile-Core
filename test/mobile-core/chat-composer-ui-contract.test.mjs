@@ -30,6 +30,10 @@ const sendArrowIcon = fs.readFileSync(
   'src/features/chat/components/composer/ComposerSendArrowIcon.tsx',
   'utf8',
 );
+const characterCounter = fs.readFileSync(
+  'src/features/chat/components/composer/ComposerCharacterCounter.tsx',
+  'utf8',
+);
 const textInput = fs.readFileSync(
   'src/features/chat/components/composer/ComposerTextInput.tsx',
   'utf8',
@@ -46,6 +50,10 @@ const translations = fs.readFileSync(
   'src/core/localization/translations.ts',
   'utf8',
 );
+const chatTranslations = fs.readFileSync(
+  'src/core/localization/chatTranslations.ts',
+  'utf8',
+);
 const colorTokens = fs.readFileSync(
   'src/design-system/tokens/colors.ts',
   'utf8',
@@ -60,6 +68,7 @@ test(
     assert.doesNotMatch(composer, /useTheme/);
 
     assert.match(composer, /ComposerAttachmentButton/);
+    assert.match(composer, /ComposerCharacterCounter/);
     assert.match(composer, /ComposerTextInput/);
     assert.match(composer, /ComposerVoiceButton/);
     assert.match(composer, /ComposerSendButton/);
@@ -155,10 +164,15 @@ test(
 );
 
 test(
-  'composer text input keeps multiline cap while resolving typed text direction',
+  'composer text input consumes the centralized multiline limit and resolves typed text direction',
   () => {
     assert.match(textInput, /multiline/);
-    assert.match(textInput, /maxLength=\{12000\}/);
+    assert.match(textInput, /MAX_MESSAGE_TEXT_LENGTH/);
+    assert.match(
+      textInput,
+      /maxLength=\{MAX_MESSAGE_TEXT_LENGTH\}/,
+    );
+    assert.doesNotMatch(textInput, /maxLength=\{12000\}/);
     assert.match(textInput, /keyboardAppearance=\{mode\}/);
     assert.match(textInput, /resolveTextDirection/);
     assert.match(textInput, /writingDirection:\s*direction/);
@@ -171,6 +185,24 @@ test(
       typography,
       /input:\s*\{[\s\S]*?fontSize:\s*typography\.body,[\s\S]*?lineHeight:\s*24/,
     );
+  },
+);
+
+test(
+  'near-limit message length feedback is delegated, localized, and visually explicit',
+  () => {
+    assert.match(composer, /isMessageTextWithinLimit/);
+    assert.match(composer, /footer=/);
+    assert.match(composerSurface, /footer\?: ReactNode/);
+    assert.match(characterCounter, /shouldShowMessageTextCounter/);
+    assert.match(characterCounter, /colors\.error/);
+    assert.match(characterCounter, /colors\.textSecondary/);
+    assert.match(characterCounter, /writingDirection:\s*'ltr'/);
+    assert.match(characterCounter, /t\('messageLength'\)/);
+
+    const localizedKeys =
+      chatTranslations.match(/messageLength:/g) ?? [];
+    assert.equal(localizedKeys.length, 3);
   },
 );
 
