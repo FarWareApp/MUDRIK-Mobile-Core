@@ -9,9 +9,12 @@ import { router } from 'expo-router';
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { ProjectBackIcon } from './ProjectBackIcon';
+import { ProjectEditIcon } from './ProjectEditIcon';
 
 type Props = {
   title: string;
@@ -25,7 +28,7 @@ export function ProjectDetailHeader({
   onEdit,
 }: Props) {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const { isRTL, t } = useLocale();
 
   return (
     <View
@@ -45,18 +48,20 @@ export function ProjectDetailHeader({
               ? colors.surfacePressed
               : colors.surfaceElevated,
             borderColor: colors.border,
+            transform: [
+              {
+                scale: pressed
+                  ? motion.press.subtleScale
+                  : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={{
-            color: colors.textPrimary,
-            fontSize: 23,
-          }}
-        >
-          ‹
-        </Text>
+        <ProjectBackIcon
+          color={colors.textPrimary}
+          isRTL={isRTL}
+        />
       </Pressable>
 
       <Text
@@ -84,18 +89,19 @@ export function ProjectDetailHeader({
               : colors.surfaceElevated,
             borderColor: colors.border,
             opacity: busy ? 0.44 : 1,
+            transform: [
+              {
+                scale: pressed && !busy
+                  ? motion.press.subtleScale
+                  : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={{
-            color: colors.textPrimary,
-            fontSize: 18,
-          }}
-        >
-          ✎
-        </Text>
+        <ProjectEditIcon
+          color={colors.textPrimary}
+        />
       </Pressable>
     </View>
   );
@@ -110,10 +116,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   title: {
+    ...typeScale.heading,
     flex: 1,
     paddingHorizontal: spacing.sm,
     textAlign: 'center',
-    fontSize: typography.heading,
     fontWeight: '700',
   },
   circleButton: {

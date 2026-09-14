@@ -1,31 +1,35 @@
 import {
   useCallback,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
-import {
+import type {
   ProjectRecord,
   ProjectRepository,
 } from '../../../contracts/ProjectRepository';
 import {
   diagnosticsService,
 } from '../../../core/diagnostics/DiagnosticsService';
-
+import type {
+  ProjectListErrorCode,
+} from '../ProjectListErrorCode';
+import type {
+  ProjectViewMode,
+} from '../ProjectViewMode';
 import {
   createProjectId,
 } from '../createProjectId';
-
-export type ProjectViewMode =
-  | 'active'
-  | 'archived';
+import {
+  filterProjectRecords,
+  hasProjectSearchQuery,
+  sortProjectRecords,
+} from '../projectListPolicy';
 
 type Dependencies = {
-  repository:
-    ProjectRepository;
-
-  onProjectDeleted?:
-    () => Promise<void>;
+  repository: ProjectRepository;
+  onProjectDeleted?: () => Promise<void>;
 };
 
 function recordProjectListError(
@@ -51,39 +55,62 @@ export function useProjectsController({
   const [loading, setLoading] =
     useState(true);
 
+  const [loadFailed, setLoadFailed] =
+    useState(false);
+
   const [busy, setBusy] =
     useState(false);
 
   const [error, setError] =
-    useState<string | null>(null);
+    useState<ProjectListErrorCode | null>(null);
 
   const [query, setQuery] =
     useState('');
 
   const [viewMode, setViewMode] =
-    useState<ProjectViewMode>(
-      'active',
-    );
+    useState<ProjectViewMode>('active');
+
+  const mutationInFlightRef =
+    useRef(false);
+
+  const beginMutation =
+    useCallback((): boolean => {
+      if (mutationInFlightRef.current) {
+        return false;
+      }
+
+      mutationInFlightRef.current = true;
+      setBusy(true);
+      setError(null);
+      return true;
+    }, []);
+
+  const endMutation =
+    useCallback(() => {
+      mutationInFlightRef.current = false;
+      setBusy(false);
+    }, []);
 
   const load =
     useCallback(async () => {
       setLoading(true);
+      setLoadFailed(false);
+      setError(null);
 
       try {
-        setProjects(
-          await repository.list(true),
-        );
+        const records =
+          await repository.list(true);
 
-        setError(null);
+        setProjects(
+          sortProjectRecords(records),
+        );
       } catch (caught) {
         recordProjectListError(
           'load-failed',
           caught,
         );
 
-        setError(
-          'Unable to load projects.',
-        );
+        setLoadFailed(true);
       } finally {
         setLoading(false);
       }
@@ -95,39 +122,43 @@ export function useProjectsController({
         name: string,
         description: string,
       ) => {
-        if (busy) {
-          return null;
-        }
-
-        const cleanName =
-          name.trim();
+        const cleanName = name.trim();
 
         if (!cleanName) {
-          setError(
-            'Project name cannot be empty.',
-          );
+          setError('name-required');
           return null;
         }
 
-        const id =
-          createProjectId();
+        if (!beginMutation()) {
+          return null;
+        }
 
-        const now =
-          Date.now();
-
-        setBusy(true);
-        setError(null);
+        const id = createProjectId();
+        const now = Date.now();
+        const cleanDescription =
+          description.trim();
 
         try {
           await repository.create({
             id,
             name: cleanName,
-            description:
-              description.trim(),
+            description: cleanDescription,
             createdAt: now,
           });
 
-          await load();
+          setProjects((current) =>
+            sortProjectRecords([
+              ...current,
+              {
+                id,
+                name: cleanName,
+                description: cleanDescription,
+                createdAt: now,
+                updatedAt: now,
+                isArchived: false,
+              },
+            ]),
+          );
 
           return id;
         } catch (caught) {
@@ -136,58 +167,64 @@ export function useProjectsController({
             caught,
           );
 
-          setError(
-            'Unable to create project.',
-          );
+          setError('create-failed');
           return null;
         } finally {
-          setBusy(false);
+          endMutation();
         }
       },
       [
-        busy,
-        load,
+        beginMutation,
+        endMutation,
         repository,
       ],
     );
 
   const toggleArchived =
     useCallback(
-      async (
-        project:
-          ProjectRecord,
-      ) => {
-        if (busy) {
+      async (project: ProjectRecord) => {
+        if (!beginMutation()) {
           return;
         }
 
-        setBusy(true);
-        setError(null);
+        const nextArchived =
+          !project.isArchived;
+        const updatedAt = Date.now();
 
         try {
           await repository.setArchived(
             project.id,
-            !project.isArchived,
-            Date.now(),
+            nextArchived,
+            updatedAt,
           );
 
-          await load();
+          setProjects((current) =>
+            sortProjectRecords(
+              current.map((item) =>
+                item.id === project.id
+                  ? {
+                      ...item,
+                      isArchived: nextArchived,
+                      updatedAt,
+                    }
+                  : item,
+              ),
+            ),
+          );
         } catch (caught) {
           recordProjectListError(
             'archive-failed',
             caught,
           );
 
-          setError(
-            'Unable to update project.',
-          );
+          setError('archive-failed');
         } finally {
-          setBusy(false);
+          endMutation();
         }
       },
       [
-        busy,
-        load,
+        beginMutation,
+        endMutation,
         repository,
       ],
     );
@@ -195,15 +232,18 @@ export function useProjectsController({
   const deleteProject =
     useCallback(
       async (id: string) => {
-        if (busy) {
+        if (!beginMutation()) {
           return false;
         }
 
-        setBusy(true);
-        setError(null);
-
         try {
           await repository.delete(id);
+
+          setProjects((current) =>
+            current.filter(
+              (project) => project.id !== id,
+            ),
+          );
 
           try {
             await onProjectDeleted?.();
@@ -217,7 +257,6 @@ export function useProjectsController({
             );
           }
 
-          await load();
           return true;
         } catch (caught) {
           recordProjectListError(
@@ -225,81 +264,62 @@ export function useProjectsController({
             caught,
           );
 
-          setError(
-            'Unable to delete project.',
-          );
+          setError('delete-failed');
           return false;
         } finally {
-          setBusy(false);
+          endMutation();
         }
       },
       [
-        busy,
-        load,
+        beginMutation,
+        endMutation,
         onProjectDeleted,
         repository,
       ],
     );
 
   const visibleProjects =
-    useMemo(() => {
-      const normalized =
-        query
-          .trim()
-          .toLocaleLowerCase();
+    useMemo(
+      () =>
+        filterProjectRecords(
+          projects,
+          viewMode,
+          query,
+        ),
+      [
+        projects,
+        query,
+        viewMode,
+      ],
+    );
 
-      return projects.filter(
-        (project) => {
-          const modeMatches =
-            viewMode === 'archived'
-              ? project.isArchived
-              : !project.isArchived;
+  const hasSearchQuery =
+    useMemo(
+      () => hasProjectSearchQuery(query),
+      [query],
+    );
 
-          if (!modeMatches) {
-            return false;
-          }
-
-          if (!normalized) {
-            return true;
-          }
-
-          return (
-            project.name
-              .toLocaleLowerCase()
-              .includes(normalized)
-            ||
-            project.description
-              .toLocaleLowerCase()
-              .includes(normalized)
-          );
-        },
-      );
-    }, [
-      projects,
-      query,
-      viewMode,
-    ]);
+  const dismissError =
+    useCallback(() => {
+      setError(null);
+      setLoadFailed(false);
+    }, []);
 
   return {
-    projects:
-      visibleProjects,
-
+    projects: visibleProjects,
     loading,
+    failed: loadFailed,
     busy,
     error,
-
     query,
     setQuery,
-
+    hasSearchQuery,
     viewMode,
     setViewMode,
-
     load,
     create,
     toggleArchived,
     deleteProject,
-
-    dismissError: () =>
-      setError(null),
+    dismissError,
   };
 }

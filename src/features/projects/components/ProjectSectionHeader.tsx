@@ -1,4 +1,6 @@
-import React from 'react';
+import React, {
+  type ReactNode,
+} from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -7,14 +9,16 @@ import {
 } from 'react-native';
 
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   title: string;
   actionLabel?: string;
   actionText?: string;
+  actionIcon?: ReactNode;
   disabled?: boolean;
   onAction?: () => void;
 };
@@ -23,6 +27,7 @@ export function ProjectSectionHeader({
   title,
   actionLabel,
   actionText,
+  actionIcon,
   disabled = false,
   onAction,
 }: Props) {
@@ -54,14 +59,22 @@ export function ProjectSectionHeader({
                 ? colors.surfacePressed
                 : 'transparent',
               opacity: disabled ? 0.44 : 1,
+              transform: [
+                {
+                  scale: pressed && !disabled
+                    ? motion.press.subtleScale
+                    : 1,
+                },
+              ],
             },
           ]}
         >
+          {actionIcon}
           <Text
-            style={{
-              color: colors.accent,
-              fontWeight: '700',
-            }}
+            style={[
+              styles.actionText,
+              { color: colors.accent },
+            ]}
           >
             {actionText}
           </Text>
@@ -80,13 +93,20 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   title: {
-    fontSize: typography.body,
+    ...typeScale.body,
     fontWeight: '700',
   },
   action: {
     minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
+  },
+  actionText: {
+    ...typeScale.secondary,
+    fontWeight: '700',
   },
 });

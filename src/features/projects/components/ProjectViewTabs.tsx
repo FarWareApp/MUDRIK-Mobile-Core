@@ -10,9 +10,11 @@ import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
-import { ProjectViewMode } from '../hooks/useProjectsController';
+import type {
+  ProjectViewMode,
+} from '../ProjectViewMode';
 
 type Props = {
   value: ProjectViewMode;
@@ -42,7 +44,7 @@ export function ProjectViewTabs({
 
   return (
     <View
-      role="tablist"
+      accessibilityRole="tablist"
       style={[
         styles.container,
         {
@@ -57,7 +59,7 @@ export function ProjectViewTabs({
         return (
           <Pressable
             key={key}
-            role="tab"
+            accessibilityRole="tab"
             accessibilityLabel={label}
             accessibilityState={{ selected }}
             onPress={() => onChange(key)}
@@ -69,6 +71,9 @@ export function ProjectViewTabs({
                   : pressed
                     ? colors.surfacePressed
                     : 'transparent',
+                borderColor: selected
+                  ? colors.border
+                  : 'transparent',
               },
             ]}
           >
@@ -102,14 +107,15 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
   label: {
-    fontSize: typography.secondary,
-    fontWeight: '600',
+    ...typeScale.secondary,
+    fontWeight: '700',
   },
 });

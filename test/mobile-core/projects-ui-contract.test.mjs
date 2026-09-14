@@ -18,6 +18,10 @@ const state = fs.readFileSync(
   'src/features/projects/components/ProjectListState.tsx',
   'utf8',
 );
+const list = fs.readFileSync(
+  'src/features/projects/components/ProjectList.tsx',
+  'utf8',
+);
 const item = fs.readFileSync(
   'src/features/projects/components/ProjectListItem.tsx',
   'utf8',
@@ -26,16 +30,20 @@ const action = fs.readFileSync(
   'src/features/projects/components/ProjectListActionButton.tsx',
   'utf8',
 );
-const archiveIcon = fs.readFileSync(
-  'src/features/projects/components/ProjectArchiveIcon.tsx',
+const backIcon = fs.readFileSync(
+  'src/features/projects/components/ProjectBackIcon.tsx',
   'utf8',
 );
-const restoreIcon = fs.readFileSync(
-  'src/features/projects/components/ProjectRestoreIcon.tsx',
+const addIcon = fs.readFileSync(
+  'src/features/projects/components/ProjectAddIcon.tsx',
   'utf8',
 );
-const deleteIcon = fs.readFileSync(
-  'src/features/projects/components/ProjectDeleteIcon.tsx',
+const searchIcon = fs.readFileSync(
+  'src/features/projects/components/ProjectSearchIcon.tsx',
+  'utf8',
+);
+const clearIcon = fs.readFileSync(
+  'src/features/projects/components/ProjectClearIcon.tsx',
   'utf8',
 );
 const tabs = fs.readFileSync(
@@ -50,144 +58,147 @@ const formatter = fs.readFileSync(
   'src/features/projects/formatters/formatProjectUpdatedAt.ts',
   'utf8',
 );
-const translations = fs.readFileSync(
-  'src/core/localization/translations.ts',
+const projectTranslations = fs.readFileSync(
+  'src/core/localization/projectTranslations.ts',
+  'utf8',
+);
+const translationCatalog = fs.readFileSync(
+  'src/core/localization/translationCatalog.ts',
   'utf8',
 );
 
-function countTranslationKey(key) {
+function countProjectTranslationKey(key) {
   const pattern = new RegExp(
     `^\\s*${key}:\\s`,
     'gm',
   );
 
-  return translations.match(pattern)?.length ?? 0;
+  return projectTranslations.match(pattern)?.length ?? 0;
 }
 
 test(
-  'projects screen delegates visual responsibilities to focused components',
+  'projects screen delegates list and editing presentation to focused components',
   () => {
     for (const component of [
       'ProjectScreenHeader',
       'ProjectSearchBar',
       'ProjectViewTabs',
       'ProjectListState',
-      'ProjectListItem',
+      'ProjectList',
       'ProjectEditorModal',
     ]) {
       assert.match(screen, new RegExp(component));
     }
 
+    assert.doesNotMatch(screen, /\bFlatList\b/);
     assert.doesNotMatch(screen, /\bTextInput\b/);
     assert.doesNotMatch(screen, /\bPressable\b/);
   },
 );
 
 test(
-  'project collection controls are localized and accessible',
+  'project collection header and search avoid font glyph controls',
   () => {
-    assert.match(header, /useLocale/);
-    assert.match(search, /useLocale/);
-    assert.match(state, /useLocale/);
-    assert.match(tabs, /role="tablist"/);
-    assert.match(tabs, /role="tab"/);
-    assert.match(tabs, /accessibilityState=\{\{ selected \}\}/);
-    assert.match(search, /keyboardAppearance=\{mode\}/);
+    assert.match(header, /ProjectBackIcon/);
+    assert.match(header, /ProjectAddIcon/);
+    assert.match(header, /motion\.press/);
+    assert.match(header, /isRTL/);
+    assert.doesNotMatch(header, /[‹+]/u);
+
+    assert.match(search, /ProjectSearchIcon/);
+    assert.match(search, /ProjectClearIcon/);
+    assert.match(search, /paddingStart/);
+    assert.match(search, /paddingEnd/);
+    assert.match(search, /width:\s*44/);
+    assert.match(search, /height:\s*44/);
+    assert.doesNotMatch(search, /[⌕×]/u);
+
+    for (const icon of [
+      backIcon,
+      addIcon,
+      searchIcon,
+      clearIcon,
+    ]) {
+      assert.doesNotMatch(icon, /<Text\b/);
+      assert.match(
+        icon,
+        /importantForAccessibility="no-hide-descendants"/,
+      );
+    }
   },
 );
 
 test(
-  'project list item reuses its action and date responsibilities',
+  'project tabs and loading states meet accessibility contracts',
   () => {
-    assert.match(item, /ProjectListActionButton/);
-    assert.match(item, /formatProjectUpdatedAt/);
-    assert.doesNotMatch(item, /toLocaleString\(/);
+    assert.match(tabs, /accessibilityRole="tablist"/);
+    assert.match(tabs, /accessibilityRole="tab"/);
+    assert.match(tabs, /accessibilityState=\{\{ selected \}\}/);
+    assert.match(tabs, /minHeight:\s*44/);
+    assert.match(state, /accessibilityRole="progressbar"/);
+    assert.match(state, /accessibilityLiveRegion/);
+    assert.match(state, /noProjectSearchResults/);
+  },
+);
+
+test(
+  'project list uses stable FlatList rendering and memoized rows',
+  () => {
+    assert.match(list, /function getProjectKey/);
+    assert.match(list, /useCallback<ListRenderItem<ProjectRecord>>/);
+    assert.match(item, /memo\(/);
+    assert.match(item, /useCallback/);
+    assert.match(item, /accessibilityState=\{\{ disabled \}\}/);
+    assert.match(item, /marginStart:\s*-spacing\.sm/);
+    assert.doesNotMatch(item, /marginLeft:/);
     assert.match(action, /width:\s*44/);
     assert.match(action, /height:\s*44/);
-    assert.match(action, /icon:\s*\(color:\s*string\)\s*=>\s*ReactNode/);
-    assert.doesNotMatch(action, /<Text\b/);
+    assert.match(action, /motion\.press\.subtleScale/);
     assert.match(formatter, /Intl\.DateTimeFormat/);
   },
 );
 
 test(
-  'project list actions use stable icon primitives instead of font glyphs',
+  'project editor locks form state during persistence and reports errors in the modal',
   () => {
-    for (const component of [
-      'ProjectArchiveIcon',
-      'ProjectRestoreIcon',
-      'ProjectDeleteIcon',
-    ]) {
-      assert.match(item, new RegExp(component));
-    }
-
-    assert.doesNotMatch(item, /[↩▣×]/u);
-
-    for (const source of [
-      archiveIcon,
-      restoreIcon,
-      deleteIcon,
-    ]) {
-      assert.match(
-        source,
-        /importantForAccessibility="no-hide-descendants"/,
-      );
-      assert.doesNotMatch(source, /<Text\b/);
-    }
-  },
-);
-
-test(
-  'project action geometry stays semantic in RTL',
-  () => {
-    assert.match(item, /const \{ locale, t, isRTL \} = useLocale\(\)/);
-    assert.match(item, /marginStart:\s*-spacing\.sm/);
-    assert.doesNotMatch(item, /marginLeft:/);
-    assert.match(restoreIcon, /isRTL/);
-    assert.match(restoreIcon, /scaleX:\s*-1/);
-  },
-);
-
-test(
-  'project editor respects localization, keyboard appearance and motion preference',
-  () => {
+    assert.match(editor, /busy\?: boolean/);
+    assert.match(editor, /errorMessage\?: string \| null/);
+    assert.match(editor, /editable=\{!busy\}/);
+    assert.match(editor, /accessibilityRole="progressbar"/);
+    assert.match(editor, /accessibilityRole="alert"/);
+    assert.match(editor, /Platform\.OS === 'ios'/);
+    assert.match(editor, /:\s*'height'/);
     assert.match(editor, /useAccessibility/);
-    assert.match(editor, /useLocale/);
-    assert.match(editor, /keyboardAppearance=\{mode\}/);
-    assert.match(editor, /surfaceInput/);
-    assert.match(editor, /writingDirection:\s*'auto'/);
+    assert.match(editor, /motion\.press/);
   },
 );
 
 test(
-  'project UI localization keys exist in all locale tables',
+  'project-specific errors and empty-search copy exist in all locales',
   () => {
     for (const key of [
-      'createProject',
-      'searchProjects',
-      'activeProjects',
-      'archivedProjects',
-      'loadingProjects',
-      'projectHistoryFailed',
-      'noProjects',
-      'deleteProject',
-      'deleteProjectMessage',
-      'newProject',
-      'openProject',
-      'archiveProject',
-      'restoreProject',
-      'deleteProjectAction',
-      'projectName',
-      'projectDescription',
-      'cancelProjectEditing',
-      'saveProject',
-      'save',
+      'projectNameRequired',
+      'projectCreateFailed',
+      'projectArchiveUpdateFailed',
+      'projectDeleteFailed',
+      'noProjectSearchResults',
+      'projectSaveDetailsFailed',
+      'projectAddFileFailed',
+      'projectOpenMediaFailed',
+      'projectOpenFilesFailed',
+      'projectCameraFailed',
+      'projectRemoveFileFailed',
+      'projectConversationUpdateFailed',
+      'projectArchivedConversationLabel',
     ]) {
       assert.equal(
-        countTranslationKey(key),
+        countProjectTranslationKey(key),
         3,
         `${key} must exist in ar, de and en`,
       );
     }
+
+    assert.match(translationCatalog, /projectTranslations/);
+    assert.match(translationCatalog, /ProjectTranslationKey/);
   },
 );

@@ -9,9 +9,12 @@ import { router } from 'expo-router';
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { ProjectAddIcon } from './ProjectAddIcon';
+import { ProjectBackIcon } from './ProjectBackIcon';
 
 type Props = {
   busy?: boolean;
@@ -23,7 +26,7 @@ export function ProjectScreenHeader({
   onCreateProject,
 }: Props) {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const { isRTL, t } = useLocale();
 
   return (
     <View
@@ -43,22 +46,25 @@ export function ProjectScreenHeader({
               ? colors.surfacePressed
               : colors.surfaceElevated,
             borderColor: colors.border,
+            transform: [
+              {
+                scale: pressed
+                  ? motion.press.subtleScale
+                  : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={{
-            color: colors.textPrimary,
-            fontSize: 23,
-          }}
-        >
-          ‹
-        </Text>
+        <ProjectBackIcon
+          color={colors.textPrimary}
+          isRTL={isRTL}
+        />
       </Pressable>
 
       <Text
         accessibilityRole="header"
+        numberOfLines={1}
         style={[
           styles.title,
           { color: colors.textPrimary },
@@ -86,20 +92,18 @@ export function ProjectScreenHeader({
                 : 1,
             shadowColor: colors.shadow,
             transform: [
-              { scale: pressed && !busy ? 0.96 : 1 },
+              {
+                scale: pressed && !busy
+                  ? motion.press.scale
+                  : 1,
+              },
             ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={{
-            color: colors.accentText,
-            fontSize: 25,
-          }}
-        >
-          +
-        </Text>
+        <ProjectAddIcon
+          color={colors.accentText}
+        />
       </Pressable>
     </View>
   );
@@ -114,9 +118,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   title: {
+    ...typeScale.heading,
     flex: 1,
+    paddingHorizontal: spacing.sm,
     textAlign: 'center',
-    fontSize: typography.heading,
     fontWeight: '700',
   },
   circleButton: {

@@ -121,6 +121,33 @@ export class SQLiteProjectRepository
     return rows.map(mapRow);
   }
 
+  async updateDetails(
+    id: string,
+    name: string,
+    description: string,
+    updatedAt: number,
+  ): Promise<void> {
+    const db =
+      await this.getDatabase();
+
+    await db.runAsync(
+      `
+        UPDATE projects
+        SET
+          name = ?,
+          description = ?,
+          updated_at = ?
+        WHERE id = ?
+      `,
+      [
+        name,
+        description,
+        updatedAt,
+        id,
+      ],
+    );
+  }
+
   async rename(
     id: string,
     name: string,

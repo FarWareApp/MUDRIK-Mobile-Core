@@ -27,6 +27,13 @@ export interface ProjectRepository {
     includeArchived?: boolean,
   ): Promise<ProjectRecord[]>;
 
+  updateDetails(
+    id: string,
+    name: string,
+    description: string,
+    updatedAt: number,
+  ): Promise<void>;
+
   rename(
     id: string,
     name: string,

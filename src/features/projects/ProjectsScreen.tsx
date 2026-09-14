@@ -4,8 +4,6 @@ import React, {
 } from 'react';
 import {
   Alert,
-  FlatList,
-  StyleSheet,
 } from 'react-native';
 import {
   router,
@@ -13,21 +11,21 @@ import {
 } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
+import type {
   ProjectRecord,
   ProjectRepository,
 } from '../../contracts/ProjectRepository';
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
-import { spacing } from '../../design-system/tokens/spacing';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
 import { ProjectEditorModal } from './components/ProjectEditorModal';
-import { ProjectListItem } from './components/ProjectListItem';
+import { ProjectList } from './components/ProjectList';
 import { ProjectListState } from './components/ProjectListState';
 import { ProjectScreenHeader } from './components/ProjectScreenHeader';
 import { ProjectSearchBar } from './components/ProjectSearchBar';
 import { ProjectViewTabs } from './components/ProjectViewTabs';
+import { getProjectListErrorTranslationKey } from './getProjectListErrorTranslationKey';
 import { useProjectsController } from './hooks/useProjectsController';
 
 type Props = {
@@ -56,62 +54,93 @@ export function ProjectsScreen({
     }, [loadProjects]),
   );
 
-  const openProject = (
-    project: ProjectRecord,
-  ) => {
-    router.push({
-      pathname: '/project/[id]',
-      params: { id: project.id },
-    });
-  };
+  const openProject = useCallback(
+    (project: ProjectRecord) => {
+      router.push({
+        pathname: '/project/[id]',
+        params: { id: project.id },
+      });
+    },
+    [],
+  );
 
-  const confirmDelete = (
-    project: ProjectRecord,
-  ) => {
-    Alert.alert(
-      t('deleteProject'),
-      `${t('deleteProjectMessage')}\n\n${project.name}`,
-      [
-        {
-          text: t('cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('delete'),
-          style: 'destructive',
-          onPress: () => {
-            void controller.deleteProject(project.id);
+  const confirmDelete = useCallback(
+    (project: ProjectRecord) => {
+      Alert.alert(
+        t('deleteProject'),
+        `${t('deleteProjectMessage')}\n\n${project.name}`,
+        [
+          {
+            text: t('cancel'),
+            style: 'cancel',
           },
-        },
-      ],
-    );
-  };
+          {
+            text: t('delete'),
+            style: 'destructive',
+            onPress: () => {
+              void controller.deleteProject(project.id);
+            },
+          },
+        ],
+      );
+    },
+    [controller.deleteProject, t],
+  );
 
-  const hasProjects = controller.projects.length > 0;
+  const archiveProject = useCallback(
+    (project: ProjectRecord) => {
+      void controller.toggleArchived(project);
+    },
+    [controller.toggleArchived],
+  );
+
+  const errorMessage =
+    controller.error
+      ? t(
+          getProjectListErrorTranslationKey(
+            controller.error,
+          ),
+        )
+      : null;
+
+  const hasProjects =
+    controller.projects.length > 0;
+
   const stateMode =
     controller.loading && !hasProjects
       ? 'loading'
-      : controller.error && !hasProjects
+      : controller.failed && !hasProjects
         ? 'error'
         : !hasProjects
-          ? 'empty'
+          ? controller.hasSearchQuery
+            ? 'search-empty'
+            : 'empty'
           : null;
+
+  const inlineMessage =
+    errorMessage
+    ?? (controller.failed && hasProjects
+      ? t('projectHistoryFailed')
+      : null);
 
   return (
     <SafeAreaView
-      style={[
-        styles.safeArea,
-        { backgroundColor: colors.background },
-      ]}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+      }}
     >
       <ProjectScreenHeader
         busy={controller.busy}
-        onCreateProject={() => setCreateOpen(true)}
+        onCreateProject={() => {
+          controller.dismissError();
+          setCreateOpen(true);
+        }}
       />
 
-      {controller.error && hasProjects ? (
+      {inlineMessage && !createOpen ? (
         <InlineErrorBanner
-          message={controller.error}
+          message={inlineMessage}
           onDismiss={controller.dismissError}
         />
       ) : null}
@@ -138,29 +167,24 @@ export function ProjectsScreen({
           }
         />
       ) : (
-        <FlatList
-          data={controller.projects}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
-            <ProjectListItem
-              project={item}
-              disabled={controller.busy}
-              onOpen={() => openProject(item)}
-              onArchive={() => {
-                void controller.toggleArchived(item);
-              }}
-              onDelete={() => confirmDelete(item)}
-            />
-          )}
+        <ProjectList
+          projects={controller.projects}
+          disabled={controller.busy}
+          onOpen={openProject}
+          onArchive={archiveProject}
+          onDelete={confirmDelete}
         />
       )}
 
       <ProjectEditorModal
         visible={createOpen}
         title={t('newProject')}
-        onCancel={() => setCreateOpen(false)}
+        busy={controller.busy}
+        errorMessage={errorMessage}
+        onCancel={() => {
+          controller.dismissError();
+          setCreateOpen(false);
+        }}
         onSave={(name, description) => {
           void (async () => {
             const id = await controller.create(
@@ -183,12 +207,3 @@ export function ProjectsScreen({
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  listContent: {
-    paddingBottom: spacing.xxl,
-  },
-});

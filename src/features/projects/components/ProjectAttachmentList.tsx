@@ -6,12 +6,17 @@ import {
   View,
 } from 'react-native';
 
-import { AttachmentRecord } from '../../../contracts/Attachment';
+import type {
+  AttachmentRecord,
+} from '../../../contracts/Attachment';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { ProjectAttachmentKindIcon } from './ProjectAttachmentKindIcon';
+import { ProjectRemoveIcon } from './ProjectRemoveIcon';
 
 type Props = {
   attachments: AttachmentRecord[];
@@ -30,6 +35,7 @@ export function ProjectAttachmentList({
   if (attachments.length === 0) {
     return (
       <Text
+        accessibilityLiveRegion="polite"
         style={[
           styles.empty,
           { color: colors.textSecondary },
@@ -50,19 +56,12 @@ export function ProjectAttachmentList({
             { borderBottomColor: colors.border },
           ]}
         >
-          <Text
-            importantForAccessibility="no"
-            style={[
-              styles.icon,
-              { color: colors.textSecondary },
-            ]}
-          >
-            {attachment.kind === 'image'
-              ? '▧'
-              : attachment.kind === 'video'
-                ? '▶'
-                : '▤'}
-          </Text>
+          <View style={styles.iconSlot}>
+            <ProjectAttachmentKindIcon
+              kind={attachment.kind}
+              color={colors.textSecondary}
+            />
+          </View>
 
           <Text
             numberOfLines={1}
@@ -87,19 +86,19 @@ export function ProjectAttachmentList({
                   ? colors.surfacePressed
                   : 'transparent',
                 opacity: disabled ? 0.44 : 1,
+                transform: [
+                  {
+                    scale: pressed && !disabled
+                      ? motion.press.subtleScale
+                      : 1,
+                  },
+                ],
               },
             ]}
           >
-            <Text
-              importantForAccessibility="no"
-              style={{
-                color: colors.error,
-                fontSize: 20,
-                fontWeight: '700',
-              }}
-            >
-              ×
-            </Text>
+            <ProjectRemoveIcon
+              color={colors.error}
+            />
           </Pressable>
         </View>
       ))}
@@ -109,8 +108,8 @@ export function ProjectAttachmentList({
 
 const styles = StyleSheet.create({
   empty: {
+    ...typeScale.secondary,
     paddingVertical: spacing.md,
-    fontSize: typography.secondary,
   },
   row: {
     minHeight: 56,
@@ -118,14 +117,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  icon: {
+  iconSlot: {
     width: 36,
-    fontSize: 20,
-    textAlign: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   name: {
+    ...typeScale.secondary,
     flex: 1,
-    fontSize: typography.secondary,
+    writingDirection: 'auto',
   },
   remove: {
     width: 44,

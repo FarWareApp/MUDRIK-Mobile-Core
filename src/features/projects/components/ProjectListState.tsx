@@ -9,12 +9,17 @@ import {
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
-  mode: 'loading' | 'error' | 'empty';
+  mode:
+    | 'loading'
+    | 'error'
+    | 'empty'
+    | 'search-empty';
   onRetry?: () => void;
 };
 
@@ -30,6 +35,15 @@ export function ProjectListState({
       ? colors.error
       : colors.border;
 
+  const message =
+    mode === 'loading'
+      ? t('loadingProjects')
+      : mode === 'error'
+        ? t('projectHistoryFailed')
+        : mode === 'search-empty'
+          ? t('noProjectSearchResults')
+          : t('noProjects');
+
   return (
     <View style={styles.container}>
       <View
@@ -43,11 +57,23 @@ export function ProjectListState({
         ]}
       >
         {mode === 'loading' ? (
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator
+            accessibilityRole="progressbar"
+            color={colors.accent}
+          />
         ) : null}
 
         <Text
-          accessibilityRole={mode === 'error' ? 'alert' : undefined}
+          accessibilityRole={
+            mode === 'error'
+              ? 'alert'
+              : undefined
+          }
+          accessibilityLiveRegion={
+            mode === 'error'
+              ? 'assertive'
+              : 'polite'
+          }
           style={[
             styles.body,
             {
@@ -58,11 +84,7 @@ export function ProjectListState({
             },
           ]}
         >
-          {mode === 'loading'
-            ? t('loadingProjects')
-            : mode === 'error'
-              ? t('projectHistoryFailed')
-              : t('noProjects')}
+          {message}
         </Text>
 
         {mode === 'error' && onRetry ? (
@@ -75,6 +97,13 @@ export function ProjectListState({
               {
                 backgroundColor: colors.accent,
                 opacity: pressed ? 0.86 : 1,
+                transform: [
+                  {
+                    scale: pressed
+                      ? motion.press.subtleScale
+                      : 1,
+                  },
+                ],
               },
             ]}
           >
@@ -118,9 +147,8 @@ const styles = StyleSheet.create({
     },
   },
   body: {
+    ...typeScale.secondary,
     marginTop: spacing.sm,
-    fontSize: typography.secondary,
-    lineHeight: 20,
     textAlign: 'center',
   },
   retry: {

@@ -7,25 +7,41 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AttachmentPicker } from '../../contracts/AttachmentPicker';
-import { ConversationRepository } from '../../contracts/ConversationRepository';
-import { ProjectAttachmentRepository } from '../../contracts/ProjectAttachmentRepository';
-import { ProjectConversationRepository } from '../../contracts/ProjectConversationRepository';
-import { ProjectRepository } from '../../contracts/ProjectRepository';
+import type {
+  AttachmentPicker,
+} from '../../contracts/AttachmentPicker';
+import type {
+  ConversationRepository,
+} from '../../contracts/ConversationRepository';
+import type {
+  ProjectAttachmentRepository,
+} from '../../contracts/ProjectAttachmentRepository';
+import type {
+  ProjectConversationRepository,
+} from '../../contracts/ProjectConversationRepository';
+import type {
+  ProjectRepository,
+} from '../../contracts/ProjectRepository';
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { spacing } from '../../design-system/tokens/spacing';
-import { typography } from '../../design-system/tokens/typography';
+import { typeScale } from '../../design-system/tokens/typography';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
-import { AttachmentCleanupService } from '../attachments/AttachmentCleanupService';
-import { AttachmentImportService } from '../attachments/AttachmentImportService';
+import type {
+  AttachmentCleanupService,
+} from '../attachments/AttachmentCleanupService';
+import type {
+  AttachmentImportService,
+} from '../attachments/AttachmentImportService';
+import { ProjectAddIcon } from './components/ProjectAddIcon';
 import { ProjectAttachmentList } from './components/ProjectAttachmentList';
 import { ProjectConversationList } from './components/ProjectConversationList';
 import { ProjectDetailHeader } from './components/ProjectDetailHeader';
 import { ProjectDetailState } from './components/ProjectDetailState';
 import { ProjectEditorModal } from './components/ProjectEditorModal';
 import { ProjectSectionHeader } from './components/ProjectSectionHeader';
+import { getProjectDetailErrorTranslationKey } from './getProjectDetailErrorTranslationKey';
 import { useProjectDetailController } from './hooks/useProjectDetailController';
 
 type Props = {
@@ -61,8 +77,6 @@ export function ProjectDetailScreen(
   }
 
   if (!controller.project) {
-    const loadFailed = Boolean(controller.error);
-
     return (
       <SafeAreaView
         style={[
@@ -71,10 +85,13 @@ export function ProjectDetailScreen(
         ]}
       >
         <ProjectDetailState
-          mode={loadFailed ? 'error' : 'not-found'}
-          errorMessage={controller.error}
+          mode={
+            controller.failed
+              ? 'error'
+              : 'not-found'
+          }
           onRetry={
-            loadFailed
+            controller.failed
               ? () => {
                   void controller.load();
                 }
@@ -86,6 +103,17 @@ export function ProjectDetailScreen(
   }
 
   const project = controller.project;
+
+  const errorMessage =
+    controller.error
+      ? t(
+          getProjectDetailErrorTranslationKey(
+            controller.error,
+          ),
+        )
+      : controller.failed
+        ? t('projectLoadFailed')
+        : null;
 
   const openAddMenu = () => {
     Alert.alert(
@@ -128,12 +156,15 @@ export function ProjectDetailScreen(
       <ProjectDetailHeader
         title={project.name}
         busy={controller.busy}
-        onEdit={() => setEditOpen(true)}
+        onEdit={() => {
+          controller.dismissError();
+          setEditOpen(true);
+        }}
       />
 
-      {controller.error ? (
+      {errorMessage && !editOpen ? (
         <InlineErrorBanner
-          message={controller.error}
+          message={errorMessage}
           onDismiss={controller.dismissError}
         />
       ) : null}
@@ -156,7 +187,12 @@ export function ProjectDetailScreen(
         <ProjectSectionHeader
           title={t('projectFiles')}
           actionLabel={t('addProjectFile')}
-          actionText={`+ ${t('add')}`}
+          actionText={t('add')}
+          actionIcon={
+            <ProjectAddIcon
+              color={colors.accent}
+            />
+          }
           disabled={controller.busy}
           onAction={openAddMenu}
         />
@@ -188,7 +224,12 @@ export function ProjectDetailScreen(
         title={t('editProject')}
         initialName={project.name}
         initialDescription={project.description}
-        onCancel={() => setEditOpen(false)}
+        busy={controller.busy}
+        errorMessage={errorMessage}
+        onCancel={() => {
+          controller.dismissError();
+          setEditOpen(false);
+        }}
         onSave={(name, description) => {
           void (async () => {
             const saved = await controller.saveDetails(
@@ -216,8 +257,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.huge,
   },
   description: {
-    fontSize: typography.secondary,
-    lineHeight: 21,
+    ...typeScale.secondary,
     marginBottom: spacing.md,
+    writingDirection: 'auto',
   },
 });

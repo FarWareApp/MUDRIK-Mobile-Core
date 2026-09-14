@@ -10,23 +10,29 @@ import { router } from 'expo-router';
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   mode: 'loading' | 'error' | 'not-found';
-  errorMessage?: string | null;
   onRetry?: () => void;
 };
 
 export function ProjectDetailState({
   mode,
-  errorMessage,
   onRetry,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
+
+  const message =
+    mode === 'loading'
+      ? t('loadingProject')
+      : mode === 'error'
+        ? t('projectLoadFailed')
+        : t('projectNotFound');
 
   return (
     <View style={styles.container}>
@@ -44,11 +50,23 @@ export function ProjectDetailState({
         ]}
       >
         {mode === 'loading' ? (
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator
+            accessibilityRole="progressbar"
+            color={colors.accent}
+          />
         ) : null}
 
         <Text
-          accessibilityRole={mode === 'error' ? 'alert' : undefined}
+          accessibilityRole={
+            mode === 'error'
+              ? 'alert'
+              : undefined
+          }
+          accessibilityLiveRegion={
+            mode === 'error'
+              ? 'assertive'
+              : 'polite'
+          }
           style={[
             styles.body,
             {
@@ -59,11 +77,7 @@ export function ProjectDetailState({
             },
           ]}
         >
-          {mode === 'loading'
-            ? t('loadingProject')
-            : mode === 'error'
-              ? errorMessage || t('projectLoadFailed')
-              : t('projectNotFound')}
+          {message}
         </Text>
 
         {mode === 'error' && onRetry ? (
@@ -76,6 +90,13 @@ export function ProjectDetailState({
               {
                 backgroundColor: colors.accent,
                 opacity: pressed ? 0.86 : 1,
+                transform: [
+                  {
+                    scale: pressed
+                      ? motion.press.subtleScale
+                      : 1,
+                  },
+                ],
               },
             ]}
           >
@@ -101,6 +122,13 @@ export function ProjectDetailState({
                 backgroundColor: pressed
                   ? colors.surfacePressed
                   : 'transparent',
+                transform: [
+                  {
+                    scale: pressed
+                      ? motion.press.subtleScale
+                      : 1,
+                  },
+                ],
               },
             ]}
           >
@@ -144,9 +172,8 @@ const styles = StyleSheet.create({
     },
   },
   body: {
+    ...typeScale.secondary,
     marginTop: spacing.sm,
-    fontSize: typography.secondary,
-    lineHeight: 20,
     textAlign: 'center',
   },
   primaryButton: {
