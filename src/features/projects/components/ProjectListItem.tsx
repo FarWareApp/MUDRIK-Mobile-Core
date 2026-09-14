@@ -13,7 +13,10 @@ import { spacing } from '../../../design-system/tokens/spacing';
 import { typography } from '../../../design-system/tokens/typography';
 
 import { formatProjectUpdatedAt } from '../formatters/formatProjectUpdatedAt';
+import { ProjectArchiveIcon } from './ProjectArchiveIcon';
+import { ProjectDeleteIcon } from './ProjectDeleteIcon';
 import { ProjectListActionButton } from './ProjectListActionButton';
+import { ProjectRestoreIcon } from './ProjectRestoreIcon';
 
 type Props = {
   project: ProjectRecord;
@@ -31,7 +34,7 @@ export function ProjectListItem({
   onDelete,
 }: Props) {
   const { colors } = useTheme();
-  const { locale, t } = useLocale();
+  const { locale, t, isRTL } = useLocale();
 
   const updatedAt = formatProjectUpdatedAt(
     project.updatedAt,
@@ -105,19 +108,28 @@ export function ProjectListItem({
               : t('archiveProject')
           }: ${project.name}`}
           disabled={disabled}
+          icon={(color) =>
+            project.isArchived ? (
+              <ProjectRestoreIcon
+                color={color}
+                isRTL={isRTL}
+              />
+            ) : (
+              <ProjectArchiveIcon color={color} />
+            )
+          }
           onPress={onArchive}
-        >
-          {project.isArchived ? '↩' : '▣'}
-        </ProjectListActionButton>
+        />
 
         <ProjectListActionButton
           accessibilityLabel={`${t('deleteProjectAction')}: ${project.name}`}
           disabled={disabled}
           tone="danger"
+          icon={(color) => (
+            <ProjectDeleteIcon color={color} />
+          )}
           onPress={onDelete}
-        >
-          ×
-        </ProjectListActionButton>
+        />
       </View>
     </View>
   );
@@ -137,7 +149,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
-    marginLeft: -spacing.sm,
+    marginStart: -spacing.sm,
     borderRadius: spacing.md,
   },
   name: {

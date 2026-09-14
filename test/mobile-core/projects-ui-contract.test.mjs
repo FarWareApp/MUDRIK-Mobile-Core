@@ -26,6 +26,18 @@ const action = fs.readFileSync(
   'src/features/projects/components/ProjectListActionButton.tsx',
   'utf8',
 );
+const archiveIcon = fs.readFileSync(
+  'src/features/projects/components/ProjectArchiveIcon.tsx',
+  'utf8',
+);
+const restoreIcon = fs.readFileSync(
+  'src/features/projects/components/ProjectRestoreIcon.tsx',
+  'utf8',
+);
+const deleteIcon = fs.readFileSync(
+  'src/features/projects/components/ProjectDeleteIcon.tsx',
+  'utf8',
+);
 const tabs = fs.readFileSync(
   'src/features/projects/components/ProjectViewTabs.tsx',
   'utf8',
@@ -92,7 +104,47 @@ test(
     assert.doesNotMatch(item, /toLocaleString\(/);
     assert.match(action, /width:\s*44/);
     assert.match(action, /height:\s*44/);
+    assert.match(action, /icon:\s*\(color:\s*string\)\s*=>\s*ReactNode/);
+    assert.doesNotMatch(action, /<Text\b/);
     assert.match(formatter, /Intl\.DateTimeFormat/);
+  },
+);
+
+test(
+  'project list actions use stable icon primitives instead of font glyphs',
+  () => {
+    for (const component of [
+      'ProjectArchiveIcon',
+      'ProjectRestoreIcon',
+      'ProjectDeleteIcon',
+    ]) {
+      assert.match(item, new RegExp(component));
+    }
+
+    assert.doesNotMatch(item, /[↩▣×]/u);
+
+    for (const source of [
+      archiveIcon,
+      restoreIcon,
+      deleteIcon,
+    ]) {
+      assert.match(
+        source,
+        /importantForAccessibility="no-hide-descendants"/,
+      );
+      assert.doesNotMatch(source, /<Text\b/);
+    }
+  },
+);
+
+test(
+  'project action geometry stays semantic in RTL',
+  () => {
+    assert.match(item, /const \{ locale, t, isRTL \} = useLocale\(\)/);
+    assert.match(item, /marginStart:\s*-spacing\.sm/);
+    assert.doesNotMatch(item, /marginLeft:/);
+    assert.match(restoreIcon, /isRTL/);
+    assert.match(restoreIcon, /scaleX:\s*-1/);
   },
 );
 

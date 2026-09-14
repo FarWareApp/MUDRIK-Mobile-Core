@@ -1,8 +1,9 @@
-import React, { PropsWithChildren } from 'react';
+import React, {
+  type ReactNode,
+} from 'react';
 import {
   Pressable,
   StyleSheet,
-  Text,
 } from 'react-native';
 
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
@@ -10,21 +11,27 @@ import { radius } from '../../../design-system/tokens/radius';
 
 type ActionTone = 'default' | 'danger';
 
-type Props = PropsWithChildren<{
+type Props = {
   accessibilityLabel: string;
   disabled?: boolean;
   tone?: ActionTone;
+  icon: (color: string) => ReactNode;
   onPress: () => void;
-}>;
+};
 
 export function ProjectListActionButton({
   accessibilityLabel,
-  children,
   disabled = false,
   tone = 'default',
+  icon,
   onPress,
 }: Props) {
   const { colors } = useTheme();
+
+  const iconColor =
+    tone === 'danger'
+      ? colors.error
+      : colors.textSecondary;
 
   return (
     <Pressable
@@ -47,20 +54,7 @@ export function ProjectListActionButton({
         },
       ]}
     >
-      <Text
-        importantForAccessibility="no"
-        style={[
-          styles.glyph,
-          {
-            color:
-              tone === 'danger'
-                ? colors.error
-                : colors.textSecondary,
-          },
-        ]}
-      >
-        {children}
-      </Text>
+      {icon(iconColor)}
     </Pressable>
   );
 }
@@ -72,10 +66,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  glyph: {
-    fontSize: 18,
-    lineHeight: 22,
-    fontWeight: '700',
   },
 });
