@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Keyboard,
   Modal,
   Pressable,
   StyleSheet,
@@ -62,6 +63,7 @@ export function AttachmentSourceSheet({
         reducedMotion ? 'none' : 'fade'
       }
       onRequestClose={onDismiss}
+      onShow={Keyboard.dismiss}
       statusBarTranslucent
       transparent
       visible={visible}
@@ -110,6 +112,7 @@ export function AttachmentSourceSheet({
           />
 
           <Text
+            accessibilityRole="header"
             style={[
               styles.title,
               {

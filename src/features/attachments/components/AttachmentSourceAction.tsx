@@ -22,6 +22,10 @@ import {
   typography,
 } from '../../../design-system/tokens/typography';
 
+import {
+  AttachmentSourceChevronIcon,
+} from './AttachmentSourceChevronIcon';
+
 type Props = {
   label: string;
   disabled?: boolean;
@@ -81,14 +85,10 @@ export function AttachmentSourceAction({
           },
         ]}
       >
-        <Text
-          style={[
-            styles.arrow,
-            { color: colors.accent },
-          ]}
-        >
-          {isRTL ? '‹' : '›'}
-        </Text>
+        <AttachmentSourceChevronIcon
+          color={colors.accent}
+          isRTL={isRTL}
+        />
       </View>
     </Pressable>
   );
@@ -119,10 +119,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  arrow: {
-    fontSize: 24,
-    lineHeight: 26,
-    fontWeight: '400',
   },
 });
