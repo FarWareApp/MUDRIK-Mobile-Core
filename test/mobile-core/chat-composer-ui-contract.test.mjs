@@ -22,6 +22,14 @@ const actionButton = fs.readFileSync(
   'src/features/chat/components/composer/ComposerActionButton.tsx',
   'utf8',
 );
+const sendButton = fs.readFileSync(
+  'src/features/chat/components/composer/ComposerSendButton.tsx',
+  'utf8',
+);
+const sendArrowIcon = fs.readFileSync(
+  'src/features/chat/components/composer/ComposerSendArrowIcon.tsx',
+  'utf8',
+);
 const textInput = fs.readFileSync(
   'src/features/chat/components/composer/ComposerTextInput.tsx',
   'utf8',
@@ -113,6 +121,24 @@ test(
     assert.match(attachmentButton, /isRTL/);
     assert.match(attachmentButton, /badgeRTL/);
     assert.match(attachmentButton, /badgeLTR/);
+  },
+);
+
+test(
+  'send affordance uses a platform-stable visual primitive instead of a font glyph',
+  () => {
+    assert.match(sendButton, /ComposerSendArrowIcon/);
+    assert.doesNotMatch(sendButton, /<Text\b/);
+    assert.doesNotMatch(sendButton, /↑/u);
+    assert.match(
+      sendArrowIcon,
+      /importantForAccessibility="no-hide-descendants"/,
+    );
+    assert.match(sendArrowIcon, /styles\.shaft/);
+    assert.match(sendArrowIcon, /styles\.leftWing/);
+    assert.match(sendArrowIcon, /styles\.rightWing/);
+    assert.match(sendArrowIcon, /rotate:\s*'-45deg'/);
+    assert.match(sendArrowIcon, /rotate:\s*'45deg'/);
   },
 );
 

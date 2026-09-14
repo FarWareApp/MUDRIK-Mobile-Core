@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
@@ -9,6 +8,7 @@ import { useLocale } from '../../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../../design-system/theme/ThemeProvider';
 
 import { ComposerActionButton } from './ComposerActionButton';
+import { ComposerSendArrowIcon } from './ComposerSendArrowIcon';
 
 type Props = {
   sending: boolean;
@@ -51,29 +51,18 @@ export function ComposerSendButton({
       emphasized={canSend}
       onPress={onSend}
     >
-      <Text
-        importantForAccessibility="no"
-        style={[
-          styles.sendGlyph,
-          {
-            color: canSend
-              ? colors.accentText
-              : colors.textSecondary,
-          },
-        ]}
-      >
-        ↑
-      </Text>
+      <ComposerSendArrowIcon
+        color={
+          canSend
+            ? colors.accentText
+            : colors.textSecondary
+        }
+      />
     </ComposerActionButton>
   );
 }
 
 const styles = StyleSheet.create({
-  sendGlyph: {
-    fontSize: 20,
-    lineHeight: 23,
-    fontWeight: '800',
-  },
   stop: {
     width: 12,
     height: 12,
