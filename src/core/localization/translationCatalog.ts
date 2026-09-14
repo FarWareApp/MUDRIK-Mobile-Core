@@ -7,6 +7,10 @@ import {
   chatTranslations,
 } from './chatTranslations';
 import {
+  ConversationTranslationKey,
+  conversationTranslations,
+} from './conversationTranslations';
+import {
   RuntimeTranslationKey,
   runtimeTranslations,
 } from './runtimeTranslations';
@@ -28,6 +32,7 @@ export type TranslationKey =
   | BaseTranslationKey
   | AttachmentTranslationKey
   | ChatTranslationKey
+  | ConversationTranslationKey
   | RuntimeTranslationKey
   | SettingsTranslationKey
   | VoiceTranslationKey;
@@ -40,6 +45,7 @@ export const translationCatalog: Record<
     ...translations.ar,
     ...attachmentTranslations.ar,
     ...chatTranslations.ar,
+    ...conversationTranslations.ar,
     ...runtimeTranslations.ar,
     ...settingsTranslations.ar,
     ...voiceTranslations.ar,
@@ -48,6 +54,7 @@ export const translationCatalog: Record<
     ...translations.de,
     ...attachmentTranslations.de,
     ...chatTranslations.de,
+    ...conversationTranslations.de,
     ...runtimeTranslations.de,
     ...settingsTranslations.de,
     ...voiceTranslations.de,
@@ -56,6 +63,7 @@ export const translationCatalog: Record<
     ...translations.en,
     ...attachmentTranslations.en,
     ...chatTranslations.en,
+    ...conversationTranslations.en,
     ...runtimeTranslations.en,
     ...settingsTranslations.en,
     ...voiceTranslations.en,

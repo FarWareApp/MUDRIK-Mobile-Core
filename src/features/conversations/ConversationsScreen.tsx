@@ -3,7 +3,6 @@ import React, {
 } from 'react';
 import {
   Alert,
-  FlatList,
   StyleSheet,
   View,
 } from 'react-native';
@@ -15,7 +14,7 @@ import {
   SafeAreaView,
 } from 'react-native-safe-area-context';
 
-import {
+import type {
   ConversationRecord,
   ConversationRepository,
 } from '../../contracts/ConversationRepository';
@@ -30,10 +29,11 @@ import {
 } from '../../shared/components/InlineErrorBanner';
 import { useActiveConversation } from './ActiveConversationProvider';
 import { ConversationHistoryHeader } from './components/ConversationHistoryHeader';
+import { ConversationHistoryList } from './components/ConversationHistoryList';
 import { ConversationHistoryState } from './components/ConversationHistoryState';
-import { ConversationListItem } from './components/ConversationListItem';
 import { ConversationSearchBar } from './components/ConversationSearchBar';
 import { ConversationViewTabs } from './components/ConversationViewTabs';
+import { getConversationHistoryErrorTranslationKey } from './getConversationHistoryErrorTranslationKey';
 import { useConversationHistoryController } from './hooks/useConversationHistoryController';
 
 type Props = {
@@ -54,31 +54,45 @@ export function ConversationsScreen({
     clearActiveConversation,
   } = useActiveConversation();
 
-  const controller =
-    useConversationHistoryController(
-      repository,
-    );
-
-  const loadConversations =
-    controller.load;
+  const {
+    conversations,
+    loading,
+    failed,
+    busy,
+    error,
+    query,
+    setQuery,
+    hasSearchQuery,
+    viewMode,
+    setViewMode,
+    load,
+    create,
+    togglePinned,
+    toggleArchived,
+    deleteConversation,
+    dismissError,
+  } = useConversationHistoryController(
+    repository,
+  );
 
   useFocusEffect(
     useCallback(() => {
-      void loadConversations();
-    }, [loadConversations]),
+      void load();
+    }, [load]),
   );
 
-  const openConversation = (
-    conversation: ConversationRecord,
-  ) => {
-    activateConversation(conversation.id);
-    router.back();
-  };
+  const openConversation =
+    useCallback(
+      (conversation: ConversationRecord) => {
+        activateConversation(conversation.id);
+        router.back();
+      },
+      [activateConversation],
+    );
 
   const createNewConversation =
-    async () => {
-      const id =
-        await controller.create();
+    useCallback(async () => {
+      const id = await create();
 
       if (!id) {
         return;
@@ -86,60 +100,92 @@ export function ConversationsScreen({
 
       activateConversation(id);
       router.back();
-    };
+    }, [
+      activateConversation,
+      create,
+    ]);
 
-  const confirmDelete = (
-    conversation: ConversationRecord,
-  ) => {
-    Alert.alert(
-      t('deleteConversation'),
-      t('deleteConversationMessage'),
+  const pinConversation =
+    useCallback(
+      (conversation: ConversationRecord) => {
+        void togglePinned(conversation);
+      },
+      [togglePinned],
+    );
+
+  const archiveConversation =
+    useCallback(
+      (conversation: ConversationRecord) => {
+        void toggleArchived(conversation);
+      },
+      [toggleArchived],
+    );
+
+  const confirmDelete =
+    useCallback(
+      (conversation: ConversationRecord) => {
+        Alert.alert(
+          t('deleteConversation'),
+          t('deleteConversationMessage'),
+          [
+            {
+              text: t('cancel'),
+              style: 'cancel',
+            },
+            {
+              text: t('delete'),
+              style: 'destructive',
+              onPress: () => {
+                void (async () => {
+                  const deleted =
+                    await deleteConversation(
+                      conversation.id,
+                    );
+
+                  if (!deleted) {
+                    return;
+                  }
+
+                  try {
+                    await onConversationDeleted?.();
+                  } catch (caught) {
+                    diagnosticsService.record(
+                      'conversation-history',
+                      caught instanceof Error
+                        ? `cleanup-after-delete-failed:${caught.message}`
+                        : 'cleanup-after-delete-failed:unknown',
+                      'warning',
+                    );
+                  }
+
+                  if (
+                    activeConversationId ===
+                    conversation.id
+                  ) {
+                    clearActiveConversation();
+                  }
+                })();
+              },
+            },
+          ],
+        );
+      },
       [
-        {
-          text: t('cancel'),
-          style: 'cancel',
-        },
-
-        {
-          text: t('delete'),
-          style: 'destructive',
-
-          onPress: () => {
-            void (async () => {
-              const deleted =
-                await controller
-                  .deleteConversation(
-                    conversation.id,
-                  );
-
-              if (!deleted) {
-                return;
-              }
-
-              try {
-                await onConversationDeleted?.();
-              } catch (caught) {
-                diagnosticsService.record(
-                  'conversation-history',
-                  caught instanceof Error
-                    ? `cleanup-after-delete-failed:${caught.message}`
-                    : 'cleanup-after-delete-failed:unknown',
-                  'warning',
-                );
-              }
-
-              if (
-                activeConversationId ===
-                conversation.id
-              ) {
-                clearActiveConversation();
-              }
-            })();
-          },
-        },
+        activeConversationId,
+        clearActiveConversation,
+        deleteConversation,
+        onConversationDeleted,
+        t,
       ],
     );
-  };
+
+  const errorMessage = error
+    ? t(
+        getConversationHistoryErrorTranslationKey(
+          error,
+        ),
+      )
+    : null;
 
   return (
     <SafeAreaView
@@ -151,71 +197,58 @@ export function ConversationsScreen({
       ]}
     >
       <ConversationHistoryHeader
+        busy={busy}
         onNewConversation={() => {
           void createNewConversation();
         }}
       />
 
-      {controller.error && (
+      {errorMessage ? (
         <InlineErrorBanner
-          message={controller.error}
-          onDismiss={
-            controller.dismissError
-          }
+          message={errorMessage}
+          onDismiss={dismissError}
         />
-      )}
+      ) : null}
 
       <View style={styles.controls}>
         <ConversationSearchBar
-          value={controller.query}
-          onChangeText={controller.setQuery}
+          value={query}
+          onChangeText={setQuery}
         />
 
         <ConversationViewTabs
-          value={controller.viewMode}
-          onChange={controller.setViewMode}
+          value={viewMode}
+          onChange={setViewMode}
         />
       </View>
 
-      {controller.loading ? (
+      {loading ? (
         <ConversationHistoryState
           mode="loading"
         />
-      ) : controller.failed ? (
+      ) : failed ? (
         <ConversationHistoryState
           mode="error"
           onRetry={() => {
-            void loadConversations();
+            void load();
           }}
         />
-      ) : controller.conversations.length === 0 ? (
+      ) : conversations.length === 0 ? (
         <ConversationHistoryState
-          mode="empty"
+          mode={
+            hasSearchQuery
+              ? 'no-results'
+              : 'empty'
+          }
         />
       ) : (
-        <FlatList
-          data={controller.conversations}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
-            <ConversationListItem
-              conversation={item}
-              disabled={controller.busy}
-              onOpen={() =>
-                openConversation(item)
-              }
-              onPin={() => {
-                void controller.togglePinned(item);
-              }}
-              onArchive={() => {
-                void controller.toggleArchived(item);
-              }}
-              onDelete={() => {
-                confirmDelete(item);
-              }}
-            />
-          )}
+        <ConversationHistoryList
+          conversations={conversations}
+          disabled={busy}
+          onOpen={openConversation}
+          onPin={pinConversation}
+          onArchive={archiveConversation}
+          onDelete={confirmDelete}
         />
       )}
     </SafeAreaView>
@@ -226,12 +259,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-
   controls: {
     paddingTop: spacing.lg,
-  },
-
-  listContent: {
-    paddingBottom: spacing.xxl,
   },
 });

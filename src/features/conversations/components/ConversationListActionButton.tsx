@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 
 type ActionTone =
@@ -63,6 +64,13 @@ export function ConversationListActionButton({
             : pressed
               ? 0.82
               : 1,
+          transform: [
+            {
+              scale: pressed && !disabled
+                ? motion.press.subtleScale
+                : 1,
+            },
+          ],
         },
       ]}
     >

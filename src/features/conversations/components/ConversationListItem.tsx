@@ -1,4 +1,7 @@
-import React from 'react';
+import React, {
+  memo,
+  useCallback,
+} from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -6,11 +9,13 @@ import {
   View,
 } from 'react-native';
 
-import { ConversationRecord } from '../../../contracts/ConversationRepository';
+import type {
+  ConversationRecord,
+} from '../../../contracts/ConversationRepository';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 import { formatConversationUpdatedAt } from '../formatters/formatConversationUpdatedAt';
 import { ConversationArchiveIcon } from './ConversationArchiveIcon';
@@ -19,133 +24,157 @@ import { ConversationListActionButton } from './ConversationListActionButton';
 import { ConversationPinIcon } from './ConversationPinIcon';
 import { ConversationRestoreIcon } from './ConversationRestoreIcon';
 
+type ConversationAction = (
+  conversation: ConversationRecord,
+) => void;
+
 type Props = {
   conversation: ConversationRecord;
   disabled?: boolean;
-  onOpen: () => void;
-  onPin: () => void;
-  onArchive: () => void;
-  onDelete: () => void;
+  onOpen: ConversationAction;
+  onPin: ConversationAction;
+  onArchive: ConversationAction;
+  onDelete: ConversationAction;
 };
 
-export function ConversationListItem({
-  conversation,
-  disabled = false,
-  onOpen,
-  onPin,
-  onArchive,
-  onDelete,
-}: Props) {
-  const { colors } = useTheme();
-  const { locale, t, isRTL } = useLocale();
+export const ConversationListItem = memo(
+  function ConversationListItem({
+    conversation,
+    disabled = false,
+    onOpen,
+    onPin,
+    onArchive,
+    onDelete,
+  }: Props) {
+    const { colors } = useTheme();
+    const { locale, t, isRTL } = useLocale();
 
-  const title =
-    conversation.title.trim() ||
-    t('untitledConversation');
+    const title =
+      conversation.title.trim() ||
+      t('untitledConversation');
 
-  const updatedAt =
-    formatConversationUpdatedAt(
-      conversation.updatedAt,
-      locale,
+    const updatedAt =
+      formatConversationUpdatedAt(
+        conversation.updatedAt,
+        locale,
+      );
+
+    const handleOpen = useCallback(
+      () => onOpen(conversation),
+      [conversation, onOpen],
+    );
+    const handlePin = useCallback(
+      () => onPin(conversation),
+      [conversation, onPin],
+    );
+    const handleArchive = useCallback(
+      () => onArchive(conversation),
+      [conversation, onArchive],
+    );
+    const handleDelete = useCallback(
+      () => onDelete(conversation),
+      [conversation, onDelete],
     );
 
-  return (
-    <View
-      style={[
-        styles.container,
-        {
-          borderBottomColor: colors.border,
-          opacity: disabled ? 0.6 : 1,
-        },
-      ]}
-    >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${t('openConversation')}: ${title}`}
-        disabled={disabled}
-        onPress={onOpen}
-        style={({ pressed }) => [
-          styles.main,
+    return (
+      <View
+        style={[
+          styles.container,
           {
-            backgroundColor: pressed
-              ? colors.surfacePressed
-              : 'transparent',
+            borderBottomColor: colors.border,
+            opacity: disabled ? 0.6 : 1,
           },
         ]}
       >
-        <Text
-          numberOfLines={1}
-          style={[
-            styles.title,
-            { color: colors.textPrimary },
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t('openConversation')}: ${title}`}
+          accessibilityState={{ disabled }}
+          disabled={disabled}
+          onPress={handleOpen}
+          style={({ pressed }) => [
+            styles.main,
+            {
+              backgroundColor: pressed
+                ? colors.surfacePressed
+                : 'transparent',
+            },
           ]}
         >
-          {title}
-        </Text>
-
-        {updatedAt ? (
           <Text
             numberOfLines={1}
             style={[
-              styles.date,
-              { color: colors.textSecondary },
+              styles.title,
+              { color: colors.textPrimary },
             ]}
           >
-            {updatedAt}
+            {title}
           </Text>
-        ) : null}
-      </Pressable>
 
-      <View style={styles.actions}>
-        <ConversationListActionButton
-          accessibilityLabel={`${
-            conversation.isPinned
-              ? t('unpinConversation')
-              : t('pinConversation')
-          }: ${title}`}
-          disabled={disabled}
-          selected={conversation.isPinned}
-          icon={(color) => (
-            <ConversationPinIcon color={color} />
-          )}
-          onPress={onPin}
-        />
+          {updatedAt ? (
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.date,
+                { color: colors.textSecondary },
+              ]}
+            >
+              {updatedAt}
+            </Text>
+          ) : null}
+        </Pressable>
 
-        <ConversationListActionButton
-          accessibilityLabel={`${
-            conversation.isArchived
-              ? t('restoreConversation')
-              : t('archiveConversation')
-          }: ${title}`}
-          disabled={disabled}
-          icon={(color) =>
-            conversation.isArchived ? (
-              <ConversationRestoreIcon
-                color={color}
-                isRTL={isRTL}
-              />
-            ) : (
-              <ConversationArchiveIcon
-                color={color}
-              />
-            )
-          }
-          onPress={onArchive}
-        />
+        <View style={styles.actions}>
+          <ConversationListActionButton
+            accessibilityLabel={`${
+              conversation.isPinned
+                ? t('unpinConversation')
+                : t('pinConversation')
+            }: ${title}`}
+            disabled={disabled}
+            selected={conversation.isPinned}
+            icon={(color) => (
+              <ConversationPinIcon color={color} />
+            )}
+            onPress={handlePin}
+          />
 
-        <ConversationListActionButton
-          accessibilityLabel={`${t('deleteConversationAction')}: ${title}`}
-          disabled={disabled}
-          tone="danger"
-          icon={(color) => (
-            <ConversationDeleteIcon color={color} />
-          )}
-          onPress={onDelete}
-        />
+          <ConversationListActionButton
+            accessibilityLabel={`${
+              conversation.isArchived
+                ? t('restoreConversation')
+                : t('archiveConversation')
+            }: ${title}`}
+            disabled={disabled}
+            icon={(color) =>
+              conversation.isArchived ? (
+                <ConversationRestoreIcon
+                  color={color}
+                  isRTL={isRTL}
+                />
+              ) : (
+                <ConversationArchiveIcon
+                  color={color}
+                />
+              )
+            }
+            onPress={handleArchive}
+          />
+
+          <ConversationListActionButton
+            accessibilityLabel={`${t('deleteConversationAction')}: ${title}`}
+            disabled={disabled}
+            tone="danger"
+            icon={(color) => (
+              <ConversationDeleteIcon color={color} />
+            )}
+            onPress={handleDelete}
+          />
+        </View>
       </View>
-    </View>
-  );
-}
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -165,12 +194,13 @@ const styles = StyleSheet.create({
     borderRadius: spacing.md,
   },
   title: {
-    fontSize: typography.body,
+    ...typeScale.body,
     fontWeight: '600',
+    writingDirection: 'auto',
   },
   date: {
+    ...typeScale.caption,
     marginTop: spacing.xs,
-    fontSize: typography.caption,
     fontVariant: ['tabular-nums'],
   },
   actions: {

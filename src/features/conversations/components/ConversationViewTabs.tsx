@@ -1,8 +1,6 @@
 import React from 'react';
 import {
-  Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
@@ -10,15 +8,14 @@ import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
-
-type ViewMode =
-  | 'active'
-  | 'archived';
+import type {
+  ConversationViewMode,
+} from '../ConversationViewMode';
+import { ConversationViewTab } from './ConversationViewTab';
 
 type Props = {
-  value: ViewMode;
-  onChange: (value: ViewMode) => void;
+  value: ConversationViewMode;
+  onChange: (value: ConversationViewMode) => void;
 };
 
 export function ConversationViewTabs({
@@ -27,49 +24,6 @@ export function ConversationViewTabs({
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
-
-  const renderTab = (
-    mode: ViewMode,
-    label: string,
-  ) => {
-    const selected =
-      value === mode;
-
-    return (
-      <Pressable
-        accessibilityRole="tab"
-        accessibilityLabel={label}
-        accessibilityState={{ selected }}
-        onPress={() => onChange(mode)}
-        style={({ pressed }) => [
-          styles.tab,
-          {
-            backgroundColor: selected
-              ? colors.surface
-              : pressed
-                ? colors.surfacePressed
-                : 'transparent',
-            borderColor: selected
-              ? colors.border
-              : 'transparent',
-          },
-        ]}
-      >
-        <Text
-          style={[
-            styles.tabText,
-            {
-              color: selected
-                ? colors.textPrimary
-                : colors.textSecondary,
-            },
-          ]}
-        >
-          {label}
-        </Text>
-      </Pressable>
-    );
-  };
 
   return (
     <View
@@ -83,14 +37,17 @@ export function ConversationViewTabs({
         },
       ]}
     >
-      {renderTab(
-        'active',
-        t('activeConversations'),
-      )}
-      {renderTab(
-        'archived',
-        t('archivedConversations'),
-      )}
+      <ConversationViewTab
+        label={t('activeConversations')}
+        selected={value === 'active'}
+        onPress={() => onChange('active')}
+      />
+
+      <ConversationViewTab
+        label={t('archivedConversations')}
+        selected={value === 'archived'}
+        onPress={() => onChange('archived')}
+      />
     </View>
   );
 }
@@ -103,19 +60,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.lg,
     padding: spacing.xs,
-  },
-
-  tab: {
-    flex: 1,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.md,
-  },
-
-  tabText: {
-    fontSize: typography.secondary,
-    fontWeight: '700',
   },
 });

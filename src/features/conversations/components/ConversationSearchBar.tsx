@@ -2,16 +2,18 @@ import React from 'react';
 import {
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { ConversationClearIcon } from './ConversationClearIcon';
+import { ConversationSearchIcon } from './ConversationSearchIcon';
 
 type Props = {
   value: string;
@@ -24,8 +26,7 @@ export function ConversationSearchBar({
 }: Props) {
   const { colors, mode } = useTheme();
   const { isRTL, t } = useLocale();
-  const hasQuery =
-    value.trim().length > 0;
+  const hasQuery = value.length > 0;
 
   return (
     <View
@@ -38,26 +39,25 @@ export function ConversationSearchBar({
         },
       ]}
     >
-      <Text
-        importantForAccessibility="no"
-        style={[
-          styles.icon,
-          { color: colors.textSecondary },
-        ]}
-      >
-        ⌕
-      </Text>
+      <View style={styles.searchIconSlot}>
+        <ConversationSearchIcon
+          color={colors.textSecondary}
+        />
+      </View>
 
       <TextInput
         accessibilityLabel={t('searchConversations')}
         value={value}
         onChangeText={onChangeText}
+        autoCapitalize="none"
+        autoCorrect={false}
         keyboardAppearance={mode}
         placeholder={t('searchConversations')}
         placeholderTextColor={
           colors.textSecondary
         }
         returnKeyType="search"
+        underlineColorAndroid="transparent"
         style={[
           styles.input,
           {
@@ -78,18 +78,19 @@ export function ConversationSearchBar({
               backgroundColor: pressed
                 ? colors.surfacePressed
                 : colors.surface,
+              transform: [
+                {
+                  scale: pressed
+                    ? motion.press.subtleScale
+                    : 1,
+                },
+              ],
             },
           ]}
         >
-          <Text
-            importantForAccessibility="no"
-            style={[
-              styles.clearText,
-              { color: colors.textSecondary },
-            ]}
-          >
-            ×
-          </Text>
+          <ConversationClearIcon
+            color={colors.textSecondary}
+          />
         </Pressable>
       )}
     </View>
@@ -105,36 +106,26 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.xs,
+    paddingStart: spacing.md,
+    paddingEnd: spacing.xs,
   },
-
-  icon: {
+  searchIconSlot: {
     width: 24,
-    fontSize: 19,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-
-  input: {
-    flex: 1,
-    minHeight: 46,
-    paddingHorizontal: spacing.sm,
-    fontSize: typography.secondary,
-    writingDirection: 'auto',
-  },
-
-  clear: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  clearText: {
-    fontSize: 20,
-    lineHeight: 22,
-    fontWeight: '700',
+  input: {
+    ...typeScale.secondary,
+    flex: 1,
+    minHeight: 46,
+    paddingHorizontal: spacing.sm,
+    writingDirection: 'auto',
+  },
+  clear: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

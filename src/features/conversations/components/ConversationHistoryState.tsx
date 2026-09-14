@@ -9,16 +9,17 @@ import {
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   mode:
     | 'loading'
     | 'error'
-    | 'empty';
-
+    | 'empty'
+    | 'no-results';
   onRetry?: () => void;
 };
 
@@ -43,10 +44,13 @@ export function ConversationHistoryState({
           ]}
         >
           <ActivityIndicator
+            accessibilityRole="progressbar"
+            accessibilityLabel={t('loadingConversations')}
             color={colors.accent}
           />
 
           <Text
+            accessibilityLiveRegion="polite"
             style={[
               styles.body,
               {
@@ -76,6 +80,7 @@ export function ConversationHistoryState({
         >
           <Text
             accessibilityRole="alert"
+            accessibilityLiveRegion="assertive"
             style={[
               styles.body,
               {
@@ -89,12 +94,20 @@ export function ConversationHistoryState({
           {onRetry && (
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={t('retry')}
               onPress={onRetry}
               style={({ pressed }) => [
                 styles.retry,
                 {
                   backgroundColor: colors.accent,
                   opacity: pressed ? 0.86 : 1,
+                  transform: [
+                    {
+                      scale: pressed
+                        ? motion.press.subtleScale
+                        : 1,
+                    },
+                  ],
                 },
               ]}
             >
@@ -113,6 +126,11 @@ export function ConversationHistoryState({
     );
   }
 
+  const message =
+    mode === 'no-results'
+      ? t('noConversationSearchResults')
+      : t('noConversations');
+
   return (
     <View style={styles.container}>
       <View
@@ -126,14 +144,13 @@ export function ConversationHistoryState({
         ]}
       >
         <Text
+          accessibilityLiveRegion="polite"
           style={[
             styles.body,
-            {
-              color: colors.textSecondary,
-            },
+            { color: colors.textSecondary },
           ]}
         >
-          {t('noConversations')}
+          {message}
         </Text>
       </View>
     </View>
@@ -147,7 +164,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xxl,
   },
-
   stateCard: {
     width: '100%',
     maxWidth: 340,
@@ -165,16 +181,13 @@ const styles = StyleSheet.create({
       height: 4,
     },
   },
-
   body: {
-    fontSize: typography.secondary,
-    lineHeight: 20,
+    ...typeScale.secondary,
     textAlign: 'center',
   },
-
   retry: {
-    marginTop: spacing.lg,
     minHeight: 44,
+    marginTop: spacing.lg,
     paddingHorizontal: spacing.xl,
     justifyContent: 'center',
     borderRadius: radius.pill,

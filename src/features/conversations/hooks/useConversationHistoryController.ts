@@ -1,23 +1,31 @@
 import {
   useCallback,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
-import {
+import type {
   ConversationRecord,
   ConversationRepository,
 } from '../../../contracts/ConversationRepository';
 import {
   diagnosticsService,
 } from '../../../core/diagnostics/DiagnosticsService';
+import type {
+  ConversationHistoryErrorCode,
+} from '../ConversationHistoryErrorCode';
+import type {
+  ConversationViewMode,
+} from '../ConversationViewMode';
 import {
   createConversationId,
 } from '../createConversationId';
-
-type ViewMode =
-  | 'active'
-  | 'archived';
+import {
+  filterConversationRecords,
+  hasConversationSearchQuery,
+  sortConversationRecords,
+} from '../conversationListPolicy';
 
 function recordConversationError(
   event: string,
@@ -48,23 +56,47 @@ export function useConversationHistoryController(
     useState(false);
 
   const [error, setError] =
-    useState<string | null>(null);
+    useState<ConversationHistoryErrorCode | null>(null);
 
   const [query, setQuery] =
     useState('');
 
   const [viewMode, setViewMode] =
-    useState<ViewMode>('active');
+    useState<ConversationViewMode>('active');
+
+  const mutationInFlightRef =
+    useRef(false);
+
+  const beginMutation =
+    useCallback((): boolean => {
+      if (mutationInFlightRef.current) {
+        return false;
+      }
+
+      mutationInFlightRef.current = true;
+      setBusy(true);
+      setError(null);
+      return true;
+    }, []);
+
+  const endMutation =
+    useCallback(() => {
+      mutationInFlightRef.current = false;
+      setBusy(false);
+    }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadFailed(false);
+    setError(null);
 
     try {
       const records =
         await repository.list(500);
 
-      setConversations(records);
+      setConversations(
+        sortConversationRecords(records),
+      );
     } catch (caught) {
       recordConversationError(
         'load-failed',
@@ -79,12 +111,9 @@ export function useConversationHistoryController(
 
   const create =
     useCallback(async () => {
-      if (busy) {
+      if (!beginMutation()) {
         return null;
       }
-
-      setBusy(true);
-      setError(null);
 
       try {
         const now = Date.now();
@@ -103,15 +132,14 @@ export function useConversationHistoryController(
           caught,
         );
 
-        setError(
-          'Unable to create conversation.',
-        );
+        setError('create-failed');
         return null;
       } finally {
-        setBusy(false);
+        endMutation();
       }
     }, [
-      busy,
+      beginMutation,
+      endMutation,
       repository,
     ]);
 
@@ -120,37 +148,49 @@ export function useConversationHistoryController(
       async (
         conversation: ConversationRecord,
       ) => {
-        if (busy) {
+        if (!beginMutation()) {
           return;
         }
 
-        setBusy(true);
-        setError(null);
+        const nextPinned =
+          !conversation.isPinned;
+        const updatedAt = Date.now();
 
         try {
           await repository.setPinned(
             conversation.id,
-            !conversation.isPinned,
-            Date.now(),
+            nextPinned,
+            updatedAt,
           );
 
-          await load();
+          setConversations(
+            (current) =>
+              sortConversationRecords(
+                current.map((item) =>
+                  item.id === conversation.id
+                    ? {
+                        ...item,
+                        isPinned: nextPinned,
+                        updatedAt,
+                      }
+                    : item,
+                ),
+              ),
+          );
         } catch (caught) {
           recordConversationError(
             'pin-failed',
             caught,
           );
 
-          setError(
-            'Unable to update pinned state.',
-          );
+          setError('pin-failed');
         } finally {
-          setBusy(false);
+          endMutation();
         }
       },
       [
-        busy,
-        load,
+        beginMutation,
+        endMutation,
         repository,
       ],
     );
@@ -160,37 +200,49 @@ export function useConversationHistoryController(
       async (
         conversation: ConversationRecord,
       ) => {
-        if (busy) {
+        if (!beginMutation()) {
           return;
         }
 
-        setBusy(true);
-        setError(null);
+        const nextArchived =
+          !conversation.isArchived;
+        const updatedAt = Date.now();
 
         try {
           await repository.setArchived(
             conversation.id,
-            !conversation.isArchived,
-            Date.now(),
+            nextArchived,
+            updatedAt,
           );
 
-          await load();
+          setConversations(
+            (current) =>
+              sortConversationRecords(
+                current.map((item) =>
+                  item.id === conversation.id
+                    ? {
+                        ...item,
+                        isArchived: nextArchived,
+                        updatedAt,
+                      }
+                    : item,
+                ),
+              ),
+          );
         } catch (caught) {
           recordConversationError(
             'archive-failed',
             caught,
           );
 
-          setError(
-            'Unable to update archived state.',
-          );
+          setError('archive-failed');
         } finally {
-          setBusy(false);
+          endMutation();
         }
       },
       [
-        busy,
-        load,
+        beginMutation,
+        endMutation,
         repository,
       ],
     );
@@ -198,16 +250,20 @@ export function useConversationHistoryController(
   const deleteConversation =
     useCallback(
       async (id: string) => {
-        if (busy) {
+        if (!beginMutation()) {
           return false;
         }
 
-        setBusy(true);
-        setError(null);
-
         try {
           await repository.delete(id);
-          await load();
+
+          setConversations(
+            (current) =>
+              current.filter(
+                (item) => item.id !== id,
+              ),
+          );
+
           return true;
         } catch (caught) {
           recordConversationError(
@@ -215,51 +271,45 @@ export function useConversationHistoryController(
             caught,
           );
 
-          setError(
-            'Unable to delete conversation.',
-          );
+          setError('delete-failed');
           return false;
         } finally {
-          setBusy(false);
+          endMutation();
         }
       },
       [
-        busy,
-        load,
+        beginMutation,
+        endMutation,
         repository,
       ],
     );
 
   const visibleConversations =
-    useMemo(() => {
-      const normalizedQuery =
-        query.trim().toLocaleLowerCase();
+    useMemo(
+      () =>
+        filterConversationRecords(
+          conversations,
+          viewMode,
+          query,
+        ),
+      [
+        conversations,
+        query,
+        viewMode,
+      ],
+    );
 
-      return conversations.filter(
-        (conversation) => {
-          const archiveMatches =
-            viewMode === 'archived'
-              ? conversation.isArchived
-              : !conversation.isArchived;
+  const hasSearchQuery =
+    useMemo(
+      () =>
+        hasConversationSearchQuery(query),
+      [query],
+    );
 
-          if (!archiveMatches) {
-            return false;
-          }
-
-          if (!normalizedQuery) {
-            return true;
-          }
-
-          return conversation.title
-            .toLocaleLowerCase()
-            .includes(normalizedQuery);
-        },
-      );
-    }, [
-      conversations,
-      query,
-      viewMode,
-    ]);
+  const dismissError =
+    useCallback(() => {
+      setError(null);
+    }, []);
 
   return {
     conversations:
@@ -272,6 +322,7 @@ export function useConversationHistoryController(
 
     query,
     setQuery,
+    hasSearchQuery,
 
     viewMode,
     setViewMode,
@@ -281,8 +332,6 @@ export function useConversationHistoryController(
     togglePinned,
     toggleArchived,
     deleteConversation,
-
-    dismissError: () =>
-      setError(null),
+    dismissError,
   };
 }
