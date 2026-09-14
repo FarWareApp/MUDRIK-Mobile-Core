@@ -11,6 +11,7 @@ import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { radius } from '../../design-system/tokens/radius';
 import { spacing } from '../../design-system/tokens/spacing';
 import { typography } from '../../design-system/tokens/typography';
+import { InlineErrorDismissIcon } from './InlineErrorDismissIcon';
 
 type Props = {
   message: string;
@@ -29,6 +30,7 @@ export function InlineErrorBanner({
   return (
     <View
       accessibilityRole="alert"
+      accessibilityLiveRegion="assertive"
       style={[
         styles.container,
         {
@@ -85,15 +87,9 @@ export function InlineErrorBanner({
             },
           ]}
         >
-          <Text
-            importantForAccessibility="no"
-            style={{
-              color: colors.textSecondary,
-              fontSize: 18,
-            }}
-          >
-            ×
-          </Text>
+          <InlineErrorDismissIcon
+            color={colors.textSecondary}
+          />
         </Pressable>
       ) : null}
     </View>
@@ -109,7 +105,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: spacing.md,
+    paddingStart: spacing.md,
     overflow: 'hidden',
   },
   message: {
