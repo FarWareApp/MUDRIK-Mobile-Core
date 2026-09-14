@@ -64,6 +64,22 @@ test(
 test(
   'emergency copy is complete for Arabic German and English',
   () => {
+    const catalogStart = emergencyTranslations.indexOf(
+      'export const emergencyErrorTranslations = {',
+    );
+    const catalogEnd = emergencyTranslations.indexOf(
+      '} as const satisfies',
+    );
+
+    assert.notEqual(catalogStart, -1);
+    assert.notEqual(catalogEnd, -1);
+    assert.ok(catalogEnd > catalogStart);
+
+    const catalogBody = emergencyTranslations.slice(
+      catalogStart,
+      catalogEnd,
+    );
+
     for (const key of [
       'title',
       'body',
@@ -77,7 +93,7 @@ test(
       );
 
       assert.equal(
-        emergencyTranslations.match(pattern)?.length ?? 0,
+        catalogBody.match(pattern)?.length ?? 0,
         3,
       );
     }
