@@ -5,10 +5,10 @@ import React, {
   useContext,
   useMemo,
 } from 'react';
-import { getLocales } from 'expo-localization';
 
 import { LanguagePreference } from '../../contracts/AppSettings';
 import { useAppSettings } from '../settings/AppSettingsProvider';
+import { resolveSystemLocale } from './resolveSystemLocale';
 import {
   TranslationKey,
   translationCatalog,
@@ -25,20 +25,6 @@ type LocaleContextValue = {
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
-
-function resolveSystemLocale(): AppLocale {
-  const language = getLocales()[0]?.languageCode?.toLowerCase();
-
-  if (language === 'ar') {
-    return 'ar';
-  }
-
-  if (language === 'de') {
-    return 'de';
-  }
-
-  return 'en';
-}
 
 export function LocaleProvider({
   children,
