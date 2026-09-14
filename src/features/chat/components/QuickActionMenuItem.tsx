@@ -32,7 +32,7 @@ import {
   spacing,
 } from '../../../design-system/tokens/spacing';
 import {
-  typography,
+  typeScale,
 } from '../../../design-system/tokens/typography';
 
 type Props = {
@@ -174,9 +174,8 @@ const styles = StyleSheet.create({
     paddingRight: spacing.lg,
   },
   label: {
+    ...typeScale.secondary,
     flex: 1,
-    fontSize: typography.secondary,
-    lineHeight: 20,
     fontWeight: '700',
   },
   symbol: {

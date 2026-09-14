@@ -7,6 +7,7 @@ import {
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { resolveTextDirection } from '../../../core/localization/TextDirectionResolver';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   text: string;
@@ -48,7 +49,6 @@ export function MessageText({
 
 const styles = StyleSheet.create({
   text: {
-    fontSize: 16,
-    lineHeight: 23,
+    ...typeScale.body,
   },
 });

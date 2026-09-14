@@ -7,6 +7,7 @@ import {
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { spacing } from '../../../design-system/tokens/spacing';
+import { typeScale } from '../../../design-system/tokens/typography';
 import { formatMessageTime } from '../formatters/formatMessageTime';
 
 type Props = {
@@ -49,10 +50,9 @@ export function MessageTimestamp({
 
 const styles = StyleSheet.create({
   timestamp: {
+    ...typeScale.micro,
     alignSelf: 'flex-end',
     marginTop: spacing.xs,
-    fontSize: 11,
-    lineHeight: 15,
     opacity: 0.72,
     fontVariant: ['tabular-nums'],
   },

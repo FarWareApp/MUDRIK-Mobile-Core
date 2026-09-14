@@ -9,6 +9,7 @@ import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
+import { typeScale } from '../../../design-system/tokens/typography';
 import { formatMessageDate } from '../formatters/formatMessageDate';
 
 type Props = {
@@ -70,8 +71,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   label: {
-    fontSize: 12,
-    lineHeight: 16,
+    ...typeScale.caption,
     fontWeight: '600',
   },
 });
