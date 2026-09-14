@@ -30,7 +30,7 @@ jobs:
           node-version: '22'
 
       - name: Install frozen dependencies
-        run: yarn install --frozen-lockfile --non-interactive
+        run: ./scripts/install-frozen-dependencies.sh
 
       - name: Verify dependency manifest is reproducible
         shell: bash
