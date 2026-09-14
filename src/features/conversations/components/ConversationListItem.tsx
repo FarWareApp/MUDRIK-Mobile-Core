@@ -13,7 +13,11 @@ import { spacing } from '../../../design-system/tokens/spacing';
 import { typography } from '../../../design-system/tokens/typography';
 
 import { formatConversationUpdatedAt } from '../formatters/formatConversationUpdatedAt';
+import { ConversationArchiveIcon } from './ConversationArchiveIcon';
+import { ConversationDeleteIcon } from './ConversationDeleteIcon';
 import { ConversationListActionButton } from './ConversationListActionButton';
+import { ConversationPinIcon } from './ConversationPinIcon';
+import { ConversationRestoreIcon } from './ConversationRestoreIcon';
 
 type Props = {
   conversation: ConversationRecord;
@@ -33,7 +37,7 @@ export function ConversationListItem({
   onDelete,
 }: Props) {
   const { colors } = useTheme();
-  const { locale, t } = useLocale();
+  const { locale, t, isRTL } = useLocale();
 
   const title =
     conversation.title.trim() ||
@@ -101,10 +105,11 @@ export function ConversationListItem({
           }: ${title}`}
           disabled={disabled}
           selected={conversation.isPinned}
+          icon={(color) => (
+            <ConversationPinIcon color={color} />
+          )}
           onPress={onPin}
-        >
-          ★
-        </ConversationListActionButton>
+        />
 
         <ConversationListActionButton
           accessibilityLabel={`${
@@ -113,21 +118,30 @@ export function ConversationListItem({
               : t('archiveConversation')
           }: ${title}`}
           disabled={disabled}
+          icon={(color) =>
+            conversation.isArchived ? (
+              <ConversationRestoreIcon
+                color={color}
+                isRTL={isRTL}
+              />
+            ) : (
+              <ConversationArchiveIcon
+                color={color}
+              />
+            )
+          }
           onPress={onArchive}
-        >
-          {conversation.isArchived
-            ? '↩'
-            : '▣'}
-        </ConversationListActionButton>
+        />
 
         <ConversationListActionButton
           accessibilityLabel={`${t('deleteConversationAction')}: ${title}`}
           disabled={disabled}
           tone="danger"
+          icon={(color) => (
+            <ConversationDeleteIcon color={color} />
+          )}
           onPress={onDelete}
-        >
-          ×
-        </ConversationListActionButton>
+        />
       </View>
     </View>
   );
@@ -147,7 +161,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
-    marginLeft: -spacing.sm,
+    marginStart: -spacing.sm,
     borderRadius: spacing.md,
   },
   title: {

@@ -10,6 +10,22 @@ const actionButton = fs.readFileSync(
   'src/features/conversations/components/ConversationListActionButton.tsx',
   'utf8',
 );
+const pinIcon = fs.readFileSync(
+  'src/features/conversations/components/ConversationPinIcon.tsx',
+  'utf8',
+);
+const archiveIcon = fs.readFileSync(
+  'src/features/conversations/components/ConversationArchiveIcon.tsx',
+  'utf8',
+);
+const restoreIcon = fs.readFileSync(
+  'src/features/conversations/components/ConversationRestoreIcon.tsx',
+  'utf8',
+);
+const deleteIcon = fs.readFileSync(
+  'src/features/conversations/components/ConversationDeleteIcon.tsx',
+  'utf8',
+);
 const updatedAtFormatter = fs.readFileSync(
   'src/features/conversations/formatters/formatConversationUpdatedAt.ts',
   'utf8',
@@ -51,6 +67,48 @@ test(
     assert.match(actionButton, /accessibilityState/);
     assert.match(actionButton, /selected/);
     assert.match(actionButton, /surfacePressed/);
+    assert.match(actionButton, /icon:\s*\(color:\s*string\)\s*=>\s*ReactNode/);
+    assert.doesNotMatch(actionButton, /<Text\b/);
+  },
+);
+
+test(
+  'conversation list actions use stable icon primitives instead of font glyphs',
+  () => {
+    for (const component of [
+      'ConversationPinIcon',
+      'ConversationArchiveIcon',
+      'ConversationRestoreIcon',
+      'ConversationDeleteIcon',
+    ]) {
+      assert.match(listItem, new RegExp(component));
+    }
+
+    assert.doesNotMatch(listItem, /[★↩▣×]/u);
+
+    for (const source of [
+      pinIcon,
+      archiveIcon,
+      restoreIcon,
+      deleteIcon,
+    ]) {
+      assert.match(
+        source,
+        /importantForAccessibility="no-hide-descendants"/,
+      );
+      assert.doesNotMatch(source, /<Text\b/);
+    }
+  },
+);
+
+test(
+  'conversation action geometry stays semantic in RTL',
+  () => {
+    assert.match(listItem, /const \{ locale, t, isRTL \} = useLocale\(\)/);
+    assert.match(listItem, /marginStart:\s*-spacing\.sm/);
+    assert.doesNotMatch(listItem, /marginLeft:/);
+    assert.match(restoreIcon, /isRTL/);
+    assert.match(restoreIcon, /scaleX:\s*-1/);
   },
 );
 

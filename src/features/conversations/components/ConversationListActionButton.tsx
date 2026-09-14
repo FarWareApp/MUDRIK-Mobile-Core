@@ -1,10 +1,9 @@
 import React, {
-  PropsWithChildren,
+  type ReactNode,
 } from 'react';
 import {
   Pressable,
   StyleSheet,
-  Text,
 } from 'react-native';
 
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
@@ -15,25 +14,26 @@ type ActionTone =
   | 'accent'
   | 'danger';
 
-type Props = PropsWithChildren<{
+type Props = {
   accessibilityLabel: string;
   disabled?: boolean;
   selected?: boolean;
   tone?: ActionTone;
+  icon: (color: string) => ReactNode;
   onPress: () => void;
-}>;
+};
 
 export function ConversationListActionButton({
   accessibilityLabel,
-  children,
   disabled = false,
   selected = false,
   tone = 'default',
+  icon,
   onPress,
 }: Props) {
   const { colors } = useTheme();
 
-  const textColor =
+  const iconColor =
     tone === 'danger'
       ? colors.error
       : selected || tone === 'accent'
@@ -66,15 +66,7 @@ export function ConversationListActionButton({
         },
       ]}
     >
-      <Text
-        importantForAccessibility="no"
-        style={[
-          styles.glyph,
-          { color: textColor },
-        ]}
-      >
-        {children}
-      </Text>
+      {icon(iconColor)}
     </Pressable>
   );
 }
@@ -86,10 +78,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  glyph: {
-    fontSize: 18,
-    lineHeight: 22,
-    fontWeight: '700',
   },
 });
