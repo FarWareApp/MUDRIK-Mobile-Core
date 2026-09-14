@@ -12,6 +12,7 @@ import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { typography } from '../../../design-system/tokens/typography';
 import { formatVoiceDurationMs } from '../formatters/formatVoiceDuration';
+import { VoiceRecorderIndicator } from './VoiceRecorderIndicator';
 
 type Props = {
   phase: VoiceRecorderPhase;
@@ -69,12 +70,9 @@ export function VoiceRecorderStatus({
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={styles.micGlyph}
-        >
-          ●
-        </Text>
+        <VoiceRecorderIndicator
+          color={colors.accentText}
+        />
       </View>
 
       <Text
@@ -116,10 +114,6 @@ const styles = StyleSheet.create({
       width: 0,
       height: 7,
     },
-  },
-  micGlyph: {
-    color: '#FFFFFF',
-    fontSize: 38,
   },
   phase: {
     marginTop: spacing.md,

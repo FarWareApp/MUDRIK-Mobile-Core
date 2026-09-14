@@ -10,12 +10,36 @@ const controller = fs.readFileSync(
   'src/features/voice/hooks/useVoiceRecorderController.ts',
   'utf8',
 );
+const header = fs.readFileSync(
+  'src/features/voice/components/VoiceScreenHeader.tsx',
+  'utf8',
+);
+const backIcon = fs.readFileSync(
+  'src/features/voice/components/VoiceBackIcon.tsx',
+  'utf8',
+);
+const status = fs.readFileSync(
+  'src/features/voice/components/VoiceRecorderStatus.tsx',
+  'utf8',
+);
+const recorderIndicator = fs.readFileSync(
+  'src/features/voice/components/VoiceRecorderIndicator.tsx',
+  'utf8',
+);
 const controls = fs.readFileSync(
   'src/features/voice/components/VoiceRecorderControls.tsx',
   'utf8',
 );
+const controlButton = fs.readFileSync(
+  'src/features/voice/components/VoiceControlButton.tsx',
+  'utf8',
+);
 const player = fs.readFileSync(
   'src/features/voice/components/VoiceRecordingPlayer.tsx',
+  'utf8',
+);
+const playbackIcon = fs.readFileSync(
+  'src/features/voice/components/VoicePlaybackIcon.tsx',
   'utf8',
 );
 const formatter = fs.readFileSync(
@@ -76,14 +100,61 @@ test(
 );
 
 test(
-  'voice controls and player meet accessible target and localization contracts',
+  'voice controls delegate button presentation and keep accessible targets',
   () => {
-    assert.match(controls, /minHeight:\s*48/);
-    assert.match(controls, /accessibilityLabel=\{label\}/);
+    assert.match(controls, /VoiceControlButton/);
+    assert.doesNotMatch(controls, /\bPressable\b/);
+    assert.doesNotMatch(controls, /useTheme/);
+    assert.match(controlButton, /minHeight:\s*48/);
+    assert.match(controlButton, /accessibilityLabel=\{label\}/);
+    assert.match(controlButton, /motion\.press\.subtleScale/);
+    assert.doesNotMatch(controlButton, /\?\s*0\.98/);
+  },
+);
+
+test(
+  'voice navigation and recorder status use platform stable visual primitives',
+  () => {
+    assert.match(header, /VoiceBackIcon/);
+    assert.match(header, /const \{ t, isRTL \} = useLocale\(\)/);
+    assert.doesNotMatch(header, /‹/u);
+    assert.match(backIcon, /isRTL/);
+    assert.match(backIcon, /scaleX:\s*-1/);
+    assert.match(
+      backIcon,
+      /importantForAccessibility="no-hide-descendants"/,
+    );
+
+    assert.match(status, /VoiceRecorderIndicator/);
+    assert.doesNotMatch(status, /●/u);
+    assert.doesNotMatch(status, /#FFFFFF/);
+    assert.match(status, /colors\.accentText/);
+    assert.match(
+      recorderIndicator,
+      /importantForAccessibility="no-hide-descendants"/,
+    );
+  },
+);
+
+test(
+  'voice playback keeps accessible targets, semantic spacing and tokenized motion',
+  () => {
     assert.match(player, /width:\s*48/);
     assert.match(player, /height:\s*48/);
     assert.match(player, /useLocale/);
     assert.match(player, /formatVoiceDurationSeconds/);
+    assert.match(player, /VoicePlaybackIcon/);
+    assert.match(player, /motion\.press\.scale/);
+    assert.match(player, /marginStart:\s*spacing\.md/);
+    assert.doesNotMatch(player, /marginLeft:/);
+    assert.doesNotMatch(player, /[Ⅱ▶]/u);
+    assert.match(
+      playbackIcon,
+      /importantForAccessibility="no-hide-descendants"/,
+    );
+    assert.match(playbackIcon, /borderLeftWidth:\s*10/);
+    assert.match(playbackIcon, /styles\.pauseStart/);
+    assert.match(playbackIcon, /styles\.pauseEnd/);
   },
 );
 

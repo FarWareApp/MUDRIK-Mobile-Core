@@ -12,10 +12,12 @@ import {
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { typography } from '../../../design-system/tokens/typography';
 import { formatVoiceDurationSeconds } from '../formatters/formatVoiceDuration';
+import { VoicePlaybackIcon } from './VoicePlaybackIcon';
 
 type Props = {
   uri: string;
@@ -71,20 +73,20 @@ export function VoiceRecordingPlayer({
           {
             backgroundColor: colors.accent,
             opacity: pressed ? 0.86 : 1,
-            transform: [{ scale: pressed ? 0.97 : 1 }],
+            transform: [
+              {
+                scale: pressed
+                  ? motion.press.scale
+                  : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={{
-            color: colors.accentText,
-            fontWeight: '700',
-            fontSize: 17,
-          }}
-        >
-          {status.playing ? 'Ⅱ' : '▶'}
-        </Text>
+        <VoicePlaybackIcon
+          color={colors.accentText}
+          playing={status.playing}
+        />
       </Pressable>
 
       <View style={styles.info}>
@@ -130,7 +132,7 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
-    marginLeft: spacing.md,
+    marginStart: spacing.md,
   },
   title: {
     fontSize: typography.secondary,

@@ -12,10 +12,11 @@ import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { typography } from '../../../design-system/tokens/typography';
+import { VoiceBackIcon } from './VoiceBackIcon';
 
 export function VoiceScreenHeader() {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const { t, isRTL } = useLocale();
 
   return (
     <View
@@ -38,15 +39,10 @@ export function VoiceScreenHeader() {
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={[
-            styles.backGlyph,
-            { color: colors.textPrimary },
-          ]}
-        >
-          ‹
-        </Text>
+        <VoiceBackIcon
+          color={colors.textPrimary}
+          isRTL={isRTL}
+        />
       </Pressable>
 
       <Text
@@ -79,9 +75,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  backGlyph: {
-    fontSize: 24,
   },
   title: {
     flex: 1,
