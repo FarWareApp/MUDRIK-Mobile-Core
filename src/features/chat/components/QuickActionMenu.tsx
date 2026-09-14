@@ -8,12 +8,27 @@ import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
 import {
+  useTheme,
+} from '../../../design-system/theme/ThemeProvider';
+import {
   spacing,
 } from '../../../design-system/tokens/spacing';
 
 import {
+  QuickActionCompanionIcon,
+} from './QuickActionCompanionIcon';
+import {
+  QuickActionConversationsIcon,
+} from './QuickActionConversationsIcon';
+import {
   QuickActionMenuItem,
 } from './QuickActionMenuItem';
+import {
+  QuickActionProjectsIcon,
+} from './QuickActionProjectsIcon';
+import {
+  QuickActionSettingsIcon,
+} from './QuickActionSettingsIcon';
 
 type Props = {
   visible: boolean;
@@ -31,6 +46,7 @@ export function QuickActionMenu({
   onSettings,
 }: Props) {
   const { t, isRTL } = useLocale();
+  const { colors } = useTheme();
 
   if (!visible) {
     return null;
@@ -39,22 +55,38 @@ export function QuickActionMenu({
   const actions = [
     {
       label: t('conversations'),
-      symbol: '☰',
+      icon: (
+        <QuickActionConversationsIcon
+          color={colors.accent}
+        />
+      ),
       onPress: onConversations,
     },
     {
       label: t('projects'),
-      symbol: '□',
+      icon: (
+        <QuickActionProjectsIcon
+          color={colors.accent}
+        />
+      ),
       onPress: onProjects,
     },
     {
       label: t('companion'),
-      symbol: '◎',
+      icon: (
+        <QuickActionCompanionIcon
+          color={colors.accent}
+        />
+      ),
       onPress: onCompanion,
     },
     {
       label: t('settings'),
-      symbol: '⚙',
+      icon: (
+        <QuickActionSettingsIcon
+          color={colors.accent}
+        />
+      ),
       onPress: onSettings,
     },
   ];
@@ -75,7 +107,7 @@ export function QuickActionMenu({
             key={action.label}
             index={index}
             label={action.label}
-            symbol={action.symbol}
+            icon={action.icon}
             onPress={action.onPress}
           />
         ),

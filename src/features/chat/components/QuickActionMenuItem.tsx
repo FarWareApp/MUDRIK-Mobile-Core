@@ -1,4 +1,6 @@
-import React from 'react';
+import React, {
+  type ReactNode,
+} from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -37,14 +39,14 @@ import {
 
 type Props = {
   label: string;
-  symbol: string;
+  icon: ReactNode;
   index: number;
   onPress: () => void;
 };
 
 export function QuickActionMenuItem({
   label,
-  symbol,
+  icon,
   index,
   onPress,
 }: Props) {
@@ -124,21 +126,14 @@ export function QuickActionMenuItem({
           <View
             importantForAccessibility="no-hide-descendants"
             style={[
-              styles.symbol,
+              styles.iconContainer,
               {
                 backgroundColor:
                   colors.accentSoft,
               },
             ]}
           >
-            <Text
-              style={[
-                styles.symbolText,
-                { color: colors.accent },
-              ]}
-            >
-              {symbol}
-            </Text>
+            {icon}
           </View>
         </Pressable>
       </AdaptiveGlassSurface>
@@ -165,29 +160,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     borderRadius: radius.pill,
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.sm,
+    paddingStart: spacing.lg,
+    paddingEnd: spacing.sm,
   },
   buttonRTL: {
     flexDirection: 'row-reverse',
-    paddingLeft: spacing.sm,
-    paddingRight: spacing.lg,
   },
   label: {
     ...typeScale.secondary,
     flex: 1,
     fontWeight: '700',
   },
-  symbol: {
+  iconContainer: {
     width: 38,
     height: 38,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  symbolText: {
-    fontSize: 17,
-    lineHeight: 20,
-    fontWeight: '700',
   },
 });
