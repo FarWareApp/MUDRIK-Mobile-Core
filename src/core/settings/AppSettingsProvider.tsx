@@ -17,11 +17,16 @@ import {
   SettingsRepository,
 } from '../../contracts/SettingsRepository';
 
+export type AppSettingsErrorCode =
+  | 'load'
+  | 'save'
+  | 'reset';
+
 type AppSettingsContextValue = {
   settings: AppSettings;
 
   loading: boolean;
-  error: string | null;
+  error: AppSettingsErrorCode | null;
 
   update:
     <K extends keyof AppSettings>(
@@ -59,7 +64,9 @@ export function AppSettingsProvider({
     useState(true);
 
   const [error, setError] =
-    useState<string | null>(null);
+    useState<
+      AppSettingsErrorCode | null
+    >(null);
 
   const load =
     useCallback(async () => {
@@ -78,9 +85,7 @@ export function AppSettingsProvider({
 
         setError(null);
       } catch {
-        setError(
-          'Unable to load application settings.',
-        );
+        setError('load');
       } finally {
         setLoading(false);
       }
@@ -123,9 +128,7 @@ export function AppSettingsProvider({
             }),
           );
 
-          setError(
-            'Unable to save application setting.',
-          );
+          setError('save');
         }
       },
       [
@@ -145,9 +148,7 @@ export function AppSettingsProvider({
 
         setError(null);
       } catch {
-        setError(
-          'Unable to reset application settings.',
-        );
+        setError('reset');
       }
     }, [repository]);
 

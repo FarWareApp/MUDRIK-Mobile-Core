@@ -29,6 +29,7 @@ import { SettingsPermissionList } from './components/SettingsPermissionList';
 import { SettingsScreenHeader } from './components/SettingsScreenHeader';
 import { SettingsScreenState } from './components/SettingsScreenState';
 import { SettingsSectionTitle } from './components/SettingsSectionTitle';
+import { getSettingsErrorTranslationKey } from './getSettingsErrorTranslationKey';
 
 type Props = {
   permissionService: PermissionService;
@@ -105,7 +106,11 @@ export function SettingsScreen({
 
       {settings.error ? (
         <InlineErrorBanner
-          message={settings.error}
+          message={t(
+            getSettingsErrorTranslationKey(
+              settings.error,
+            ),
+          )}
           onRetry={() => {
             void settings.reload();
           }}

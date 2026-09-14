@@ -3,6 +3,10 @@ import {
   chatTranslations,
 } from './chatTranslations';
 import {
+  SettingsTranslationKey,
+  settingsTranslations,
+} from './settingsTranslations';
+import {
   AppLocale,
   TranslationKey as BaseTranslationKey,
   translations,
@@ -15,6 +19,7 @@ import {
 export type TranslationKey =
   | BaseTranslationKey
   | ChatTranslationKey
+  | SettingsTranslationKey
   | VoiceTranslationKey;
 
 export const translationCatalog: Record<
@@ -24,16 +29,19 @@ export const translationCatalog: Record<
   ar: {
     ...translations.ar,
     ...chatTranslations.ar,
+    ...settingsTranslations.ar,
     ...voiceTranslations.ar,
   },
   de: {
     ...translations.de,
     ...chatTranslations.de,
+    ...settingsTranslations.de,
     ...voiceTranslations.de,
   },
   en: {
     ...translations.en,
     ...chatTranslations.en,
+    ...settingsTranslations.en,
     ...voiceTranslations.en,
   },
 };
