@@ -8,29 +8,47 @@ const bubbleSurface = fs.readFileSync(
 );
 
 test(
-  'message bubble geometry mirrors semantic start and end corners in RTL',
+  'message bubble tail geometry mirrors semantic start and end corners in RTL',
   () => {
     assert.match(bubbleSurface, /useLocale/);
     assert.match(bubbleSurface, /const \{ isRTL \} = useLocale\(\)/);
-    assert.match(bubbleSurface, /userShapeLTR/);
-    assert.match(bubbleSurface, /userShapeRTL/);
-    assert.match(bubbleSurface, /assistantShapeLTR/);
-    assert.match(bubbleSurface, /assistantShapeRTL/);
     assert.match(
       bubbleSurface,
-      /userShapeLTR:[\s\S]*borderBottomRightRadius:\s*radius\.sm/,
+      /userTailLTR:[\s\S]*?borderBottomRightRadius:\s*radius\.sm/,
     );
     assert.match(
       bubbleSurface,
-      /userShapeRTL:[\s\S]*borderBottomLeftRadius:\s*radius\.sm/,
+      /userTailRTL:[\s\S]*?borderBottomLeftRadius:\s*radius\.sm/,
     );
     assert.match(
       bubbleSurface,
-      /assistantShapeLTR:[\s\S]*borderBottomLeftRadius:\s*radius\.sm/,
+      /assistantTailLTR:[\s\S]*?borderBottomLeftRadius:\s*radius\.sm/,
     );
     assert.match(
       bubbleSurface,
-      /assistantShapeRTL:[\s\S]*borderBottomRightRadius:\s*radius\.sm/,
+      /assistantTailRTL:[\s\S]*?borderBottomRightRadius:\s*radius\.sm/,
+    );
+  },
+);
+
+test(
+  'group connection geometry mirrors semantic corners in RTL',
+  () => {
+    assert.match(
+      bubbleSurface,
+      /userConnectionLTR:[\s\S]*?borderTopRightRadius:\s*radius\.sm/,
+    );
+    assert.match(
+      bubbleSurface,
+      /userConnectionRTL:[\s\S]*?borderTopLeftRadius:\s*radius\.sm/,
+    );
+    assert.match(
+      bubbleSurface,
+      /assistantConnectionLTR:[\s\S]*?borderTopLeftRadius:\s*radius\.sm/,
+    );
+    assert.match(
+      bubbleSurface,
+      /assistantConnectionRTL:[\s\S]*?borderTopRightRadius:\s*radius\.sm/,
     );
   },
 );
