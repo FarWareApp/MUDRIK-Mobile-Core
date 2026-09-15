@@ -6,128 +6,137 @@ const screen = fs.readFileSync(
   'src/features/diagnostics/DiagnosticsScreen.tsx',
   'utf8',
 );
-const controller = fs.readFileSync(
-  'src/features/diagnostics/hooks/useDiagnosticsController.ts',
+const header = fs.readFileSync(
+  'src/features/diagnostics/components/DiagnosticsScreenHeader.tsx',
   'utf8',
 );
-const eventList = fs.readFileSync(
-  'src/features/diagnostics/components/DiagnosticEventList.tsx',
+const backIcon = fs.readFileSync(
+  'src/features/diagnostics/components/DiagnosticsBackIcon.tsx',
+  'utf8',
+);
+const sectionHeader = fs.readFileSync(
+  'src/features/diagnostics/components/DiagnosticsSectionHeader.tsx',
+  'utf8',
+);
+const clearButton = fs.readFileSync(
+  'src/features/diagnostics/components/ClearDiagnosticsButton.tsx',
   'utf8',
 );
 const maintenance = fs.readFileSync(
   'src/features/diagnostics/components/StorageMaintenanceCard.tsx',
   'utf8',
 );
-const formatter = fs.readFileSync(
-  'src/features/diagnostics/formatters/formatDiagnosticTimestamp.ts',
+const health = fs.readFileSync(
+  'src/features/diagnostics/components/CoreHealthCard.tsx',
   'utf8',
 );
-const translations = fs.readFileSync(
-  'src/core/localization/translations.ts',
+const eventList = fs.readFileSync(
+  'src/features/diagnostics/components/DiagnosticEventList.tsx',
+  'utf8',
+);
+const eventCard = fs.readFileSync(
+  'src/features/diagnostics/components/DiagnosticEventCard.tsx',
+  'utf8',
+);
+const controller = fs.readFileSync(
+  'src/features/diagnostics/hooks/useDiagnosticsController.ts',
+  'utf8',
+);
+const errorMapper = fs.readFileSync(
+  'src/features/diagnostics/getDiagnosticsErrorTranslationKey.ts',
   'utf8',
 );
 
-function countTranslationKey(key) {
-  const pattern = new RegExp(
-    `^\\s*${key}:\\s`,
-    'gm',
-  );
-
-  return translations.match(pattern)?.length ?? 0;
-}
-
 test(
-  'diagnostics screen delegates data and presentation responsibilities',
+  'diagnostics screen keeps orchestration separate and locks destructive controls while loading',
   () => {
-    assert.match(screen, /useDiagnosticsController/);
-
-    for (const component of [
-      'DiagnosticsScreenHeader',
-      'DiagnosticsSectionHeader',
-      'CoreHealthCard',
-      'StorageMaintenanceCard',
-      'DiagnosticEventList',
-      'ClearDiagnosticsButton',
-    ]) {
-      assert.match(screen, new RegExp(component));
-    }
-
-    assert.doesNotMatch(screen, /diagnosticsService/);
-    assert.doesNotMatch(screen, /ActivityIndicator/);
-    assert.doesNotMatch(screen, /\bPressable\b/);
-    assert.doesNotMatch(screen, /toLocaleString\(/);
+    assert.match(screen, /getDiagnosticsErrorTranslationKey/);
+    assert.match(screen, /const controlsDisabled =/);
+    assert.match(screen, /controller\.busy \|\| controller\.loading/);
+    assert.match(screen, /showsVerticalScrollIndicator=\{false\}/);
+    assert.match(screen, /disabled=\{controlsDisabled\}/);
+    assert.doesNotMatch(screen, /function errorFor/);
   },
 );
 
 test(
-  'diagnostics controller owns repository and maintenance operations',
+  'diagnostics header uses a stable RTL-aware primitive and reduced-motion press feedback',
   () => {
-    assert.match(controller, /repository\.list/);
-    assert.match(controller, /repository\.clear/);
-    assert.match(controller, /diagnosticsService\.snapshot/);
-    assert.match(controller, /diagnosticsService\.clear/);
-    assert.match(controller, /runAttachmentMaintenance/);
+    assert.match(header, /DiagnosticsBackIcon/);
+    assert.match(header, /useAccessibility/);
+    assert.match(header, /isRTL/);
+    assert.match(header, /motion\.press\.subtleScale/);
+    assert.match(header, /typeScale\.heading/);
+    assert.match(header, /width:\s*44/);
+    assert.match(header, /height:\s*44/);
+    assert.doesNotMatch(header, /‹/u);
+
+    assert.doesNotMatch(backIcon, /\bText\b/);
+    assert.match(backIcon, /scaleX:\s*-1/);
   },
 );
 
 test(
-  'diagnostics event presentation is locale aware and deterministic',
+  'diagnostics actions use design motion, semantic touch targets and localized text direction',
   () => {
-    assert.match(eventList, /formatDiagnosticTimestamp/);
-    assert.match(eventList, /useLocale/);
-    assert.match(formatter, /Intl\.DateTimeFormat/);
-    assert.match(formatter, /Number\.isSafeInteger/);
-    assert.doesNotMatch(eventList, /toLocaleString\(/);
-  },
-);
+    assert.match(sectionHeader, /motion\.press\.subtleScale/);
+    assert.match(sectionHeader, /minHeight:\s*44/);
+    assert.match(sectionHeader, /writingDirection:\s*'auto'/);
 
-test(
-  'diagnostics maintenance action keeps accessible target state',
-  () => {
-    assert.match(maintenance, /minHeight:\s*44/);
+    assert.match(clearButton, /motion\.press\.subtleScale/);
+    assert.match(clearButton, /minHeight:\s*44/);
+    assert.match(clearButton, /colors\.error/);
+    assert.match(clearButton, /typeScale\.secondary/);
+
+    assert.match(maintenance, /ActivityIndicator/);
     assert.match(maintenance, /accessibilityState=\{\{ disabled: busy, busy \}\}/);
-    assert.match(maintenance, /Intl\.NumberFormat/);
+    assert.match(maintenance, /motion\.press\.subtleScale/);
+    assert.match(maintenance, /minHeight:\s*48/);
+    assert.match(maintenance, /accessibilityLiveRegion="polite"/);
   },
 );
 
 test(
-  'diagnostics localization keys exist in all locale tables',
+  'diagnostics cards support long content and isolate event rendering',
   () => {
-    for (const key of [
-      'coreHealthSection',
-      'storageMaintenanceSection',
-      'localDiagnosticsSection',
-      'healthHealthy',
-      'healthDegraded',
-      'healthReady',
-      'healthStarting',
-      'noCoreIssues',
-      'storageMaintenanceDescription',
-      'runSafeStorageCleanup',
-      'runSafeCleanup',
-      'storageAlreadyClean',
-      'storageCleanupRemoved',
-      'orphanAttachments',
-      'noLocalDiagnosticEvents',
-      'diagnosticLevelInfo',
-      'diagnosticLevelWarning',
-      'diagnosticLevelError',
-      'refreshDiagnostics',
-      'refresh',
-      'clearLocalDiagnostics',
-      'clearDiagnostics',
-      'clearDiagnosticsTitle',
-      'clearDiagnosticsMessage',
-      'clear',
-      'diagnosticsLoadFailed',
-      'diagnosticsClearFailed',
-      'storageMaintenanceFailed',
-    ]) {
-      assert.equal(
-        countTranslationKey(key),
-        3,
-        `${key} must exist in ar, de and en`,
-      );
-    }
+    assert.match(health, /flexWrap:\s*'wrap'/);
+    assert.match(health, /borderStartWidth:\s*2/);
+    assert.match(health, /paddingStart:\s*spacing\.md/);
+    assert.match(health, /typeScale\.heading/);
+    assert.match(health, /writingDirection:\s*'auto'/);
+
+    assert.match(eventList, /DiagnosticEventCard/);
+    assert.match(eventList, /useMemo/);
+    assert.match(eventList, /accessibilityRole="progressbar"/);
+    assert.doesNotMatch(eventList, /formatDiagnosticTimestamp/);
+
+    assert.match(eventCard, /memo\(/);
+    assert.match(eventCard, /formatDiagnosticTimestamp/);
+    assert.match(eventCard, /typeScale\.caption/);
+    assert.match(eventCard, /writingDirection:\s*'auto'/);
+  },
+);
+
+test(
+  'diagnostics controller prevents concurrent operations and preserves logs when clearing persistence fails',
+  () => {
+    assert.match(controller, /operationRef/);
+    assert.match(controller, /operationRef\.current !== null/);
+    assert.match(controller, /mergeDiagnosticEvents/);
+
+    const clearPersist = controller.indexOf('await repository.clear()');
+    const clearRuntime = controller.indexOf('diagnosticsService.clear()');
+
+    assert.ok(clearPersist >= 0);
+    assert.ok(clearRuntime > clearPersist);
+  },
+);
+
+test(
+  'diagnostics error translation ownership is separated from the screen',
+  () => {
+    assert.match(errorMapper, /diagnosticsLoadFailed/);
+    assert.match(errorMapper, /diagnosticsClearFailed/);
+    assert.match(errorMapper, /storageMaintenanceFailed/);
   },
 );

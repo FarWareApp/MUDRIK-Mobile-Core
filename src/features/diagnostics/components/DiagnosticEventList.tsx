@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -14,8 +14,8 @@ import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
-import { formatDiagnosticTimestamp } from '../formatters/formatDiagnosticTimestamp';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { DiagnosticEventCard } from './DiagnosticEventCard';
 
 type Props = {
   loading: boolean;
@@ -28,10 +28,22 @@ export function DiagnosticEventList({
 }: Props) {
   const { colors } = useTheme();
   const { locale, t } = useLocale();
+  const levelLabels = useMemo<Record<DiagnosticLevel, string>>(
+    () => ({
+      info: t('diagnosticLevelInfo'),
+      warning: t('diagnosticLevelWarning'),
+      error: t('diagnosticLevelError'),
+    }),
+    [t],
+  );
 
   if (loading) {
     return (
-      <View style={styles.loader}>
+      <View
+        accessibilityLiveRegion="polite"
+        accessibilityRole="progressbar"
+        style={styles.loader}
+      >
         <ActivityIndicator color={colors.accent} />
       </View>
     );
@@ -40,6 +52,7 @@ export function DiagnosticEventList({
   if (events.length === 0) {
     return (
       <View
+        accessibilityLiveRegion="polite"
         style={[
           styles.emptyCard,
           {
@@ -60,82 +73,16 @@ export function DiagnosticEventList({
     );
   }
 
-  const levelLabels: Record<DiagnosticLevel, string> = {
-    info: t('diagnosticLevelInfo'),
-    warning: t('diagnosticLevelWarning'),
-    error: t('diagnosticLevelError'),
-  };
-
   return (
     <View>
-      {events.map((event) => {
-        const timestamp = formatDiagnosticTimestamp(
-          event.timestamp,
-          locale,
-        );
-
-        return (
-          <View
-            key={event.id}
-            style={[
-              styles.eventCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <View style={styles.rowBetween}>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.module,
-                  { color: colors.textPrimary },
-                ]}
-              >
-                {event.module}
-              </Text>
-
-              <Text
-                style={[
-                  styles.level,
-                  {
-                    color:
-                      event.level === 'error'
-                        ? colors.error
-                        : event.level === 'warning'
-                          ? colors.warning
-                          : colors.textSecondary,
-                  },
-                ]}
-              >
-                {levelLabels[event.level]}
-              </Text>
-            </View>
-
-            <Text
-              selectable
-              style={[
-                styles.eventText,
-                { color: colors.textSecondary },
-              ]}
-            >
-              {event.event}
-            </Text>
-
-            {timestamp ? (
-              <Text
-                style={[
-                  styles.timestamp,
-                  { color: colors.textSecondary },
-                ]}
-              >
-                {timestamp}
-              </Text>
-            ) : null}
-          </View>
-        );
-      })}
+      {events.map((event) => (
+        <DiagnosticEventCard
+          key={event.id}
+          event={event}
+          locale={locale}
+          levelLabels={levelLabels}
+        />
+      ))}
     </View>
   );
 }
@@ -148,42 +95,11 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.lg,
   },
-  eventCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  module: {
-    flex: 1,
-    fontSize: typography.secondary,
-    fontWeight: '700',
-  },
-  level: {
-    fontSize: typography.caption,
-    fontWeight: '700',
-  },
-  eventText: {
-    marginTop: spacing.sm,
-    fontSize: typography.caption,
-    lineHeight: 18,
-  },
-  timestamp: {
-    marginTop: spacing.sm,
-    fontSize: typography.caption,
-    fontVariant: ['tabular-nums'],
-  },
   body: {
-    fontSize: typography.secondary,
-    lineHeight: 19,
+    ...typeScale.secondary,
+    writingDirection: 'auto',
   },
 });

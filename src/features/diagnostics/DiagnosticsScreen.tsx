@@ -19,10 +19,8 @@ import { DiagnosticEventList } from './components/DiagnosticEventList';
 import { DiagnosticsScreenHeader } from './components/DiagnosticsScreenHeader';
 import { DiagnosticsSectionHeader } from './components/DiagnosticsSectionHeader';
 import { StorageMaintenanceCard } from './components/StorageMaintenanceCard';
-import {
-  DiagnosticsErrorCode,
-  useDiagnosticsController,
-} from './hooks/useDiagnosticsController';
+import { getDiagnosticsErrorTranslationKey } from './getDiagnosticsErrorTranslationKey';
+import { useDiagnosticsController } from './hooks/useDiagnosticsController';
 
 type MaintenanceResult = {
   orphanAttachmentsRemoved: number;
@@ -44,11 +42,14 @@ export function DiagnosticsScreen({
     repository,
     runAttachmentMaintenance,
   });
-
-  const errorMessage = errorFor(
+  const errorKey = getDiagnosticsErrorTranslationKey(
     controller.errorCode,
-    t,
   );
+  const errorMessage = errorKey
+    ? t(errorKey)
+    : null;
+  const controlsDisabled =
+    controller.busy || controller.loading;
 
   const confirmClear = () => {
     Alert.alert(
@@ -93,7 +94,10 @@ export function DiagnosticsScreen({
         />
       ) : null}
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <DiagnosticsSectionHeader
           title={t('coreHealthSection')}
         />
@@ -105,7 +109,7 @@ export function DiagnosticsScreen({
         />
 
         <StorageMaintenanceCard
-          busy={controller.busy}
+          busy={controlsDisabled}
           removedCount={controller.maintenanceRemovedCount}
           onRun={() => {
             void controller.runMaintenance();
@@ -116,7 +120,7 @@ export function DiagnosticsScreen({
           title={t('localDiagnosticsSection')}
           actionLabel={t('refreshDiagnostics')}
           actionText={t('refresh')}
-          disabled={controller.busy || controller.loading}
+          disabled={controlsDisabled}
           onAction={() => {
             void controller.load();
           }}
@@ -129,7 +133,7 @@ export function DiagnosticsScreen({
 
         <ClearDiagnosticsButton
           disabled={
-            controller.busy ||
+            controlsDisabled ||
             controller.events.length === 0
           }
           onPress={confirmClear}
@@ -137,32 +141,6 @@ export function DiagnosticsScreen({
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-type Translate = (
-  key:
-    | 'diagnosticsLoadFailed'
-    | 'diagnosticsClearFailed'
-    | 'storageMaintenanceFailed',
-) => string;
-
-function errorFor(
-  errorCode: DiagnosticsErrorCode | null,
-  t: Translate,
-): string | null {
-  if (errorCode === 'load') {
-    return t('diagnosticsLoadFailed');
-  }
-
-  if (errorCode === 'clear') {
-    return t('diagnosticsClearFailed');
-  }
-
-  if (errorCode === 'maintenance') {
-    return t('storageMaintenanceFailed');
-  }
-
-  return null;
 }
 
 const styles = StyleSheet.create({

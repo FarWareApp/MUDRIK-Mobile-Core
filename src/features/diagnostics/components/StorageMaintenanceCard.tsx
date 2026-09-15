@@ -1,16 +1,19 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   busy: boolean;
@@ -24,6 +27,7 @@ export function StorageMaintenanceCard({
   onRun,
 }: Props) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
   const { locale, t } = useLocale();
 
   const feedback =
@@ -63,27 +67,42 @@ export function StorageMaintenanceCard({
           styles.button,
           {
             backgroundColor: colors.accent,
-            opacity: busy
-              ? 0.5
-              : pressed
-                ? 0.86
-                : 1,
+            opacity: busy ? 0.58 : 1,
+            transform: [
+              {
+                scale:
+                  pressed
+                  && !busy
+                  && !reducedMotion
+                    ? motion.press.subtleScale
+                    : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          style={{
-            color: colors.accentText,
-            fontWeight: '700',
-          }}
-        >
-          {t('runSafeCleanup')}
-        </Text>
+        <View style={styles.buttonContent}>
+          {busy ? (
+            <ActivityIndicator
+              color={colors.accentText}
+              size="small"
+            />
+          ) : null}
+
+          <Text
+            style={[
+              styles.buttonText,
+              { color: colors.accentText },
+            ]}
+          >
+            {t('runSafeCleanup')}
+          </Text>
+        </View>
       </Pressable>
 
       {feedback ? (
         <Text
-          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
           style={[
             styles.feedback,
             { color: colors.success },
@@ -99,7 +118,7 @@ export function StorageMaintenanceCard({
 const styles = StyleSheet.create({
   card: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.lg,
     elevation: 1,
     shadowOpacity: 0.06,
@@ -110,20 +129,31 @@ const styles = StyleSheet.create({
     },
   },
   body: {
-    fontSize: typography.secondary,
-    lineHeight: 19,
+    ...typeScale.secondary,
+    writingDirection: 'auto',
   },
   button: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
+    minHeight: 48,
     borderRadius: radius.pill,
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
     marginTop: spacing.lg,
   },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  buttonText: {
+    ...typeScale.secondary,
+    fontWeight: '700',
+    textAlign: 'center',
+    writingDirection: 'auto',
+  },
   feedback: {
+    ...typeScale.caption,
     marginTop: spacing.md,
-    fontSize: typography.caption,
-    lineHeight: 17,
+    writingDirection: 'auto',
   },
 });

@@ -6,10 +6,12 @@ import {
   View,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   title: string;
@@ -27,6 +29,7 @@ export function DiagnosticsSectionHeader({
   onAction,
 }: Props) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
 
   return (
     <View style={styles.container}>
@@ -54,14 +57,24 @@ export function DiagnosticsSectionHeader({
                 ? colors.surfacePressed
                 : 'transparent',
               opacity: disabled ? 0.44 : 1,
+              transform: [
+                {
+                  scale:
+                    pressed
+                    && !disabled
+                    && !reducedMotion
+                      ? motion.press.subtleScale
+                      : 1,
+                },
+              ],
             },
           ]}
         >
           <Text
-            style={{
-              color: colors.accent,
-              fontWeight: '700',
-            }}
+            style={[
+              styles.actionText,
+              { color: colors.accent },
+            ]}
           >
             {actionText}
           </Text>
@@ -78,16 +91,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.sm,
   },
   title: {
+    ...typeScale.caption,
     flex: 1,
-    fontSize: typography.caption,
     fontWeight: '700',
+    writingDirection: 'auto',
   },
   action: {
     minHeight: 44,
+    flexShrink: 0,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
+  },
+  actionText: {
+    ...typeScale.secondary,
+    fontWeight: '700',
+    writingDirection: 'auto',
   },
 });

@@ -1,17 +1,18 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
 import type { DiagnosticRepository } from '../../../contracts/DiagnosticRepository';
 import type { DiagnosticEvent } from '../../../contracts/Diagnostics';
 import { diagnosticsService } from '../../../core/diagnostics/DiagnosticsService';
-
-export type DiagnosticsErrorCode =
-  | 'load'
-  | 'clear'
-  | 'maintenance';
+import type { DiagnosticsErrorCode } from '../DiagnosticsErrorCode';
+import {
+  DIAGNOSTIC_EVENT_LIMIT,
+  mergeDiagnosticEvents,
+} from '../mergeDiagnosticEvents';
 
 type MaintenanceResult = {
   orphanAttachmentsRemoved: number;
@@ -22,7 +23,10 @@ type Args = {
   runAttachmentMaintenance: () => Promise<MaintenanceResult>;
 };
 
-const DIAGNOSTIC_LIMIT = 100;
+type DiagnosticsOperation =
+  | 'load'
+  | 'clear'
+  | 'maintenance';
 
 export function useDiagnosticsController({
   repository,
@@ -35,30 +39,34 @@ export function useDiagnosticsController({
     useState<DiagnosticsErrorCode | null>(null);
   const [maintenanceRemovedCount, setMaintenanceRemovedCount] =
     useState<number | null>(null);
+  const operationRef = useRef<DiagnosticsOperation | null>(null);
 
   const load = useCallback(async () => {
+    if (operationRef.current !== null) {
+      return;
+    }
+
+    operationRef.current = 'load';
     setLoading(true);
+    setErrorCode(null);
 
     try {
-      const stored = await repository.list(DIAGNOSTIC_LIMIT);
-      const merged = new Map<string, DiagnosticEvent>();
-
-      for (const event of [
-        ...stored,
-        ...diagnosticsService.snapshot(),
-      ]) {
-        merged.set(event.id, event);
-      }
+      const stored = await repository.list(
+        DIAGNOSTIC_EVENT_LIMIT,
+      );
+      const runtime = diagnosticsService.snapshot();
 
       setEvents(
-        [...merged.values()]
-          .sort((a, b) => b.timestamp - a.timestamp)
-          .slice(0, DIAGNOSTIC_LIMIT),
+        mergeDiagnosticEvents(
+          stored,
+          runtime,
+          DIAGNOSTIC_EVENT_LIMIT,
+        ),
       );
-      setErrorCode(null);
     } catch {
       setErrorCode('load');
     } finally {
+      operationRef.current = null;
       setLoading(false);
     }
   }, [repository]);
@@ -68,31 +76,45 @@ export function useDiagnosticsController({
   }, [load]);
 
   const clearDiagnostics = useCallback(async () => {
+    if (operationRef.current !== null) {
+      return;
+    }
+
+    operationRef.current = 'clear';
     setBusy(true);
+    setErrorCode(null);
 
     try {
-      diagnosticsService.clear();
       await repository.clear();
+      diagnosticsService.clear();
       setEvents([]);
-      setErrorCode(null);
     } catch {
       setErrorCode('clear');
     } finally {
+      operationRef.current = null;
       setBusy(false);
     }
   }, [repository]);
 
   const runMaintenance = useCallback(async () => {
+    if (operationRef.current !== null) {
+      return;
+    }
+
+    operationRef.current = 'maintenance';
     setBusy(true);
+    setErrorCode(null);
     setMaintenanceRemovedCount(null);
 
     try {
       const result = await runAttachmentMaintenance();
-      setMaintenanceRemovedCount(result.orphanAttachmentsRemoved);
-      setErrorCode(null);
+      setMaintenanceRemovedCount(
+        result.orphanAttachmentsRemoved,
+      );
     } catch {
       setErrorCode('maintenance');
     } finally {
+      operationRef.current = null;
       setBusy(false);
     }
   }, [runAttachmentMaintenance]);

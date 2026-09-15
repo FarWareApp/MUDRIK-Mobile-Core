@@ -5,10 +5,13 @@ import {
   Text,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   disabled: boolean;
@@ -20,6 +23,7 @@ export function ClearDiagnosticsButton({
   onPress,
 }: Props) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
   const { t } = useLocale();
 
   return (
@@ -32,19 +36,29 @@ export function ClearDiagnosticsButton({
       style={({ pressed }) => [
         styles.button,
         {
-          borderColor: colors.border,
+          borderColor: colors.error,
           backgroundColor: pressed
             ? colors.surfacePressed
             : 'transparent',
           opacity: disabled ? 0.44 : 1,
+          transform: [
+            {
+              scale:
+                pressed
+                && !disabled
+                && !reducedMotion
+                  ? motion.press.subtleScale
+                  : 1,
+            },
+          ],
         },
       ]}
     >
       <Text
-        style={{
-          color: colors.textPrimary,
-          fontWeight: '700',
-        }}
+        style={[
+          styles.label,
+          { color: colors.error },
+        ]}
       >
         {t('clearDiagnostics')}
       </Text>
@@ -61,5 +75,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
     marginTop: spacing.lg,
+  },
+  label: {
+    ...typeScale.secondary,
+    fontWeight: '700',
+    textAlign: 'center',
+    writingDirection: 'auto',
   },
 });

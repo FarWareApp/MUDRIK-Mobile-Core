@@ -10,7 +10,7 @@ import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   health: CoreHealthSnapshot;
@@ -21,9 +21,14 @@ export function CoreHealthCard({
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
+  const statusColor =
+    health.status === 'healthy'
+      ? colors.success
+      : colors.warning;
 
   return (
     <View
+      accessibilityLiveRegion="polite"
       style={[
         styles.card,
         {
@@ -45,18 +50,26 @@ export function CoreHealthCard({
             : t('healthDegraded')}
         </Text>
 
-        <Text
-          style={{
-            color: health.status === 'healthy'
-              ? colors.success
-              : colors.warning,
-            fontWeight: '700',
-          }}
+        <View
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: statusColor,
+            },
+          ]}
         >
-          {health.ready
-            ? t('healthReady')
-            : t('healthStarting')}
-        </Text>
+          <Text
+            style={[
+              styles.statusText,
+              { color: statusColor },
+            ]}
+          >
+            {health.ready
+              ? t('healthReady')
+              : t('healthStarting')}
+          </Text>
+        </View>
       </View>
 
       {health.issues.length === 0 ? (
@@ -72,19 +85,22 @@ export function CoreHealthCard({
         health.issues.map((issue) => (
           <View
             key={issue.id}
-            style={styles.issue}
+            style={[
+              styles.issue,
+              { borderStartColor: colors.warning },
+            ]}
           >
             <Text
-              style={{
-                color: colors.warning,
-                fontWeight: '700',
-              }}
+              style={[
+                styles.issueId,
+                { color: colors.warning },
+              ]}
             >
               {issue.id}
             </Text>
             <Text
               style={[
-                styles.body,
+                styles.issueMessage,
                 { color: colors.textSecondary },
               ]}
             >
@@ -100,7 +116,7 @@ export function CoreHealthCard({
 const styles = StyleSheet.create({
   card: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.lg,
     elevation: 1,
     shadowOpacity: 0.06,
@@ -114,19 +130,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: spacing.md,
   },
   title: {
-    fontSize: typography.body,
+    ...typeScale.heading,
+    flexShrink: 1,
     fontWeight: '700',
+    writingDirection: 'auto',
+  },
+  statusBadge: {
+    minHeight: 32,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  statusText: {
+    ...typeScale.caption,
+    fontWeight: '700',
+    writingDirection: 'auto',
   },
   body: {
-    marginTop: spacing.sm,
-    fontSize: typography.secondary,
-    lineHeight: 19,
+    ...typeScale.secondary,
+    marginTop: spacing.md,
+    writingDirection: 'auto',
   },
   issue: {
     marginTop: spacing.md,
+    borderStartWidth: 2,
+    paddingStart: spacing.md,
     gap: spacing.xs,
+  },
+  issueId: {
+    ...typeScale.caption,
+    fontWeight: '700',
+    writingDirection: 'auto',
+  },
+  issueMessage: {
+    ...typeScale.secondary,
+    writingDirection: 'auto',
   },
 });
