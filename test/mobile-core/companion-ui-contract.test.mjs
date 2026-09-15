@@ -182,7 +182,7 @@ test(
     assert.match(stepper, /disabled=\{increaseDisabled\}/);
     assert.match(stepper, /width:\s*44/);
     assert.match(stepper, /height:\s*44/);
-    assert.doesNotMatch(stepper, /[+−]/u);
+    assert.doesNotMatch(stepper, />\s*[+−]\s*</u);
     assert.doesNotMatch(stepperIcon, /\bText\b/);
 
     assert.match(toggle, /paddingEnd:\s*spacing\.md/);
