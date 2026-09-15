@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -11,22 +12,29 @@ import type {
   AppPermissionRecord,
   AppPermissionStatus,
 } from '../../../contracts/PermissionService';
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   permission: AppPermissionRecord;
+  disabled?: boolean;
+  requesting?: boolean;
   onRequest: () => void;
 };
 
 export function PermissionRow({
   permission,
+  disabled = false,
+  requesting = false,
   onRequest,
 }: Props) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
   const { t } = useLocale();
 
   const permissionLabels: Record<AppPermissionId, string> = {
@@ -46,6 +54,13 @@ export function PermissionRow({
   const canRequest =
     permission.status !== 'granted' &&
     permission.canAskAgain;
+  const actionDisabled = disabled || requesting;
+  const statusColor =
+    permission.status === 'granted'
+      ? colors.success
+      : permission.status === 'denied'
+        ? colors.warning
+        : colors.textSecondary;
 
   return (
     <View
@@ -64,20 +79,42 @@ export function PermissionRow({
           {label}
         </Text>
 
-        <Text
+        <View
           style={[
-            styles.status,
-            { color: colors.textSecondary },
+            styles.statusBadge,
+            {
+              borderColor: colors.border,
+              backgroundColor: colors.surfaceElevated,
+            },
           ]}
         >
-          {statusLabels[permission.status]}
-        </Text>
+          <View
+            importantForAccessibility="no"
+            style={[
+              styles.statusDot,
+              { backgroundColor: statusColor },
+            ]}
+          />
+          <Text
+            style={[
+              styles.status,
+              { color: statusColor },
+            ]}
+          >
+            {statusLabels[permission.status]}
+          </Text>
+        </View>
       </View>
 
       {canRequest ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${t('allowPermission')}: ${label}`}
+          accessibilityState={{
+            disabled: actionDisabled,
+            busy: requesting,
+          }}
+          disabled={actionDisabled}
           onPress={onRequest}
           style={({ pressed }) => [
             styles.button,
@@ -86,17 +123,33 @@ export function PermissionRow({
                 ? colors.surfacePressed
                 : colors.surfaceElevated,
               borderColor: colors.border,
+              opacity: actionDisabled ? 0.5 : 1,
+              transform: [
+                {
+                  scale:
+                    pressed && !actionDisabled && !reducedMotion
+                      ? motion.press.subtleScale
+                      : 1,
+                },
+              ],
             },
           ]}
         >
-          <Text
-            style={{
-              color: colors.textPrimary,
-              fontWeight: '600',
-            }}
-          >
-            {t('allowPermission')}
-          </Text>
+          {requesting ? (
+            <ActivityIndicator
+              color={colors.accent}
+              size="small"
+            />
+          ) : (
+            <Text
+              style={[
+                styles.buttonText,
+                { color: colors.textPrimary },
+              ]}
+            >
+              {t('allowPermission')}
+            </Text>
+          )}
         </Pressable>
       ) : null}
     </View>
@@ -105,30 +158,54 @@ export function PermissionRow({
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 66,
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
   },
   text: {
     flex: 1,
-    paddingRight: spacing.md,
+    paddingEnd: spacing.md,
   },
   label: {
-    fontSize: typography.secondary,
+    ...typeScale.secondary,
     fontWeight: '600',
+    writingDirection: 'auto',
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    minHeight: 28,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: radius.pill,
   },
   status: {
-    marginTop: spacing.xs,
-    fontSize: typography.caption,
+    ...typeScale.caption,
+    fontWeight: '700',
+    writingDirection: 'auto',
   },
   button: {
+    minWidth: 76,
     minHeight: 44,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
+    alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
+  },
+  buttonText: {
+    ...typeScale.secondary,
+    fontWeight: '600',
   },
 });

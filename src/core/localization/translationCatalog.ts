@@ -15,6 +15,10 @@ import {
   conversationTranslations,
 } from './conversationTranslations';
 import {
+  PermissionTranslationKey,
+  permissionTranslations,
+} from './permissionTranslations';
+import {
   ProjectTranslationKey,
   projectTranslations,
 } from './projectTranslations';
@@ -42,6 +46,7 @@ export type TranslationKey =
   | ChatTranslationKey
   | CompanionTranslationKey
   | ConversationTranslationKey
+  | PermissionTranslationKey
   | ProjectTranslationKey
   | RuntimeTranslationKey
   | SettingsTranslationKey
@@ -57,6 +62,7 @@ export const translationCatalog: Record<
     ...chatTranslations.ar,
     ...companionTranslations.ar,
     ...conversationTranslations.ar,
+    ...permissionTranslations.ar,
     ...projectTranslations.ar,
     ...runtimeTranslations.ar,
     ...settingsTranslations.ar,
@@ -68,6 +74,7 @@ export const translationCatalog: Record<
     ...chatTranslations.de,
     ...companionTranslations.de,
     ...conversationTranslations.de,
+    ...permissionTranslations.de,
     ...projectTranslations.de,
     ...runtimeTranslations.de,
     ...settingsTranslations.de,
@@ -79,6 +86,7 @@ export const translationCatalog: Record<
     ...chatTranslations.en,
     ...companionTranslations.en,
     ...conversationTranslations.en,
+    ...permissionTranslations.en,
     ...projectTranslations.en,
     ...runtimeTranslations.en,
     ...settingsTranslations.en,

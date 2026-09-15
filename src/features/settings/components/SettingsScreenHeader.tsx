@@ -7,15 +7,19 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { SettingsBackIcon } from './SettingsBackIcon';
 
 export function SettingsScreenHeader() {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const { reducedMotion } = useAccessibility();
+  const { isRTL, t } = useLocale();
 
   return (
     <View
@@ -35,22 +39,26 @@ export function SettingsScreenHeader() {
               ? colors.surfacePressed
               : colors.surfaceElevated,
             borderColor: colors.border,
+            transform: [
+              {
+                scale:
+                  pressed && !reducedMotion
+                    ? motion.press.subtleScale
+                    : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={[
-            styles.backGlyph,
-            { color: colors.textPrimary },
-          ]}
-        >
-          ‹
-        </Text>
+        <SettingsBackIcon
+          color={colors.textPrimary}
+          isRTL={isRTL}
+        />
       </Pressable>
 
       <Text
         accessibilityRole="header"
+        numberOfLines={1}
         style={[
           styles.title,
           { color: colors.textPrimary },
@@ -80,13 +88,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backGlyph: {
-    fontSize: 24,
-  },
   title: {
+    ...typeScale.heading,
     flex: 1,
+    paddingHorizontal: spacing.sm,
     textAlign: 'center',
-    fontSize: typography.heading,
     fontWeight: '700',
   },
   spacer: {

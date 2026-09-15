@@ -10,14 +10,18 @@ import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 export function SettingsScreenState() {
   const { colors } = useTheme();
   const { t } = useLocale();
 
   return (
-    <View style={styles.container}>
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLiveRegion="polite"
+      style={styles.container}
+    >
       <View
         style={[
           styles.card,
@@ -67,8 +71,9 @@ const styles = StyleSheet.create({
     },
   },
   label: {
+    ...typeScale.secondary,
     marginTop: spacing.sm,
-    fontSize: typography.secondary,
     textAlign: 'center',
+    writingDirection: 'auto',
   },
 });

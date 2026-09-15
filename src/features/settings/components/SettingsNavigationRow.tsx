@@ -6,10 +6,12 @@ import {
   View,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 import { SettingsNavigationChevronIcon } from './SettingsNavigationChevronIcon';
 
@@ -27,6 +29,7 @@ export function SettingsNavigationRow({
   onPress,
 }: Props) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
   const { isRTL } = useLocale();
 
   return (
@@ -41,6 +44,14 @@ export function SettingsNavigationRow({
           backgroundColor: pressed
             ? colors.surfacePressed
             : 'transparent',
+          transform: [
+            {
+              scale:
+                pressed && !reducedMotion
+                  ? motion.press.subtleScale
+                  : 1,
+            },
+          ],
         },
       ]}
     >
@@ -88,12 +99,13 @@ const styles = StyleSheet.create({
     paddingEnd: spacing.md,
   },
   title: {
-    fontSize: typography.secondary,
+    ...typeScale.secondary,
     fontWeight: '600',
+    writingDirection: 'auto',
   },
   description: {
+    ...typeScale.caption,
     marginTop: spacing.xs,
-    fontSize: typography.caption,
-    lineHeight: 17,
+    writingDirection: 'auto',
   },
 });

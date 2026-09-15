@@ -5,6 +5,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -12,7 +13,6 @@ import {
   AppSettings,
   DEFAULT_APP_SETTINGS,
 } from '../../contracts/AppSettings';
-
 import {
   SettingsRepository,
 } from '../../contracts/SettingsRepository';
@@ -24,31 +24,25 @@ export type AppSettingsErrorCode =
 
 type AppSettingsContextValue = {
   settings: AppSettings;
-
   loading: boolean;
+  busy: boolean;
   error: AppSettingsErrorCode | null;
-
   update:
     <K extends keyof AppSettings>(
       key: K,
       value: AppSettings[K],
     ) => Promise<void>;
-
   reset: () => Promise<void>;
   reload: () => Promise<void>;
-
   dismissError: () => void;
 };
 
 const AppSettingsContext =
-  createContext<
-    AppSettingsContextValue | null
-  >(null);
+  createContext<AppSettingsContextValue | null>(null);
 
 type Props =
   PropsWithChildren<{
-    repository:
-      SettingsRepository;
+    repository: SettingsRepository;
   }>;
 
 export function AppSettingsProvider({
@@ -56,146 +50,128 @@ export function AppSettingsProvider({
   children,
 }: Props) {
   const [settings, setSettings] =
-    useState<AppSettings>(
-      DEFAULT_APP_SETTINGS,
-    );
-
-  const [loading, setLoading] =
-    useState(true);
-
+    useState<AppSettings>(DEFAULT_APP_SETTINGS);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [error, setError] =
-    useState<
-      AppSettingsErrorCode | null
-    >(null);
+    useState<AppSettingsErrorCode | null>(null);
 
-  const load =
-    useCallback(async () => {
-      await Promise.resolve();
+  const loadLockRef = useRef(false);
+  const mutationLockRef = useRef(false);
 
-      setLoading(true);
+  const load = useCallback(async () => {
+    if (loadLockRef.current || mutationLockRef.current) {
+      return;
+    }
 
-      try {
-        const stored =
-          await repository.getAll();
+    loadLockRef.current = true;
+    setLoading(true);
 
-        setSettings({
-          ...DEFAULT_APP_SETTINGS,
-          ...stored,
-        });
+    try {
+      const stored = await repository.getAll();
 
-        setError(null);
-      } catch {
-        setError('load');
-      } finally {
-        setLoading(false);
-      }
-    }, [repository]);
+      setSettings({
+        ...DEFAULT_APP_SETTINGS,
+        ...stored,
+      });
+      setError(null);
+    } catch {
+      setError('load');
+    } finally {
+      loadLockRef.current = false;
+      setLoading(false);
+    }
+  }, [repository]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const update =
-    useCallback(
-      async <
-        K extends keyof AppSettings,
-      >(
-        key: K,
-        value: AppSettings[K],
-      ) => {
-        const previous =
-          settings[key];
+  const update = useCallback(
+    async <K extends keyof AppSettings>(
+      key: K,
+      value: AppSettings[K],
+    ) => {
+      if (mutationLockRef.current || loadLockRef.current) {
+        return;
+      }
 
-        setSettings(
-          (current) => ({
-            ...current,
-            [key]: value,
-          }),
-        );
+      mutationLockRef.current = true;
+      setBusy(true);
 
-        try {
-          await repository.set(
-            key,
-            value,
-          );
-
-          setError(null);
-        } catch {
-          setSettings(
-            (current) => ({
-              ...current,
-              [key]: previous,
-            }),
-          );
-
-          setError('save');
-        }
-      },
-      [
-        repository,
-        settings,
-      ],
-    );
-
-  const reset =
-    useCallback(async () => {
       try {
-        await repository.clear();
-
-        setSettings(
-          DEFAULT_APP_SETTINGS,
-        );
-
+        await repository.set(key, value);
+        setSettings((current) => ({
+          ...current,
+          [key]: value,
+        }));
         setError(null);
       } catch {
-        setError('reset');
+        setError('save');
+      } finally {
+        mutationLockRef.current = false;
+        setBusy(false);
       }
-    }, [repository]);
+    },
+    [repository],
+  );
 
-  const dismissError =
-    useCallback(() => {
+  const reset = useCallback(async () => {
+    if (mutationLockRef.current || loadLockRef.current) {
+      return;
+    }
+
+    mutationLockRef.current = true;
+    setBusy(true);
+
+    try {
+      await repository.clear();
+      setSettings(DEFAULT_APP_SETTINGS);
       setError(null);
-    }, []);
+    } catch {
+      setError('reset');
+    } finally {
+      mutationLockRef.current = false;
+      setBusy(false);
+    }
+  }, [repository]);
 
-  const value =
-    useMemo<
-      AppSettingsContextValue
-    >(
-      () => ({
-        settings,
-        loading,
-        error,
-        update,
-        reset,
-        reload: load,
-        dismissError,
-      }),
-      [
-        dismissError,
-        error,
-        load,
-        loading,
-        reset,
-        settings,
-        update,
-      ],
-    );
+  const dismissError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const value = useMemo<AppSettingsContextValue>(
+    () => ({
+      settings,
+      loading,
+      busy,
+      error,
+      update,
+      reset,
+      reload: load,
+      dismissError,
+    }),
+    [
+      busy,
+      dismissError,
+      error,
+      load,
+      loading,
+      reset,
+      settings,
+      update,
+    ],
+  );
 
   return (
-    <AppSettingsContext.Provider
-      value={value}
-    >
+    <AppSettingsContext.Provider value={value}>
       {children}
     </AppSettingsContext.Provider>
   );
 }
 
-export function useAppSettings():
-  AppSettingsContextValue {
-  const value =
-    useContext(
-      AppSettingsContext,
-    );
+export function useAppSettings(): AppSettingsContextValue {
+  const value = useContext(AppSettingsContext);
 
   if (!value) {
     throw new Error(

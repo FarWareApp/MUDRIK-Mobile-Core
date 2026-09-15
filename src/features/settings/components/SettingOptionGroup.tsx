@@ -6,10 +6,12 @@ import {
   View,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Option<T extends string> = {
   value: T;
@@ -32,9 +34,12 @@ export function SettingOptionGroup<T extends string>({
   onChange,
 }: Props<T>) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
 
   return (
     <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={label}
       style={[
         styles.container,
         { borderBottomColor: colors.border },
@@ -56,7 +61,7 @@ export function SettingOptionGroup<T extends string>({
           return (
             <Pressable
               key={option.value}
-              accessibilityRole="button"
+              accessibilityRole="radio"
               accessibilityLabel={option.label}
               accessibilityState={{ selected, disabled }}
               disabled={disabled}
@@ -73,16 +78,27 @@ export function SettingOptionGroup<T extends string>({
                     ? colors.accent
                     : colors.border,
                   opacity: disabled ? 0.5 : 1,
+                  transform: [
+                    {
+                      scale:
+                        pressed && !disabled && !reducedMotion
+                          ? motion.press.subtleScale
+                          : 1,
+                    },
+                  ],
                 },
               ]}
             >
               <Text
-                style={{
-                  color: selected
-                    ? colors.accentText
-                    : colors.textPrimary,
-                  fontWeight: selected ? '700' : '500',
-                }}
+                style={[
+                  styles.optionText,
+                  {
+                    color: selected
+                      ? colors.accentText
+                      : colors.textPrimary,
+                    fontWeight: selected ? '700' : '600',
+                  },
+                ]}
               >
                 {option.label}
               </Text>
@@ -101,8 +117,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   label: {
-    fontSize: typography.secondary,
+    ...typeScale.secondary,
     fontWeight: '600',
+    writingDirection: 'auto',
   },
   options: {
     marginTop: spacing.sm,
@@ -114,7 +131,13 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
+    alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
+  },
+  optionText: {
+    ...typeScale.secondary,
+    textAlign: 'center',
+    writingDirection: 'auto',
   },
 });

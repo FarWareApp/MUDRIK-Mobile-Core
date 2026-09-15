@@ -8,7 +8,7 @@ import {
 
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   label: string;
@@ -81,15 +81,16 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
-    paddingRight: spacing.lg,
+    paddingEnd: spacing.lg,
   },
   label: {
-    fontSize: typography.secondary,
+    ...typeScale.secondary,
     fontWeight: '600',
+    writingDirection: 'auto',
   },
   description: {
+    ...typeScale.caption,
     marginTop: spacing.xs,
-    fontSize: typography.caption,
-    lineHeight: 17,
+    writingDirection: 'auto',
   },
 });

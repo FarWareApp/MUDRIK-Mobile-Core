@@ -20,6 +20,7 @@ import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { spacing } from '../../design-system/tokens/spacing';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
+import { getPermissionErrorTranslationKey } from '../permissions/getPermissionErrorTranslationKey';
 import { usePermissionController } from '../permissions/hooks/usePermissionController';
 import { ResetSettingsButton } from './components/ResetSettingsButton';
 import { SettingOptionGroup } from './components/SettingOptionGroup';
@@ -62,20 +63,15 @@ export function SettingsScreen({
     { value: 'en', label: 'English' },
   ];
 
-  if (settings.loading) {
-    return (
-      <SafeAreaView
-        style={[
-          styles.safeArea,
-          { backgroundColor: colors.background },
-        ]}
-      >
-        <SettingsScreenState />
-      </SafeAreaView>
-    );
-  }
+  const mutableDisabled =
+    settings.busy ||
+    permissions.requestingId !== null;
 
   const confirmReset = () => {
+    if (mutableDisabled) {
+      return;
+    }
+
     Alert.alert(
       t('resetSettingsTitle'),
       t('resetSettingsMessage'),
@@ -104,119 +100,161 @@ export function SettingsScreen({
     >
       <SettingsScreenHeader />
 
-      {settings.error ? (
-        <InlineErrorBanner
-          message={t(
-            getSettingsErrorTranslationKey(
-              settings.error,
-            ),
-          )}
-          onRetry={() => {
-            void settings.reload();
-          }}
-          onDismiss={settings.dismissError}
-        />
-      ) : null}
+      {settings.loading ? (
+        <SettingsScreenState />
+      ) : (
+        <>
+          {settings.error ? (
+            <InlineErrorBanner
+              message={t(
+                getSettingsErrorTranslationKey(
+                  settings.error,
+                ),
+              )}
+              onRetry={
+                settings.error === 'load'
+                  ? () => {
+                      void settings.reload();
+                    }
+                  : undefined
+              }
+              onDismiss={settings.dismissError}
+            />
+          ) : null}
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <SettingsSectionTitle title={t('settingsAppSection')} />
+          {permissions.errorCode ? (
+            <InlineErrorBanner
+              message={t(
+                getPermissionErrorTranslationKey(
+                  permissions.errorCode,
+                ),
+              )}
+              onRetry={
+                permissions.errorCode === 'load'
+                  ? () => {
+                      void permissions.refresh();
+                    }
+                  : undefined
+              }
+              onDismiss={permissions.dismissError}
+            />
+          ) : null}
 
-        <SettingOptionGroup
-          label={t('theme')}
-          value={settings.settings.theme}
-          options={themeOptions}
-          onChange={(value) => {
-            void settings.update('theme', value);
-          }}
-        />
+          <ScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <SettingsSectionTitle title={t('settingsAppSection')} />
 
-        <SettingOptionGroup
-          label={t('language')}
-          value={settings.settings.language}
-          options={languageOptions}
-          onChange={(value) => {
-            void settings.update('language', value);
-          }}
-        />
+            <SettingOptionGroup
+              label={t('theme')}
+              value={settings.settings.theme}
+              options={themeOptions}
+              disabled={mutableDisabled}
+              onChange={(value) => {
+                void settings.update('theme', value);
+              }}
+            />
 
-        <SettingToggleRow
-          label={t('saveTextDrafts')}
-          description={t('saveTextDraftsDescription')}
-          value={settings.settings.saveDrafts}
-          onChange={(value) => {
-            void settings.update('saveDrafts', value);
-          }}
-        />
+            <SettingOptionGroup
+              label={t('language')}
+              value={settings.settings.language}
+              options={languageOptions}
+              disabled={mutableDisabled}
+              onChange={(value) => {
+                void settings.update('language', value);
+              }}
+            />
 
-        <SettingToggleRow
-          label={t('autoPlayVoice')}
-          description={t('autoPlayVoiceDescription')}
-          value={settings.settings.autoPlayVoice}
-          onChange={(value) => {
-            void settings.update('autoPlayVoice', value);
-          }}
-        />
+            <SettingToggleRow
+              label={t('saveTextDrafts')}
+              description={t('saveTextDraftsDescription')}
+              value={settings.settings.saveDrafts}
+              disabled={mutableDisabled}
+              onChange={(value) => {
+                void settings.update('saveDrafts', value);
+              }}
+            />
 
-        <SettingToggleRow
-          label={t('cellularUploads')}
-          description={t('cellularUploadsDescription')}
-          value={settings.settings.cellularUploads}
-          onChange={(value) => {
-            void settings.update('cellularUploads', value);
-          }}
-        />
+            <SettingToggleRow
+              label={t('autoPlayVoice')}
+              description={t('autoPlayVoiceDescription')}
+              value={settings.settings.autoPlayVoice}
+              disabled={mutableDisabled}
+              onChange={(value) => {
+                void settings.update('autoPlayVoice', value);
+              }}
+            />
 
-        <SettingsSectionTitle title={t('settingsAccessibilitySection')} />
+            <SettingToggleRow
+              label={t('cellularUploads')}
+              description={t('cellularUploadsDescription')}
+              value={settings.settings.cellularUploads}
+              disabled={mutableDisabled}
+              onChange={(value) => {
+                void settings.update('cellularUploads', value);
+              }}
+            />
 
-        <SettingToggleRow
-          label={t('reducedMotion')}
-          value={settings.settings.reducedMotion}
-          onChange={(value) => {
-            void settings.update('reducedMotion', value);
-          }}
-        />
+            <SettingsSectionTitle title={t('settingsAccessibilitySection')} />
 
-        <SettingToggleRow
-          label={t('haptics')}
-          value={settings.settings.hapticsEnabled}
-          onChange={(value) => {
-            void settings.update('hapticsEnabled', value);
-          }}
-        />
+            <SettingToggleRow
+              label={t('reducedMotion')}
+              value={settings.settings.reducedMotion}
+              disabled={mutableDisabled}
+              onChange={(value) => {
+                void settings.update('reducedMotion', value);
+              }}
+            />
 
-        <SettingsSectionTitle title={t('settingsPrivacyDiagnosticsSection')} />
+            <SettingToggleRow
+              label={t('haptics')}
+              value={settings.settings.hapticsEnabled}
+              disabled={mutableDisabled}
+              onChange={(value) => {
+                void settings.update('hapticsEnabled', value);
+              }}
+            />
 
-        <SettingToggleRow
-          label={t('diagnostics')}
-          description={t('diagnosticsDescription')}
-          value={settings.settings.diagnosticsEnabled}
-          onChange={(value) => {
-            void settings.update('diagnosticsEnabled', value);
-          }}
-        />
+            <SettingsSectionTitle title={t('settingsPrivacyDiagnosticsSection')} />
 
-        <SettingsNavigationRow
-          title={t('coreHealthDiagnostics')}
-          description={t('coreHealthDiagnosticsDescription')}
-          accessibilityLabel={t('openCoreHealthDiagnostics')}
-          onPress={() => router.push('/diagnostics')}
-        />
+            <SettingToggleRow
+              label={t('diagnostics')}
+              description={t('diagnosticsDescription')}
+              value={settings.settings.diagnosticsEnabled}
+              disabled={mutableDisabled}
+              onChange={(value) => {
+                void settings.update('diagnosticsEnabled', value);
+              }}
+            />
 
-        <SettingsSectionTitle title={t('settingsPermissionsSection')} />
+            <SettingsNavigationRow
+              title={t('coreHealthDiagnostics')}
+              description={t('coreHealthDiagnosticsDescription')}
+              accessibilityLabel={t('openCoreHealthDiagnostics')}
+              onPress={() => router.push('/diagnostics')}
+            />
 
-        <SettingsPermissionList
-          loading={permissions.loading}
-          permissions={permissions.permissions}
-          onRequest={(permissionId) => {
-            void permissions.request(permissionId);
-          }}
-        />
+            <SettingsSectionTitle title={t('settingsPermissionsSection')} />
 
-        <ResetSettingsButton onPress={confirmReset} />
-      </ScrollView>
+            <SettingsPermissionList
+              loading={permissions.loading}
+              disabled={settings.busy}
+              requestingId={permissions.requestingId}
+              permissions={permissions.permissions}
+              onRequest={(permissionId) => {
+                void permissions.request(permissionId);
+              }}
+            />
+
+            <ResetSettingsButton
+              disabled={mutableDisabled}
+              onPress={confirmReset}
+            />
+          </ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -226,6 +264,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.huge,
   },
 });

@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
@@ -10,85 +11,93 @@ import {
   PermissionService,
 } from '../../../contracts/PermissionService';
 
+export type PermissionErrorCode =
+  | 'load'
+  | 'request';
+
 export function usePermissionController(
   service: PermissionService,
 ) {
-  const [
-    permissions,
-    setPermissions,
-  ] = useState<
-    AppPermissionRecord[]
-  >([]);
+  const [permissions, setPermissions] =
+    useState<AppPermissionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [requestingId, setRequestingId] =
+    useState<AppPermissionId | null>(null);
+  const [errorCode, setErrorCode] =
+    useState<PermissionErrorCode | null>(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const refreshLockRef = useRef(false);
+  const requestLockRef = useRef(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const refresh = useCallback(async () => {
+    if (refreshLockRef.current || requestLockRef.current) {
+      return;
+    }
 
-  const refresh =
-    useCallback(async () => {
-      setLoading(true);
+    refreshLockRef.current = true;
+    setLoading(true);
 
-      try {
-        setPermissions(
-          await service.getAll(),
-        );
-
-        setError(null);
-      } catch {
-        setError(
-          'Unable to read permissions.',
-        );
-      } finally {
-        setLoading(false);
-      }
-    }, [service]);
+    try {
+      setPermissions(await service.getAll());
+      setErrorCode(null);
+    } catch {
+      setErrorCode('load');
+    } finally {
+      refreshLockRef.current = false;
+      setLoading(false);
+    }
+  }, [service]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  const request =
-    useCallback(
-      async (
-        id: AppPermissionId,
-      ) => {
-        try {
-          const result =
-            await service.request(id);
+  const request = useCallback(
+    async (
+      id: AppPermissionId,
+    ) => {
+      if (requestLockRef.current || refreshLockRef.current) {
+        return null;
+      }
 
-          setPermissions(
-            (current) =>
-              current.map(
-                (permission) =>
-                  permission.id === id
-                    ? result
-                    : permission,
-              ),
-          );
+      requestLockRef.current = true;
+      setRequestingId(id);
 
-          return result;
-        } catch {
-          setError(
-            'Unable to request permission.',
-          );
+      try {
+        const result = await service.request(id);
 
-          return null;
-        }
-      },
-      [service],
-    );
+        setPermissions((current) =>
+          current.map((permission) =>
+            permission.id === id
+              ? result
+              : permission,
+          ),
+        );
+        setErrorCode(null);
+
+        return result;
+      } catch {
+        setErrorCode('request');
+        return null;
+      } finally {
+        requestLockRef.current = false;
+        setRequestingId(null);
+      }
+    },
+    [service],
+  );
+
+  const dismissError = useCallback(() => {
+    setErrorCode(null);
+  }, []);
 
   return {
     permissions,
     loading,
-    error,
-
+    requestingId,
+    errorCode,
     refresh,
     request,
-
-    dismissError: () =>
-      setError(null),
+    dismissError,
   };
 }
