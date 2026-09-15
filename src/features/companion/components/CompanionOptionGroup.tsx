@@ -6,15 +6,18 @@ import {
   View,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props<T extends string> = {
   title: string;
   value: T;
   options: readonly (readonly [T, string])[];
+  disabled?: boolean;
   onChange: (value: T) => void;
 };
 
@@ -22,9 +25,11 @@ export function CompanionOptionGroup<T extends string>({
   title,
   value,
   options,
+  disabled = false,
   onChange,
 }: Props<T>) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
 
   return (
     <View style={styles.group}>
@@ -37,16 +42,24 @@ export function CompanionOptionGroup<T extends string>({
         {title}
       </Text>
 
-      <View style={styles.options}>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel={title}
+        style={styles.options}
+      >
         {options.map(([key, label]) => {
           const selected = value === key;
 
           return (
             <Pressable
               key={key}
-              accessibilityRole="button"
+              accessibilityRole="radio"
               accessibilityLabel={label}
-              accessibilityState={{ selected }}
+              accessibilityState={{
+                disabled,
+                selected,
+              }}
+              disabled={disabled}
               onPress={() => onChange(key)}
               style={({ pressed }) => [
                 styles.option,
@@ -59,16 +72,32 @@ export function CompanionOptionGroup<T extends string>({
                   borderColor: selected
                     ? colors.accent
                     : colors.border,
+                  opacity: disabled ? 0.52 : 1,
+                  transform: [
+                    {
+                      scale:
+                        pressed
+                        && !disabled
+                        && !reducedMotion
+                          ? motion.press.subtleScale
+                          : 1,
+                    },
+                  ],
                 },
               ]}
             >
               <Text
-                style={{
-                  color: selected
-                    ? colors.accentText
-                    : colors.textPrimary,
-                  fontWeight: selected ? '700' : '500',
-                }}
+                style={[
+                  styles.optionText,
+                  {
+                    color: selected
+                      ? colors.accentText
+                      : colors.textPrimary,
+                    fontWeight: selected
+                      ? '700'
+                      : '500',
+                  },
+                ]}
               >
                 {label}
               </Text>
@@ -85,9 +114,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   groupTitle: {
+    ...typeScale.caption,
     marginBottom: spacing.sm,
-    fontSize: typography.caption,
     fontWeight: '700',
+    writingDirection: 'auto',
   },
   options: {
     flexDirection: 'row',
@@ -100,5 +130,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  optionText: {
+    ...typeScale.secondary,
+    textAlign: 'center',
+    writingDirection: 'auto',
   },
 });

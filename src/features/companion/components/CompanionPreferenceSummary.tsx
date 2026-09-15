@@ -2,6 +2,7 @@ import React from 'react';
 import {
   StyleSheet,
   Text,
+  View,
 } from 'react-native';
 
 import type {
@@ -11,8 +12,9 @@ import type {
 } from '../../../contracts/Companion';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   interactionStyle: CompanionInteractionStyle;
@@ -48,26 +50,58 @@ export function CompanionPreferenceSummary({
     female: t('companionVoiceFemale'),
   } satisfies Record<CompanionVoicePreference, string>;
 
+  const labels = [
+    interactionLabels[interactionStyle],
+    presenceLabels[presenceLevel],
+    voiceLabels[voicePreference],
+  ];
+
   return (
-    <Text
-      style={[
-        styles.text,
-        { color: colors.textSecondary },
-      ]}
-    >
-      {interactionLabels[interactionStyle]}
-      {' · '}
-      {presenceLabels[presenceLevel]}
-      {' · '}
-      {voiceLabels[voicePreference]}
-    </Text>
+    <View style={styles.container}>
+      {labels.map((label, index) => (
+        <View
+          key={`${index}:${label}`}
+          style={[
+            styles.chip,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.text,
+              { color: colors.textSecondary },
+            ]}
+          >
+            {label}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  text: {
+  container: {
     marginTop: spacing.lg,
-    fontSize: typography.caption,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  chip: {
+    minHeight: 32,
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  text: {
+    ...typeScale.caption,
     textAlign: 'center',
+    writingDirection: 'auto',
   },
 });

@@ -26,7 +26,8 @@ import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { InlineErrorBanner } from '../../../shared/components/InlineErrorBanner';
 
 import { CompanionEditorHeader } from './CompanionEditorHeader';
 import { CompanionNumericStepper } from './CompanionNumericStepper';
@@ -37,6 +38,7 @@ type Props = {
   visible: boolean;
   profile: CompanionProfile;
   saving: boolean;
+  errorMessage?: string | null;
   onCancel: () => void;
   onSave: (profile: CompanionProfile) => void;
 };
@@ -45,19 +47,20 @@ export function CompanionProfileEditorModal({
   visible,
   profile,
   saving,
+  errorMessage = null,
   onCancel,
   onSave,
 }: Props) {
   const { colors, mode } = useTheme();
   const { reducedMotion } = useAccessibility();
-  const { isRTL, t } = useLocale();
+  const { t } = useLocale();
   const [draft, setDraft] = useState(profile);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !saving) {
       setDraft(profile);
     }
-  }, [profile, visible]);
+  }, [profile, saving, visible]);
 
   const presentationOptions: readonly (
     readonly [CompanionPresentation, string]
@@ -109,10 +112,10 @@ export function CompanionProfileEditorModal({
     <Modal
       visible={visible}
       animationType={reducedMotion ? 'none' : 'slide'}
-      onRequestClose={onCancel}
+      onRequestClose={saving ? () => undefined : onCancel}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={[
           styles.screen,
           { backgroundColor: colors.background },
@@ -123,6 +126,12 @@ export function CompanionProfileEditorModal({
           onCancel={onCancel}
           onSave={() => onSave(draft)}
         />
+
+        {errorMessage ? (
+          <InlineErrorBanner
+            message={errorMessage}
+          />
+        ) : null}
 
         <ScrollView
           contentContainerStyle={styles.content}
@@ -143,6 +152,7 @@ export function CompanionProfileEditorModal({
 
           <TextInput
             accessibilityLabel={t('companionName')}
+            accessibilityState={{ disabled: saving }}
             value={draft.displayName}
             onChangeText={(displayName) =>
               setDraft((current) => ({
@@ -162,7 +172,6 @@ export function CompanionProfileEditorModal({
                 color: colors.textPrimary,
                 borderColor: colors.border,
                 backgroundColor: colors.surfaceInput,
-                textAlign: isRTL ? 'right' : 'left',
               },
             ]}
           />
@@ -171,6 +180,7 @@ export function CompanionProfileEditorModal({
             title={t('companionPresentation')}
             value={draft.presentation}
             options={presentationOptions}
+            disabled={saving}
             onChange={(presentation) =>
               setDraft((current) => ({
                 ...current,
@@ -183,6 +193,7 @@ export function CompanionProfileEditorModal({
             title={t('companionVoicePreference')}
             value={draft.voicePreference}
             options={voiceOptions}
+            disabled={saving}
             onChange={(voicePreference) =>
               setDraft((current) => ({
                 ...current,
@@ -195,6 +206,7 @@ export function CompanionProfileEditorModal({
             title={t('companionInteractionStyle')}
             value={draft.interactionStyle}
             options={interactionOptions}
+            disabled={saving}
             onChange={(interactionStyle) =>
               setDraft((current) => ({
                 ...current,
@@ -207,6 +219,7 @@ export function CompanionProfileEditorModal({
             title={t('companionPersonalityPreset')}
             value={draft.personalityPreset}
             options={personalityOptions}
+            disabled={saving}
             onChange={(personalityPreset) =>
               setDraft((current) => ({
                 ...current,
@@ -219,6 +232,7 @@ export function CompanionProfileEditorModal({
             title={t('companionPresenceLevel')}
             value={draft.presenceLevel}
             options={presenceOptions}
+            disabled={saving}
             onChange={(presenceLevel) =>
               setDraft((current) => ({
                 ...current,
@@ -244,6 +258,7 @@ export function CompanionProfileEditorModal({
               maximum={100}
               step={5}
               displayValue={`${draft.warmth}`}
+              disabled={saving}
               onChange={(warmth) =>
                 setDraft((current) => ({
                   ...current,
@@ -259,6 +274,7 @@ export function CompanionProfileEditorModal({
               maximum={100}
               step={5}
               displayValue={`${draft.directness}`}
+              disabled={saving}
               onChange={(directness) =>
                 setDraft((current) => ({
                   ...current,
@@ -274,6 +290,7 @@ export function CompanionProfileEditorModal({
               maximum={100}
               step={5}
               displayValue={`${draft.humor}`}
+              disabled={saving}
               onChange={(humor) =>
                 setDraft((current) => ({
                   ...current,
@@ -289,6 +306,7 @@ export function CompanionProfileEditorModal({
               maximum={100}
               step={5}
               displayValue={`${draft.initiative}`}
+              disabled={saving}
               onChange={(initiative) =>
                 setDraft((current) => ({
                   ...current,
@@ -304,6 +322,7 @@ export function CompanionProfileEditorModal({
               maximum={100}
               step={5}
               displayValue={`${draft.verbosity}`}
+              disabled={saving}
               onChange={(verbosity) =>
                 setDraft((current) => ({
                   ...current,
@@ -321,6 +340,7 @@ export function CompanionProfileEditorModal({
               maximum={2}
               step={0.1}
               displayValue={`${draft.speakingRate.toFixed(1)}×`}
+              disabled={saving}
               onChange={(next) =>
                 setDraft((current) => ({
                   ...current,
@@ -359,20 +379,22 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.huge,
   },
   input: {
+    ...typeScale.input,
     minHeight: 48,
     marginTop: spacing.xl,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.lg,
-    fontSize: typography.secondary,
+    textAlign: 'auto',
     writingDirection: 'auto',
   },
   group: {
     marginTop: spacing.xl,
   },
   groupTitle: {
+    ...typeScale.caption,
     marginBottom: spacing.sm,
-    fontSize: typography.caption,
     fontWeight: '700',
+    writingDirection: 'auto',
   },
 });

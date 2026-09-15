@@ -7,11 +7,15 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { CompanionBackIcon } from './CompanionBackIcon';
+import { CompanionEditIcon } from './CompanionEditIcon';
 
 type Props = {
   disabled?: boolean;
@@ -23,7 +27,8 @@ export function CompanionScreenHeader({
   onEdit,
 }: Props) {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const { reducedMotion } = useAccessibility();
+  const { isRTL, t } = useLocale();
 
   return (
     <View
@@ -43,18 +48,21 @@ export function CompanionScreenHeader({
               ? colors.surfacePressed
               : colors.surfaceElevated,
             borderColor: colors.border,
+            transform: [
+              {
+                scale:
+                  pressed && !reducedMotion
+                    ? motion.press.subtleScale
+                    : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={[
-            styles.backGlyph,
-            { color: colors.textPrimary },
-          ]}
-        >
-          ‹
-        </Text>
+        <CompanionBackIcon
+          color={colors.textPrimary}
+          isRTL={isRTL}
+        />
       </Pressable>
 
       <Text
@@ -81,18 +89,22 @@ export function CompanionScreenHeader({
               : colors.surfaceElevated,
             borderColor: colors.border,
             opacity: disabled ? 0.44 : 1,
+            transform: [
+              {
+                scale:
+                  pressed
+                  && !disabled
+                  && !reducedMotion
+                    ? motion.press.subtleScale
+                    : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={[
-            styles.editGlyph,
-            { color: colors.textPrimary },
-          ]}
-        >
-          ✎
-        </Text>
+        <CompanionEditIcon
+          color={colors.textPrimary}
+        />
       </Pressable>
     </View>
   );
@@ -114,16 +126,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backGlyph: {
-    fontSize: 24,
-  },
-  editGlyph: {
-    fontSize: 18,
-  },
   title: {
+    ...typeScale.heading,
     flex: 1,
     textAlign: 'center',
-    fontSize: typography.heading,
     fontWeight: '700',
   },
 });

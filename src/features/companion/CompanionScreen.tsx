@@ -3,7 +3,7 @@ import React, {
   useState,
 } from 'react';
 import {
-  Alert,
+  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -24,6 +24,7 @@ import { CompanionProfileEditorModal } from './components/CompanionProfileEditor
 import { CompanionScreenHeader } from './components/CompanionScreenHeader';
 import { CompanionScreenState } from './components/CompanionScreenState';
 import { CompanionSessionControls } from './components/CompanionSessionControls';
+import { getCompanionProfileErrorTranslationKey } from './getCompanionProfileErrorTranslationKey';
 import { useCompanionProfileController } from './hooks/useCompanionProfileController';
 import { useCompanionSessionController } from './hooks/useCompanionSessionController';
 
@@ -47,8 +48,8 @@ export function CompanionScreen({
 
   useEffect(() => {
     if (
-      !companionEnabled &&
-      sessionPhase !== 'idle'
+      !companionEnabled
+      && sessionPhase !== 'idle'
     ) {
       stopSession();
     }
@@ -58,7 +59,7 @@ export function CompanionScreen({
     stopSession,
   ]);
 
-  if (profile.loading) {
+  if (profile.loading || profile.failed) {
     return (
       <SafeAreaView
         style={[
@@ -66,10 +67,33 @@ export function CompanionScreen({
           { backgroundColor: colors.background },
         ]}
       >
-        <CompanionScreenState mode="loading" />
+        <CompanionScreenState
+          mode={profile.failed ? 'error' : 'loading'}
+          onRetry={
+            profile.failed
+              ? () => {
+                  void profile.reload();
+                }
+              : undefined
+          }
+        />
       </SafeAreaView>
     );
   }
+
+  const profileErrorMessage =
+    profile.error
+      ? t(
+          getCompanionProfileErrorTranslationKey(
+            profile.error,
+          ),
+        )
+      : null;
+
+  const sessionErrorMessage =
+    session.error
+      ? t('companionSessionFailed')
+      : null;
 
   return (
     <SafeAreaView
@@ -80,17 +104,31 @@ export function CompanionScreen({
     >
       <CompanionScreenHeader
         disabled={profile.saving}
-        onEdit={() => setEditing(true)}
+        onEdit={() => {
+          profile.dismissError();
+          setEditing(true);
+        }}
       />
 
-      {profile.error ? (
+      {!editing && (profileErrorMessage || sessionErrorMessage) ? (
         <InlineErrorBanner
-          message={profile.error}
-          onDismiss={profile.dismissError}
+          message={
+            profileErrorMessage
+              ?? sessionErrorMessage
+              ?? ''
+          }
+          onDismiss={
+            profileErrorMessage
+              ? profile.dismissError
+              : session.dismissError
+          }
         />
       ) : null}
 
-      <View style={styles.body}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+      >
         <CompanionAvatar
           name={profile.profile.displayName}
           presentation={profile.profile.presentation}
@@ -121,26 +159,28 @@ export function CompanionScreen({
           presenceLevel={profile.profile.presenceLevel}
           voicePreference={profile.profile.voicePreference}
         />
-      </View>
+      </ScrollView>
 
       <CompanionProfileEditorModal
         visible={editing}
         profile={profile.profile}
         saving={profile.saving}
-        onCancel={() => setEditing(false)}
+        errorMessage={profileErrorMessage}
+        onCancel={() => {
+          if (profile.saving) {
+            return;
+          }
+
+          profile.dismissError();
+          setEditing(false);
+        }}
         onSave={(next) => {
           void (async () => {
-            const failure = await profile.save(next);
+            const saved = await profile.save(next);
 
-            if (failure) {
-              Alert.alert(
-                t('companion'),
-                failure,
-              );
-              return;
+            if (saved) {
+              setEditing(false);
             }
-
-            setEditing(false);
           })();
         }}
       />
@@ -153,10 +193,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   body: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.xxl,
     paddingBottom: spacing.huge,
   },
   controls: {

@@ -6,11 +6,14 @@ import {
   View,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { CompanionStepperIcon } from './CompanionStepperIcon';
 
 type Props = {
   label: string;
@@ -19,6 +22,7 @@ type Props = {
   maximum: number;
   step: number;
   displayValue: string;
+  disabled?: boolean;
   onChange: (value: number) => void;
 };
 
@@ -29,13 +33,17 @@ export function CompanionNumericStepper({
   maximum,
   step,
   displayValue,
+  disabled = false,
   onChange,
 }: Props) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
   const { t } = useLocale();
 
-  const decreaseDisabled = value <= minimum;
-  const increaseDisabled = value >= maximum;
+  const decreaseDisabled =
+    disabled || value <= minimum;
+  const increaseDisabled =
+    disabled || value >= maximum;
   const decrease = Math.max(minimum, value - step);
   const increase = Math.min(maximum, value + step);
 
@@ -68,18 +76,23 @@ export function CompanionNumericStepper({
               ? colors.surfacePressed
               : colors.surfaceElevated,
             opacity: decreaseDisabled ? 0.4 : 1,
+            transform: [
+              {
+                scale:
+                  pressed
+                  && !decreaseDisabled
+                  && !reducedMotion
+                    ? motion.press.subtleScale
+                    : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={[
-            styles.glyph,
-            { color: colors.textPrimary },
-          ]}
-        >
-          −
-        </Text>
+        <CompanionStepperIcon
+          kind="decrease"
+          color={colors.textPrimary}
+        />
       </Pressable>
 
       <Text
@@ -105,18 +118,23 @@ export function CompanionNumericStepper({
               ? colors.surfacePressed
               : colors.surfaceElevated,
             opacity: increaseDisabled ? 0.4 : 1,
+            transform: [
+              {
+                scale:
+                  pressed
+                  && !increaseDisabled
+                  && !reducedMotion
+                    ? motion.press.subtleScale
+                    : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
-          style={[
-            styles.glyph,
-            { color: colors.textPrimary },
-          ]}
-        >
-          +
-        </Text>
+        <CompanionStepperIcon
+          kind="increase"
+          color={colors.textPrimary}
+        />
       </Pressable>
     </View>
   );
@@ -130,9 +148,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   label: {
+    ...typeScale.secondary,
     flex: 1,
-    fontSize: typography.secondary,
     fontWeight: '600',
+    writingDirection: 'auto',
   },
   button: {
     width: 44,
@@ -141,14 +160,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glyph: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
   value: {
+    ...typeScale.secondary,
     minWidth: 58,
     paddingHorizontal: spacing.sm,
-    fontSize: typography.secondary,
     fontVariant: ['tabular-nums'],
     textAlign: 'center',
   },

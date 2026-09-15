@@ -1,16 +1,19 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   saving: boolean;
@@ -24,6 +27,7 @@ export function CompanionEditorHeader({
   onSave,
 }: Props) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
   const { t } = useLocale();
 
   return (
@@ -36,6 +40,8 @@ export function CompanionEditorHeader({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('cancelCompanionEditing')}
+        accessibilityState={{ disabled: saving }}
+        disabled={saving}
         onPress={onCancel}
         style={({ pressed }) => [
           styles.action,
@@ -43,14 +49,25 @@ export function CompanionEditorHeader({
             backgroundColor: pressed
               ? colors.surfacePressed
               : 'transparent',
+            opacity: saving ? 0.44 : 1,
+            transform: [
+              {
+                scale:
+                  pressed
+                  && !saving
+                  && !reducedMotion
+                    ? motion.press.subtleScale
+                    : 1,
+              },
+            ],
           },
         ]}
       >
         <Text
-          style={{
-            color: colors.textSecondary,
-            fontWeight: '600',
-          }}
+          style={[
+            styles.actionText,
+            { color: colors.textSecondary },
+          ]}
         >
           {t('cancel')}
         </Text>
@@ -69,7 +86,10 @@ export function CompanionEditorHeader({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('saveCompanion')}
-        accessibilityState={{ disabled: saving, busy: saving }}
+        accessibilityState={{
+          disabled: saving,
+          busy: saving,
+        }}
         disabled={saving}
         onPress={onSave}
         style={({ pressed }) => [
@@ -78,18 +98,37 @@ export function CompanionEditorHeader({
             backgroundColor: pressed
               ? colors.surfacePressed
               : 'transparent',
-            opacity: saving ? 0.44 : 1,
+            opacity: saving ? 0.72 : 1,
+            transform: [
+              {
+                scale:
+                  pressed
+                  && !saving
+                  && !reducedMotion
+                    ? motion.press.subtleScale
+                    : 1,
+              },
+            ],
           },
         ]}
       >
-        <Text
-          style={{
-            color: colors.accent,
-            fontWeight: '700',
-          }}
-        >
-          {t('save')}
-        </Text>
+        {saving ? (
+          <ActivityIndicator
+            accessibilityRole="progressbar"
+            color={colors.accent}
+            size="small"
+          />
+        ) : (
+          <Text
+            style={[
+              styles.actionText,
+              styles.saveText,
+              { color: colors.accent },
+            ]}
+          >
+            {t('save')}
+          </Text>
+        )}
       </Pressable>
     </View>
   );
@@ -111,10 +150,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
+  actionText: {
+    ...typeScale.secondary,
+    fontWeight: '600',
+  },
+  saveText: {
+    fontWeight: '700',
+  },
   title: {
+    ...typeScale.heading,
     flex: 1,
     textAlign: 'center',
-    fontSize: typography.heading,
     fontWeight: '700',
   },
 });

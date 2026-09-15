@@ -3,27 +3,25 @@ import {
   useState,
 } from 'react';
 
-import {
+import type {
   CompanionSessionPhase,
 } from '../../../contracts/Companion';
+import {
+  diagnosticsService,
+} from '../../../core/diagnostics/DiagnosticsService';
+import type {
+  CompanionSessionErrorCode,
+} from '../CompanionSessionErrorCode';
 
 export function useCompanionSessionController() {
   const [phase, setPhase] =
-    useState<CompanionSessionPhase>(
-      'idle',
-    );
+    useState<CompanionSessionPhase>('idle');
 
-  const [
-    phaseBeforePause,
-    setPhaseBeforePause,
-  ] = useState<
-    CompanionSessionPhase
-  >('listening');
+  const [phaseBeforePause, setPhaseBeforePause] =
+    useState<CompanionSessionPhase>('listening');
 
   const [error, setError] =
-    useState<string | null>(
-      null,
-    );
+    useState<CompanionSessionErrorCode | null>(null);
 
   const start =
     useCallback(() => {
@@ -50,30 +48,22 @@ export function useCompanionSessionController() {
     useCallback(() => {
       if (
         phase !== 'listening'
-        &&
-        phase !== 'speaking'
+        && phase !== 'speaking'
       ) {
         return;
       }
 
-      setPhaseBeforePause(
-        phase,
-      );
-
+      setPhaseBeforePause(phase);
       setPhase('paused');
     }, [phase]);
 
   const resume =
     useCallback(() => {
-      if (
-        phase !== 'paused'
-      ) {
+      if (phase !== 'paused') {
         return;
       }
 
-      setPhase(
-        phaseBeforePause,
-      );
+      setPhase(phaseBeforePause);
     }, [
       phase,
       phaseBeforePause,
@@ -81,23 +71,16 @@ export function useCompanionSessionController() {
 
   const interrupt =
     useCallback(() => {
-      if (
-        phase === 'idle'
-      ) {
+      if (phase === 'idle') {
         return;
       }
 
-      setPhase(
-        'interrupted',
-      );
+      setPhase('interrupted');
     }, [phase]);
 
   const recover =
     useCallback(() => {
-      if (
-        phase !==
-        'interrupted'
-      ) {
+      if (phase !== 'interrupted') {
         return;
       }
 
@@ -111,34 +94,39 @@ export function useCompanionSessionController() {
     }, []);
 
   const fail =
-    useCallback(
-      (message: string) => {
-        setError(message);
-        setPhase('error');
-      },
-      [],
-    );
+    useCallback((caught?: unknown) => {
+      if (caught !== undefined) {
+        diagnosticsService.record(
+          'companion-session',
+          caught instanceof Error
+            ? `session-failed:${caught.message}`
+            : 'session-failed:unknown',
+          'error',
+        );
+      }
+
+      setError('session-failed');
+      setPhase('error');
+    }, []);
+
+  const dismissError =
+    useCallback(() => {
+      setError(null);
+    }, []);
 
   return {
     phase,
     error,
-
     start,
     stop,
-
     beginListening,
     beginProcessing,
     beginSpeaking,
-
     pause,
     resume,
-
     interrupt,
     recover,
-
     fail,
-
-    dismissError: () =>
-      setError(null),
+    dismissError,
   };
 }

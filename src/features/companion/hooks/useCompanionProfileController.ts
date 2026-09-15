@@ -1,60 +1,101 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
 import {
   createDefaultCompanionProfile,
 } from '../../../contracts/Companion';
-
 import type {
   CompanionProfile,
 } from '../../../contracts/Companion';
-
 import type {
   CompanionRepository,
 } from '../../../contracts/CompanionRepository';
+import {
+  diagnosticsService,
+} from '../../../core/diagnostics/DiagnosticsService';
+import type {
+  CompanionProfileErrorCode,
+} from '../CompanionProfileErrorCode';
+
+function recordCompanionProfileError(
+  event: string,
+  caught: unknown,
+): void {
+  diagnosticsService.record(
+    'companion-profile',
+    caught instanceof Error
+      ? `${event}:${caught.message}`
+      : `${event}:unknown`,
+    'error',
+  );
+}
 
 export function useCompanionProfileController(
   repository: CompanionRepository,
 ) {
   const [profile, setProfile] =
     useState<CompanionProfile>(
-      createDefaultCompanionProfile(),
+      createDefaultCompanionProfile,
     );
 
   const [loading, setLoading] =
     useState(true);
 
+  const [loadFailed, setLoadFailed] =
+    useState(false);
+
   const [saving, setSaving] =
     useState(false);
 
   const [error, setError] =
-    useState<string | null>(
-      null,
-    );
+    useState<CompanionProfileErrorCode | null>(null);
+
+  const mutationInFlightRef =
+    useRef(false);
+
+  const beginMutation =
+    useCallback((): boolean => {
+      if (mutationInFlightRef.current) {
+        return false;
+      }
+
+      mutationInFlightRef.current = true;
+      setSaving(true);
+      setError(null);
+      return true;
+    }, []);
+
+  const endMutation =
+    useCallback(() => {
+      mutationInFlightRef.current = false;
+      setSaving(false);
+    }, []);
 
   const load =
     useCallback(async () => {
-      await Promise.resolve();
-
       setLoading(true);
+      setLoadFailed(false);
+      setError(null);
 
       try {
         const stored =
-          await repository
-            .getProfile();
+          await repository.getProfile();
 
-        if (stored) {
-          setProfile(stored);
-        }
-
-        setError(null);
-      } catch {
-        setError(
-          'Unable to load companion profile.',
+        setProfile(
+          stored
+            ?? createDefaultCompanionProfile(),
         );
+      } catch (caught) {
+        recordCompanionProfileError(
+          'load-failed',
+          caught,
+        );
+        setLoadFailed(true);
+        setError('load-failed');
       } finally {
         setLoading(false);
       }
@@ -67,57 +108,48 @@ export function useCompanionProfileController(
   const save =
     useCallback(
       async (
-        next:
-          CompanionProfile,
-      ): Promise<string | null> => {
-        setSaving(true);
+        next: CompanionProfile,
+      ): Promise<boolean> => {
+        const displayName =
+          next.displayName.trim();
+
+        if (!displayName) {
+          setError('name-required');
+          return false;
+        }
+
+        if (!beginMutation()) {
+          return false;
+        }
+
+        const updated: CompanionProfile = {
+          ...next,
+          companionId: profile.companionId,
+          displayName,
+          createdAt: profile.createdAt,
+          revision: profile.revision + 1,
+          updatedAt: Date.now(),
+        };
 
         try {
-          const displayName =
-            next.displayName.trim();
-
-          if (!displayName) {
-            const message =
-              'Companion name cannot be empty.';
-
-            setError(message);
-            return message;
-          }
-
-          const updated:
-            CompanionProfile = {
-            ...next,
-            companionId:
-              profile.companionId,
-            displayName,
-            createdAt:
-              profile.createdAt,
-            revision:
-              profile.revision + 1,
-            updatedAt:
-              Date.now(),
-          };
-
-          await repository
-            .saveProfile(
-              updated,
-            );
-
+          await repository.saveProfile(updated);
           setProfile(updated);
           setError(null);
-
-          return null;
-        } catch {
-          const message =
-            'Unable to save companion profile.';
-
-          setError(message);
-          return message;
+          return true;
+        } catch (caught) {
+          recordCompanionProfileError(
+            'save-failed',
+            caught,
+          );
+          setError('save-failed');
+          return false;
         } finally {
-          setSaving(false);
+          endMutation();
         }
       },
       [
+        beginMutation,
+        endMutation,
         profile.companionId,
         profile.createdAt,
         profile.revision,
@@ -126,38 +158,50 @@ export function useCompanionProfileController(
     );
 
   const reset =
-    useCallback(async () => {
-      setSaving(true);
+    useCallback(async (): Promise<boolean> => {
+      if (!beginMutation()) {
+        return false;
+      }
 
       try {
-        await repository
-          .clearProfile();
-
+        await repository.clearProfile();
         setProfile(
           createDefaultCompanionProfile(),
         );
-
         setError(null);
-      } catch {
-        setError(
-          'Unable to reset companion profile.',
+        return true;
+      } catch (caught) {
+        recordCompanionProfileError(
+          'reset-failed',
+          caught,
         );
+        setError('reset-failed');
+        return false;
       } finally {
-        setSaving(false);
+        endMutation();
       }
-    }, [repository]);
+    }, [
+      beginMutation,
+      endMutation,
+      repository,
+    ]);
+
+  const dismissError =
+    useCallback(() => {
+      if (!loadFailed) {
+        setError(null);
+      }
+    }, [loadFailed]);
 
   return {
     profile,
     loading,
+    failed: loadFailed,
     saving,
     error,
-
     save,
     reset,
     reload: load,
-
-    dismissError: () =>
-      setError(null),
+    dismissError,
   };
 }

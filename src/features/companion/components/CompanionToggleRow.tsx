@@ -9,7 +9,7 @@ import {
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   title: string;
@@ -61,7 +61,10 @@ export function CompanionToggleRow({
 
       <Switch
         accessibilityLabel={title}
-        accessibilityState={{ disabled }}
+        accessibilityState={{
+          disabled,
+          checked: value,
+        }}
         disabled={disabled}
         value={value}
         onValueChange={onChange}
@@ -82,15 +85,16 @@ const styles = StyleSheet.create({
   },
   copy: {
     flex: 1,
-    paddingRight: spacing.md,
+    paddingEnd: spacing.md,
   },
   title: {
-    fontSize: typography.secondary,
+    ...typeScale.secondary,
     fontWeight: '600',
+    writingDirection: 'auto',
   },
   description: {
+    ...typeScale.caption,
     marginTop: spacing.xs,
-    fontSize: typography.caption,
-    lineHeight: 17,
+    writingDirection: 'auto',
   },
 });

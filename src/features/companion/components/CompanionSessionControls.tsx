@@ -1,4 +1,4 @@
-import React, { PropsWithChildren } from 'react';
+import React from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -9,10 +9,13 @@ import {
 import type {
   CompanionSessionPhase,
 } from '../../../contracts/Companion';
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   phase: CompanionSessionPhase;
@@ -91,13 +94,19 @@ export function CompanionSessionControls({
     );
   }
 
+  const canPause =
+    phase === 'listening'
+    || phase === 'speaking';
+
   return (
     <View style={styles.row}>
-      <Control
-        label={t('pauseCompanionSession')}
-        disabled={!enabled}
-        onPress={onPause}
-      />
+      {canPause ? (
+        <Control
+          label={t('pauseCompanionSession')}
+          disabled={!enabled}
+          onPress={onPause}
+        />
+      ) : null}
       <Control
         label={t('interruptCompanionSession')}
         disabled={!enabled}
@@ -111,12 +120,12 @@ export function CompanionSessionControls({
   );
 }
 
-type ControlProps = PropsWithChildren<{
+type ControlProps = {
   label: string;
   primary?: boolean;
   disabled?: boolean;
   onPress: () => void;
-}>;
+};
 
 function Control({
   label,
@@ -125,6 +134,7 @@ function Control({
   onPress,
 }: ControlProps) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
 
   return (
     <Pressable
@@ -150,18 +160,27 @@ function Control({
               ? 0.86
               : 1,
           transform: [
-            { scale: pressed && !disabled ? 0.98 : 1 },
+            {
+              scale:
+                pressed
+                && !disabled
+                && !reducedMotion
+                  ? motion.press.subtleScale
+                  : 1,
+            },
           ],
         },
       ]}
     >
       <Text
-        style={{
-          color: primary
-            ? colors.accentText
-            : colors.textPrimary,
-          fontWeight: '700',
-        }}
+        style={[
+          styles.controlText,
+          {
+            color: primary
+              ? colors.accentText
+              : colors.textPrimary,
+          },
+        ]}
       >
         {label}
       </Text>
@@ -182,5 +201,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+  controlText: {
+    ...typeScale.secondary,
+    fontWeight: '700',
+    textAlign: 'center',
+    writingDirection: 'auto',
   },
 });

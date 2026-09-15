@@ -1,27 +1,24 @@
 import React from 'react';
-
 import {
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import {
+import type {
   CompanionPresentation,
   CompanionSessionPhase,
 } from '../../../contracts/Companion';
-
-import {
-  useTheme,
-} from '../../../design-system/theme/ThemeProvider';
+import { useLocale } from '../../../core/localization/LocaleProvider';
+import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { spacing } from '../../../design-system/tokens/spacing';
+import { typeScale } from '../../../design-system/tokens/typography';
+import { getCompanionPhaseTranslationKey } from '../getCompanionPhaseTranslationKey';
+import { CompanionAvatarMark } from './CompanionAvatarMark';
 
 type Props = {
-  presentation:
-    CompanionPresentation;
-
-  phase:
-    CompanionSessionPhase;
-
+  presentation: CompanionPresentation;
+  phase: CompanionSessionPhase;
   name: string;
 };
 
@@ -30,98 +27,107 @@ export function CompanionAvatar({
   phase,
   name,
 }: Props) {
-  const { colors } =
-    useTheme();
-
-  const symbol =
-    presentation === 'female'
-      ? '♀'
-      : '♂';
+  const { colors } = useTheme();
+  const { t } = useLocale();
+  const phaseLabel =
+    t(getCompanionPhaseTranslationKey(phase));
+  const speaking = phase === 'speaking';
+  const active =
+    phase === 'listening'
+    || phase === 'processing'
+    || speaking;
+  const foreground = speaking
+    ? colors.accentText
+    : colors.textPrimary;
+  const markAccent = speaking
+    ? colors.accentText
+    : colors.accent;
 
   return (
-    <View style={styles.wrapper}>
+    <View
+      accessible
+      accessibilityLabel={`${name}. ${phaseLabel}`}
+      accessibilityLiveRegion="polite"
+      style={styles.wrapper}
+    >
       <View
+        importantForAccessibility="no-hide-descendants"
         style={[
           styles.avatar,
           {
-            backgroundColor:
-              phase === 'speaking'
-                ? colors.accent
-                : colors.surfaceElevated,
-
-            borderColor:
-              phase === 'listening'
-                ? colors.accent
-                : colors.border,
+            backgroundColor: speaking
+              ? colors.accent
+              : colors.surfaceElevated,
+            borderColor: active
+              ? colors.accent
+              : colors.border,
+            shadowColor: colors.shadow,
           },
         ]}
       >
-        <Text
-          style={[
-            styles.symbol,
-            {
-              color:
-                phase === 'speaking'
-                  ? colors.accentText
-                  : colors.textPrimary,
-            },
-          ]}
-        >
-          {symbol}
-        </Text>
+        <CompanionAvatarMark
+          presentation={presentation}
+          color={foreground}
+          accentColor={markAccent}
+          active={active}
+        />
       </View>
 
       <Text
+        importantForAccessibility="no"
         style={[
           styles.name,
-          {
-            color:
-              colors.textPrimary,
-          },
+          { color: colors.textPrimary },
         ]}
       >
         {name}
       </Text>
 
       <Text
-        style={{
-          color:
-            colors.textSecondary,
-          marginTop: 5,
-          textTransform:
-            'capitalize',
-        }}
+        importantForAccessibility="no"
+        style={[
+          styles.phase,
+          { color: colors.textSecondary },
+        ]}
       >
-        {phase}
+        {phaseLabel}
       </Text>
     </View>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    wrapper: {
-      alignItems: 'center',
+const styles = StyleSheet.create({
+  wrapper: {
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    shadowOffset: {
+      width: 0,
+      height: 6,
     },
-
-    avatar: {
-      width: 170,
-      height: 170,
-      borderRadius: 85,
-      borderWidth: 3,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-    },
-
-    symbol: {
-      fontSize: 72,
-      fontWeight: '300',
-    },
-
-    name: {
-      marginTop: 18,
-      fontSize: 24,
-      fontWeight: '700',
-    },
-  });
+  },
+  name: {
+    ...typeScale.title,
+    maxWidth: 320,
+    marginTop: spacing.xl,
+    fontWeight: '700',
+    textAlign: 'center',
+    writingDirection: 'auto',
+  },
+  phase: {
+    ...typeScale.caption,
+    marginTop: spacing.xs,
+    fontWeight: '600',
+    textAlign: 'center',
+    writingDirection: 'auto',
+  },
+});

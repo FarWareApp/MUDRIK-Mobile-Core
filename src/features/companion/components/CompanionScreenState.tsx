@@ -1,30 +1,39 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
+import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
-  mode: 'loading';
+  mode: 'loading' | 'error';
+  onRetry?: () => void;
 };
 
 export function CompanionScreenState({
   mode,
+  onRetry,
 }: Props) {
   const { colors } = useTheme();
+  const { reducedMotion } = useAccessibility();
   const { t } = useLocale();
+  const loading = mode === 'loading';
 
   return (
     <View style={styles.container}>
       <View
+        accessibilityRole={loading ? undefined : 'alert'}
+        accessibilityLiveRegion={loading ? 'polite' : 'assertive'}
         style={[
           styles.card,
           {
@@ -34,8 +43,11 @@ export function CompanionScreenState({
           },
         ]}
       >
-        {mode === 'loading' ? (
-          <ActivityIndicator color={colors.accent} />
+        {loading ? (
+          <ActivityIndicator
+            accessibilityRole="progressbar"
+            color={colors.accent}
+          />
         ) : null}
 
         <Text
@@ -44,8 +56,44 @@ export function CompanionScreenState({
             { color: colors.textSecondary },
           ]}
         >
-          {t('loadingCompanion')}
+          {loading
+            ? t('loadingCompanion')
+            : t('companionLoadFailed')}
         </Text>
+
+        {!loading && onRetry ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('retryLoadingCompanion')}
+            onPress={onRetry}
+            style={({ pressed }) => [
+              styles.retry,
+              {
+                backgroundColor: pressed
+                  ? colors.surfacePressed
+                  : colors.surfaceElevated,
+                borderColor: colors.border,
+                transform: [
+                  {
+                    scale:
+                      pressed && !reducedMotion
+                        ? motion.press.subtleScale
+                        : 1,
+                  },
+                ],
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.retryText,
+                { color: colors.accent },
+              ]}
+            >
+              {t('retry')}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -60,7 +108,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 360,
     minHeight: 124,
     alignItems: 'center',
     justifyContent: 'center',
@@ -76,8 +124,21 @@ const styles = StyleSheet.create({
     },
   },
   label: {
+    ...typeScale.secondary,
     marginTop: spacing.sm,
-    fontSize: typography.secondary,
     textAlign: 'center',
+    writingDirection: 'auto',
+  },
+  retry: {
+    minHeight: 44,
+    marginTop: spacing.lg,
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.xl,
+  },
+  retryText: {
+    ...typeScale.secondary,
+    fontWeight: '700',
   },
 });

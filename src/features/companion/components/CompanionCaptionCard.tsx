@@ -9,7 +9,7 @@ import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
-import { typography } from '../../../design-system/tokens/typography';
+import { typeScale } from '../../../design-system/tokens/typography';
 
 type Props = {
   enabled: boolean;
@@ -23,6 +23,7 @@ export function CompanionCaptionCard({
 
   return (
     <View
+      accessibilityLiveRegion="polite"
       style={[
         styles.container,
         {
@@ -48,7 +49,7 @@ export function CompanionCaptionCard({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 420,
     marginTop: spacing.xxl,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.lg,
@@ -56,8 +57,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   text: {
-    fontSize: typography.secondary,
-    lineHeight: 20,
+    ...typeScale.secondary,
     textAlign: 'center',
+    writingDirection: 'auto',
   },
 });
