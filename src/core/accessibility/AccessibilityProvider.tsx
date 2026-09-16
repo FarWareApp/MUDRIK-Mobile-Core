@@ -2,20 +2,15 @@ import React, {
   createContext,
   PropsWithChildren,
   useContext,
-  useEffect,
   useMemo,
-  useState,
 } from 'react';
-
-import {
-  AccessibilityInfo,
-  Platform,
-  useWindowDimensions,
-} from 'react-native';
 
 import {
   useAppSettings,
 } from '../settings/AppSettingsProvider';
+import {
+  useSystemAccessibilityState,
+} from './useSystemAccessibilityState';
 
 type AccessibilityContextValue = {
   reducedMotion: boolean;
@@ -47,88 +42,11 @@ export function AccessibilityProvider({
   const { settings } =
     useAppSettings();
 
-  const { fontScale } =
-    useWindowDimensions();
-
-  const [
+  const {
     systemReducedMotion,
-    setSystemReducedMotion,
-  ] = useState(false);
-
-  const [
     systemReducedTransparency,
-    setSystemReducedTransparency,
-  ] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    void AccessibilityInfo
-      .isReduceMotionEnabled()
-      .then((enabled) => {
-        if (mounted) {
-          setSystemReducedMotion(
-            enabled,
-          );
-        }
-      });
-
-    const subscription =
-      AccessibilityInfo
-        .addEventListener(
-          'reduceMotionChanged',
-          (
-            enabled:
-              boolean,
-          ) => {
-            setSystemReducedMotion(
-              enabled,
-            );
-          },
-        );
-
-    return () => {
-      mounted = false;
-      subscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS !== 'ios') {
-      return;
-    }
-
-    let mounted = true;
-
-    void AccessibilityInfo
-      .isReduceTransparencyEnabled()
-      .then((enabled) => {
-        if (mounted) {
-          setSystemReducedTransparency(
-            enabled,
-          );
-        }
-      });
-
-    const subscription =
-      AccessibilityInfo
-        .addEventListener(
-          'reduceTransparencyChanged',
-          (
-            enabled:
-              boolean,
-          ) => {
-            setSystemReducedTransparency(
-              enabled,
-            );
-          },
-        );
-
-    return () => {
-      mounted = false;
-      subscription.remove();
-    };
-  }, []);
+    fontScale,
+  } = useSystemAccessibilityState();
 
   const value =
     useMemo<
