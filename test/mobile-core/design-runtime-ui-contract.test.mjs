@@ -6,6 +6,10 @@ const accessibility = fs.readFileSync(
   'src/core/accessibility/AccessibilityProvider.tsx',
   'utf8',
 );
+const systemAccessibility = fs.readFileSync(
+  'src/core/accessibility/useSystemAccessibilityState.ts',
+  'utf8',
+);
 const adaptiveGlass = fs.readFileSync(
   'src/design-system/components/AdaptiveGlassSurface.tsx',
   'utf8',
@@ -39,15 +43,23 @@ test(
 );
 
 test(
-  'accessibility runtime tracks iOS reduce-transparency state',
+  'accessibility runtime tracks iOS reduce-transparency state through the dedicated system observer',
   () => {
     assert.match(
-      accessibility,
+      systemAccessibility,
       /isReduceTransparencyEnabled\(\)/,
     );
     assert.match(
-      accessibility,
+      systemAccessibility,
       /'reduceTransparencyChanged'/,
+    );
+    assert.match(
+      systemAccessibility,
+      /Platform\.OS !== 'ios'/,
+    );
+    assert.match(
+      accessibility,
+      /useSystemAccessibilityState\(\)/,
     );
     assert.match(
       accessibility,
@@ -55,7 +67,7 @@ test(
     );
     assert.match(
       accessibility,
-      /Platform\.OS !== 'ios'/,
+      /systemReducedTransparency/,
     );
   },
 );
