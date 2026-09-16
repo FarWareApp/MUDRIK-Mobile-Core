@@ -6,12 +6,12 @@
 
 This evidence closes the automated/pre-device obligations for Section 04 only. It does not claim that real Android sensor, permission, hardware-indicator or cross-device behavior has passed.
 
-## Accepted Pre-Device Candidate
+## Accepted Pre-Device Baseline
 
 - Commit: `0bfc86e83bdca2bf79ad1ff061709a08889501c4`
 - Branch: `mudrik-core-v1`
 
-## Validation Evidence
+## Original Validation Evidence
 
 ### Mobile Core Validation
 
@@ -20,7 +20,7 @@ This evidence closes the automated/pre-device obligations for Section 04 only. I
 - Run ID: `34773109075`
 - Result: **SUCCESS**
 
-Validated gates on the exact candidate:
+Validated gates on the original accepted candidate:
 
 - frozen dependency install: PASS;
 - dependency-manifest reproducibility: PASS;
@@ -35,7 +35,7 @@ Validated gates on the exact candidate:
 - Expo Doctor: **21/21 PASS**;
 - Computer Agent Phase 0 tests: **10/10 PASS**.
 
-Dependency audit at acceptance:
+Dependency audit at original acceptance:
 
 - Critical: `0`
 - High: `0`
@@ -58,7 +58,7 @@ No incompatible dependency override is accepted merely to hide an advisory.
 
 ## Implemented Section 04 Controls
 
-The accepted candidate includes:
+The accepted implementation includes:
 
 - deterministic observation privacy state machine with `active`, `visual_off`, `ambient_off`, and `privacy_lock`;
 - exact natural-language privacy fast path for canonical Arabic, English, and German stop/resume phrases;
@@ -79,6 +79,31 @@ The accepted candidate includes:
 - policy-violation and unverifiable states exposed to the UI model rather than hidden;
 - ordinary Settings reset structurally unable to erase observation privacy policy.
 
+## Supplemental Hardening — 2026-09-16
+
+Section 04 was hardened beyond the original accepted baseline to close asynchronous ordering/replay risk in `ObservationPrivacyCoordinator`.
+
+Implementation candidate:
+
+`458d250a15bf78b403cd9db10f48aede8dd7eeb9`
+
+Exact-candidate validation:
+
+- Mobile Core Validation run ID `35125961670`: **SUCCESS**;
+- CodeQL Security Analysis run ID `35125961690`: **SUCCESS**.
+
+Additional guarantees now enforced:
+
+- privacy commands execute serially in invocation order;
+- one rejected command cannot poison the queue for later commands;
+- an older `resume_*` or `unlock_privacy` request cannot widen authority over a newer persisted privacy decision;
+- restrictive commands cannot move the persisted privacy timestamp backwards;
+- malformed command timestamps actively fail closed and stop passive observation;
+- privacy-policy read failure actively fails closed and stops passive observation;
+- regression coverage includes a deterministic delayed-unlock/later-lock race whose final state must remain `privacy_lock`.
+
+Defect record: `S04-ORDER-001` in `SECTION_04_DEFECTS.md`.
+
 ## Adversarial Evidence Highlights
 
 Regression coverage proves at minimum:
@@ -94,6 +119,8 @@ Regression coverage proves at minimum:
 - active unauthorized sensor state becomes a policy violation;
 - persistence failure never broadens privacy authority;
 - sensor-stop failure cannot be reported as successful privacy enforcement;
+- stale privacy broadening cannot overtake a newer restriction;
+- concurrent privacy commands preserve invocation order;
 - privacy audit rejects arbitrary raw sensor payload fields;
 - Settings reset cannot delete the dedicated privacy row.
 
