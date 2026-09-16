@@ -20,8 +20,7 @@ export function NotificationNavigationBridge() {
   } = useNotifications();
 
   useEffect(() => {
-    const response =
-      lastResponse;
+    const response = lastResponse;
 
     if (!response) {
       return;
@@ -29,12 +28,10 @@ export function NotificationNavigationBridge() {
 
     const consume = () => {
       void consumeLastResponse()
-        .catch((caught) => {
+        .catch(() => {
           diagnosticsService.record(
             'notification-navigation',
-            caught instanceof Error
-              ? `consume-failed:${caught.message}`
-              : 'consume-failed:unknown',
+            'consume-failed',
             'warning',
           );
         });
@@ -51,7 +48,6 @@ export function NotificationNavigationBridge() {
         'ignored-invalid-route',
         'warning',
       );
-
       consume();
       return;
     }
@@ -67,22 +63,20 @@ export function NotificationNavigationBridge() {
           },
         });
       }
-
+    } catch {
       diagnosticsService.record(
         'notification-navigation',
-        `navigated:${route.target}`,
-      );
-    } catch (caught) {
-      diagnosticsService.record(
-        'notification-navigation',
-        caught instanceof Error
-          ? `navigation-failed:${caught.message}`
-          : 'navigation-failed:unknown',
+        'navigation-failed',
         'error',
       );
-    } finally {
-      consume();
+      return;
     }
+
+    diagnosticsService.record(
+      'notification-navigation',
+      `navigated:${route.target}`,
+    );
+    consume();
   }, [
     consumeLastResponse,
     lastResponse,
