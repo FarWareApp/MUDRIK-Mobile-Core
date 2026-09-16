@@ -86,9 +86,12 @@ test(
     assert.match(permissionController, /export type PermissionErrorCode/);
     assert.match(permissionController, /requestLockRef = useRef\(false\)/);
     assert.match(permissionController, /refreshLockRef = useRef\(false\)/);
+    assert.match(permissionController, /settingsLockRef = useRef\(false\)/);
     assert.match(permissionController, /setErrorCode\('load'\)/);
     assert.match(permissionController, /setErrorCode\('request'\)/);
+    assert.match(permissionController, /setErrorCode\('settings'\)/);
     assert.match(permissionController, /requestingId/);
+    assert.match(permissionController, /openingSettingsId/);
     assert.doesNotMatch(permissionController, /Unable to /);
     assert.match(permissionMapper, /PermissionTranslationKey/);
   },
@@ -102,8 +105,10 @@ test(
     assert.match(screen, /getPermissionErrorTranslationKey/);
     assert.match(screen, /permissions\.errorCode === 'load'/);
     assert.match(screen, /const mutableDisabled/);
+    assert.match(screen, /permissions\.openingSettingsId !== null/);
     assert.match(screen, /disabled=\{mutableDisabled\}/);
     assert.match(screen, /requestingId=\{permissions\.requestingId\}/);
+    assert.match(screen, /openingSettingsId=\{permissions\.openingSettingsId\}/);
     assert.match(screen, /showsVerticalScrollIndicator=\{false\}/);
   },
 );
@@ -131,13 +136,16 @@ test(
 );
 
 test(
-  'permission presentation exposes progress, busy state and status hierarchy accessibly',
+  'permission presentation exposes progress, all-action busy state and status hierarchy accessibly',
   () => {
     assert.match(permissionList, /accessibilityRole="progressbar"/);
     assert.match(permissionList, /accessibilityLiveRegion="polite"/);
     assert.match(permissionList, /loadingPermissions/);
+    assert.match(permissionRow, /const actionBusy = canOpenSettings/);
+    assert.match(permissionRow, /\? openingSettings[\s\S]*?: requesting/);
     assert.match(permissionRow, /accessibilityState=\{\{/);
-    assert.match(permissionRow, /busy:\s*requesting/);
+    assert.match(permissionRow, /busy:\s*actionBusy/);
+    assert.match(permissionRow, /\{actionBusy \? \(/);
     assert.match(permissionRow, /ActivityIndicator/);
     assert.match(permissionRow, /statusBadge/);
     assert.match(permissionRow, /paddingEnd:\s*spacing\.md/);
@@ -151,7 +159,10 @@ test(
     for (const key of [
       'permissionsLoadFailed',
       'permissionRequestFailed',
+      'permissionSettingsOpenFailed',
       'loadingPermissions',
+      'openPermissionSettings',
+      'openingPermissionSettings',
     ]) {
       assert.equal(
         countKey(permissionTranslations, key),
