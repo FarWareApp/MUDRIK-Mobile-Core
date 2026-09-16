@@ -125,6 +125,39 @@ Validation on that exact implementation commit:
 - Expo Doctor: PASS;
 - Computer Agent Phase 0 tests: PASS.
 
+## Localization and RTL/LTR
+
+Localization and directionality hardening is present on validated implementation head `f49a1d9ff5a36c6a2b574203f2c59570d091b377`.
+
+Key controls:
+
+- system-locale observation is isolated in `useResolvedAppLocale.ts` while `LocaleProvider.tsx` remains context/composition-only;
+- Android system-locale changes are re-read when the application returns to the active foreground state;
+- the Android `AppState` subscription is removed during cleanup;
+- explicit Arabic, German, or English preferences bypass system-locale observation;
+- `resolveSystemLocale.ts` contains locale normalization and a safe English fallback if native locale resolution throws;
+- RTL remains declarative (`locale === 'ar'`) and is applied centrally through `AppDirectionBoundary.tsx` rather than forcing native direction globally;
+- no `I18nManager.forceRTL`/`allowRTL` mutation was introduced;
+- the error-recovery contract was aligned with the dedicated locale-resolution hook so the contract protects behavior without coupling native observation back into the provider;
+- focused regression coverage exists in `test/mobile-core/localization-hardening-contract.test.mjs`.
+
+Validation on that exact implementation head:
+
+- Mobile Core Validation run `35117522183`: PASS;
+- CodeQL Security Analysis run `35117522237`: PASS;
+- frozen dependency install: PASS;
+- dependency reproducibility: PASS;
+- Android configuration gate: PASS;
+- tracked sensitive-file gate: PASS;
+- full Git-history secret scan: PASS;
+- High/Critical dependency audit gate: PASS;
+- reviewed advisory dependency paths: PASS;
+- ESLint: PASS;
+- TypeScript: PASS;
+- Mobile Core security regression tests: PASS;
+- Expo Doctor: PASS;
+- Computer Agent Phase 0 tests: PASS.
+
 ## Remaining Gate
 
 This evidence is pre-device only. Section 01 remains open until the real Android Layer 4 matrix is executed and the exact freeze candidate passes all final automated and security gates. In particular, microphone recording/playback, lifecycle behavior, accessibility/reduced-motion behavior, RTL/LTR behavior, permissions, notifications and other hardware/OS-dependent paths still require physical-device verification before `MOBILE-CORE-FROZEN` can be created.
