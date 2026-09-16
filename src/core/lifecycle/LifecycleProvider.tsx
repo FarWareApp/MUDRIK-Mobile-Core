@@ -2,23 +2,22 @@ import React, {
   createContext,
   PropsWithChildren,
   useContext,
-  useEffect,
   useMemo,
-  useState,
 } from 'react';
 
-import {
-  AppState,
+import type {
   AppStateStatus,
 } from 'react-native';
 
-import {
+import type {
   AppLifecyclePhase,
 } from '../../contracts/AppLifecycle';
-
 import {
-  diagnosticsService,
-} from '../diagnostics/DiagnosticsService';
+  resolveAppLifecyclePhase,
+} from './AppLifecyclePhaseResolver';
+import {
+  useSystemLifecycleState,
+} from './useSystemLifecycleState';
 
 type LifecycleContextValue = {
   appState: AppStateStatus;
@@ -33,72 +32,21 @@ const LifecycleContext =
     LifecycleContextValue | null
   >(null);
 
-function mapPhase(
-  state: AppStateStatus,
-): AppLifecyclePhase {
-  if (state === 'active') {
-    return 'active';
-  }
-
-  if (state === 'inactive') {
-    return 'inactive';
-  }
-
-  if (state === 'background') {
-    return 'background';
-  }
-
-  return 'unknown';
-}
-
 export function LifecycleProvider({
   children,
 }: PropsWithChildren) {
-  const [
+  const {
     appState,
-    setAppState,
-  ] = useState<AppStateStatus>(
-    AppState.currentState,
-  );
-
-  const [
     lastChangedAt,
-    setLastChangedAt,
-  ] = useState(0);
-
-  useEffect(() => {
-    diagnosticsService.record(
-      'lifecycle',
-      `initial:${AppState.currentState}`,
-    );
-
-    const subscription =
-      AppState.addEventListener(
-        'change',
-        (nextState) => {
-          diagnosticsService.record(
-            'lifecycle',
-            `state:${nextState}`,
-          );
-
-          setAppState(nextState);
-
-          setLastChangedAt(
-            Date.now(),
-          );
-        },
-      );
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
+  } = useSystemLifecycleState();
 
   const value =
     useMemo<LifecycleContextValue>(
       () => {
         const phase =
-          mapPhase(appState);
+          resolveAppLifecyclePhase(
+            appState,
+          );
 
         return {
           appState,
