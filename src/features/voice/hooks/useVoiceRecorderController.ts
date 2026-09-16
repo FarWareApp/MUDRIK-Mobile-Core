@@ -71,17 +71,26 @@ export function useVoiceRecorderController() {
     return () => {
       mountedRef.current = false;
 
+      if (operationRef.current === 'stop') {
+        return;
+      }
+
       const currentPhase = phaseRef.current;
       const recordingIsActive =
         currentPhase === 'recording' ||
         currentPhase === 'paused';
 
-      if (
-        recordingIsActive &&
-        operationRef.current !== 'stop'
-      ) {
-        void recorder.stop()
-          .catch(() => undefined);
+      if (recordingIsActive) {
+        void (async () => {
+          try {
+            await recorder.stop();
+          } catch {
+            // Playback restoration still has to run when stop cleanup fails.
+          }
+
+          await restorePlayback();
+        })();
+        return;
       }
 
       void restorePlayback();
@@ -134,8 +143,8 @@ export function useVoiceRecorderController() {
         return;
       }
 
-      await audioSession.prepareRecording();
       recordingSessionPrepared = true;
+      await audioSession.prepareRecording();
 
       if (
         !mountedRef.current ||
