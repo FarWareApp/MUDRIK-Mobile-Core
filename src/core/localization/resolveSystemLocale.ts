@@ -1,22 +1,36 @@
 import { getLocales } from 'expo-localization';
 
-import type { AppLocale } from './translations';
+import type {
+  AppLocale,
+} from './AppLocale';
 
-export function resolveSystemLocale(): AppLocale {
+export function resolveSystemLocale():
+  AppLocale {
   try {
-    const language =
-      getLocales()[0]?.languageCode?.toLowerCase();
+    const first =
+      getLocales()[0];
 
-    if (language === 'ar') {
+    const languageCode =
+      first
+        ?.languageCode
+        ?.toLowerCase();
+
+    if (
+      languageCode
+      === 'ar'
+    ) {
       return 'ar';
     }
 
-    if (language === 'de') {
+    if (
+      languageCode
+      === 'de'
+    ) {
       return 'de';
     }
+
+    return 'en';
   } catch {
     return 'en';
   }
-
-  return 'en';
 }
