@@ -86,10 +86,16 @@ test(
       controller,
       /let recordingSessionPrepared = false;/,
     );
-    assert.match(
-      controller,
-      /recordingSessionPrepared = true;/,
+
+    const preparedFlag = controller.indexOf(
+      'recordingSessionPrepared = true;',
     );
+    const prepareRecording = controller.indexOf(
+      'await audioSession.prepareRecording();',
+    );
+
+    assert.ok(preparedFlag >= 0);
+    assert.ok(prepareRecording > preparedFlag);
     assert.match(
       controller,
       /catch \{\s*if \(recordingSessionPrepared\) \{\s*await restorePlayback\(\);/,
@@ -104,23 +110,34 @@ test(
 );
 
 test(
-  'voice recorder releases active capture and audio mode when its screen unmounts',
+  'voice recorder releases active capture before restoring audio mode on unmount',
   () => {
+    assert.match(
+      controller,
+      /if \(operationRef\.current === 'stop'\) \{\s*return;/,
+    );
     assert.match(
       controller,
       /currentPhase === 'recording' \|\|\s*currentPhase === 'paused'/,
     );
-    assert.match(
-      controller,
-      /recordingIsActive &&\s*operationRef\.current !== 'stop'/,
+
+    const cleanupStart = controller.indexOf(
+      'if (recordingIsActive) {',
     );
-    assert.match(
-      controller,
-      /void recorder\.stop\(\)\s*\.catch\(\(\) => undefined\);/,
+    const cleanupBody = controller.slice(cleanupStart);
+    const nativeStop = cleanupBody.indexOf(
+      'await recorder.stop();',
     );
+    const playbackRestore = cleanupBody.indexOf(
+      'await restorePlayback();',
+    );
+
+    assert.notEqual(cleanupStart, -1);
+    assert.ok(nativeStop >= 0);
+    assert.ok(playbackRestore > nativeStop);
     assert.match(
-      controller,
-      /void restorePlayback\(\);/,
+      cleanupBody,
+      /catch \{[\s\S]*?await restorePlayback\(\);/,
     );
   },
 );
