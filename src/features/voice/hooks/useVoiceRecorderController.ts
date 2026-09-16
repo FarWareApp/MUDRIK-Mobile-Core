@@ -55,8 +55,6 @@ export function useVoiceRecorderController() {
   const phaseRef = useRef<VoiceRecorderPhase>(phase);
   const operationRef = useRef<RecorderOperation | null>(null);
 
-  phaseRef.current = phase;
-
   const restorePlayback = useCallback(async () => {
     try {
       await audioSession.preparePlayback();
@@ -64,6 +62,10 @@ export function useVoiceRecorderController() {
       // Best-effort cleanup must never replace the primary recorder failure.
     }
   }, [audioSession]);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
 
   useEffect(() => {
     mountedRef.current = true;
