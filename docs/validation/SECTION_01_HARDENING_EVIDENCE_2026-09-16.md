@@ -191,6 +191,44 @@ Validation on that exact implementation head:
 - Expo Doctor: PASS;
 - Computer Agent Phase 0 tests: PASS.
 
+## Permissions
+
+Permission hardening is present on validated implementation head `9422ab913b85beaa3f643f263b76c181091a65df`.
+
+Key controls:
+
+- permission refresh, request and system-settings operations are serialized with independent locks;
+- mounted and service-revision guards prevent stale asynchronous permission results from mutating state after unmount or dependency replacement;
+- stale operations cannot release locks owned by a newer service revision;
+- a permission request result is accepted only when its returned permission ID matches the requested ID;
+- native permission `canAskAgain` capability is treated as an explicit boolean rather than using an optimistic fallback;
+- native permission request routing is exhaustive for microphone, camera, media library and notifications;
+- permanent denial (`canAskAgain === false`) exposes an app-settings recovery action through the dedicated `PermissionSettingsService` abstraction;
+- native `Linking.openSettings()` is isolated inside `NativePermissionSettingsService` and is not leaked into settings UI components;
+- permission state is refreshed through the lifecycle layer when the application returns to the active foreground state after system settings;
+- request/settings actions share accessible busy-state semantics while remaining distinguishable internally;
+- caught native failures are reduced to stable typed error codes without promoting raw platform error strings;
+- focused regression coverage exists in `test/mobile-core/permissions-hardening-contract.test.mjs` and `test/mobile-core/settings-hardening-contract.test.mjs`.
+
+Validation on that exact implementation head:
+
+- Mobile Core Validation run `35123778567`: PASS;
+- CodeQL Security Analysis run `35123778580`: PASS;
+- frozen dependency install: PASS;
+- dependency reproducibility: PASS;
+- Android configuration gate: PASS;
+- tracked sensitive-file gate: PASS;
+- full Git-history secret scan: PASS;
+- High/Critical dependency audit gate: PASS;
+- reviewed advisory dependency paths: PASS;
+- ESLint: PASS;
+- TypeScript: PASS;
+- Mobile Core security regression tests: PASS;
+- Expo Doctor: PASS;
+- Computer Agent Phase 0 tests: PASS.
+
+Physical verification of real permission prompts, permanent-denial transitions, app-settings navigation and returning from system settings remains part of the mandatory Layer 4 device matrix.
+
 ## Remaining Gate
 
 This evidence is pre-device only. Section 01 remains open until the real Android Layer 4 matrix is executed and the exact freeze candidate passes all final automated and security gates. In particular, microphone recording/playback, lifecycle behavior, accessibility/reduced-motion behavior, RTL/LTR behavior, permissions, notifications and other hardware/OS-dependent paths still require physical-device verification before `MOBILE-CORE-FROZEN` can be created.
