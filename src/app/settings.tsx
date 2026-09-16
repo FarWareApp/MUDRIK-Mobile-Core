@@ -14,6 +14,9 @@ export default function SettingsRoute() {
       permissionService={
         appServices.permissionService
       }
+      permissionSettingsService={
+        appServices.permissionSettingsService
+      }
     />
   );
 }
