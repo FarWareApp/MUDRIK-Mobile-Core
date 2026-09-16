@@ -21,16 +21,20 @@ type Props = {
   loading: boolean;
   disabled?: boolean;
   requestingId: AppPermissionId | null;
+  openingSettingsId: AppPermissionId | null;
   permissions: readonly AppPermissionRecord[];
   onRequest: (id: AppPermissionId) => void;
+  onOpenSettings: (id: AppPermissionId) => void;
 };
 
 export function SettingsPermissionList({
   loading,
   disabled = false,
   requestingId,
+  openingSettingsId,
   permissions,
   onRequest,
+  onOpenSettings,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -55,15 +59,21 @@ export function SettingsPermissionList({
     );
   }
 
+  const interactionBusy =
+    requestingId !== null ||
+    openingSettingsId !== null;
+
   return (
     <View>
       {permissions.map((permission) => (
         <PermissionRow
           key={permission.id}
           permission={permission}
-          disabled={disabled || requestingId !== null}
+          disabled={disabled || interactionBusy}
           requesting={requestingId === permission.id}
+          openingSettings={openingSettingsId === permission.id}
           onRequest={() => onRequest(permission.id)}
+          onOpenSettings={() => onOpenSettings(permission.id)}
         />
       ))}
     </View>
