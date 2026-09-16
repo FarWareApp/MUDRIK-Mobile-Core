@@ -17,6 +17,9 @@ import {
 } from '../../core/lifecycle/LifecycleProvider';
 
 import {
+  ConnectivityErrorCode,
+} from './ConnectivityErrorCode';
+import {
   useConnectivityController,
 } from './hooks/useConnectivityController';
 
@@ -27,7 +30,7 @@ type ConnectivityContextValue = {
   loading: boolean;
 
   error:
-    string | null;
+    ConnectivityErrorCode | null;
 
   dismissError:
     () => void;
