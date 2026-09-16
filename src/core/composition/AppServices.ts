@@ -9,6 +9,7 @@ import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
 import { NotificationService } from '../../contracts/NotificationService';
 import { PermissionService } from '../../contracts/PermissionService';
+import { PermissionSettingsService } from '../../contracts/PermissionSettingsService';
 import { SettingsRepository } from '../../contracts/SettingsRepository';
 import { ProjectRepository } from '../../contracts/ProjectRepository';
 import { ProjectConversationRepository } from '../../contracts/ProjectConversationRepository';
@@ -26,6 +27,7 @@ import { SQLiteMessageRepository } from '../../features/chat/storage/SQLiteMessa
 import { SQLiteConversationRepository } from '../../features/conversations/storage/SQLiteConversationRepository';
 
 import { NativePermissionService } from '../../features/permissions/services/NativePermissionService';
+import { NativePermissionSettingsService } from '../../features/permissions/services/NativePermissionSettingsService';
 import { SQLiteSettingsRepository } from '../../features/settings/storage/SQLiteSettingsRepository';
 import { SQLiteCompanionRepository } from '../../features/companion/storage/SQLiteCompanionRepository';
 import { SQLiteDiagnosticRepository } from '../../features/diagnostics/storage/SQLiteDiagnosticRepository';
@@ -86,6 +88,9 @@ export type AppServices = {
 
   permissionService:
     PermissionService;
+
+  permissionSettingsService:
+    PermissionSettingsService;
 
   projectRepository:
     ProjectRepository;
@@ -155,6 +160,9 @@ export const appServices: AppServices = {
 
   permissionService:
     new NativePermissionService(),
+
+  permissionSettingsService:
+    new NativePermissionSettingsService(),
 
   projectRepository:
     new SQLiteProjectRepository(
