@@ -14,6 +14,9 @@ import type {
 import type {
   PermissionService,
 } from '../../contracts/PermissionService';
+import type {
+  PermissionSettingsService,
+} from '../../contracts/PermissionSettingsService';
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useAppSettings } from '../../core/settings/AppSettingsProvider';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
@@ -22,6 +25,7 @@ import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
 import { getPermissionErrorTranslationKey } from '../permissions/getPermissionErrorTranslationKey';
 import { usePermissionController } from '../permissions/hooks/usePermissionController';
+import { useRefreshPermissionsOnForeground } from '../permissions/hooks/useRefreshPermissionsOnForeground';
 import { ResetSettingsButton } from './components/ResetSettingsButton';
 import { SettingOptionGroup } from './components/SettingOptionGroup';
 import { SettingToggleRow } from './components/SettingToggleRow';
@@ -34,15 +38,24 @@ import { getSettingsErrorTranslationKey } from './getSettingsErrorTranslationKey
 
 type Props = {
   permissionService: PermissionService;
+  permissionSettingsService: PermissionSettingsService;
 };
 
 export function SettingsScreen({
   permissionService,
+  permissionSettingsService,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
   const settings = useAppSettings();
-  const permissions = usePermissionController(permissionService);
+  const permissions = usePermissionController(
+    permissionService,
+    permissionSettingsService,
+  );
+
+  useRefreshPermissionsOnForeground(
+    permissions.refresh,
+  );
 
   const themeOptions: readonly {
     value: ThemePreference;
@@ -65,7 +78,8 @@ export function SettingsScreen({
 
   const mutableDisabled =
     settings.busy ||
-    permissions.requestingId !== null;
+    permissions.requestingId !== null ||
+    permissions.openingSettingsId !== null;
 
   const confirmReset = () => {
     if (mutableDisabled) {
@@ -242,9 +256,13 @@ export function SettingsScreen({
               loading={permissions.loading}
               disabled={settings.busy}
               requestingId={permissions.requestingId}
+              openingSettingsId={permissions.openingSettingsId}
               permissions={permissions.permissions}
               onRequest={(permissionId) => {
                 void permissions.request(permissionId);
+              }}
+              onOpenSettings={(permissionId) => {
+                void permissions.openSettings(permissionId);
               }}
             />
 
