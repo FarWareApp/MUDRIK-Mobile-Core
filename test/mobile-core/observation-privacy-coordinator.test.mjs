@@ -38,6 +38,7 @@ function createRepository(
 
   return {
     writes,
+    getCurrent: () => current,
     repository: {
       get: async () => current,
       set: async (input) => {
@@ -309,7 +310,7 @@ test('fail-closed recovered state is persisted again before restriction enforcem
   assert.equal(result.sensorStopConfirmed, true);
 });
 
-test('invalid timestamp fails closed without touching persistence or sensors', async () => {
+test('invalid timestamp fails closed and actively stops passive observation', async () => {
   const repo = createRepository(snapshot('active'));
   const sensors = createSensors();
   const coordinator = new ObservationPrivacyCoordinator(
@@ -324,7 +325,143 @@ test('invalid timestamp fails closed without touching persistence or sensors', a
 
   assert.equal(result.state, 'privacy_lock');
   assert.equal(result.allowed, false);
-  assert.equal(result.reason, 'denied');
+  assert.equal(result.persisted, false);
+  assert.equal(result.sensorStopConfirmed, true);
+  assert.equal(result.reason, 'invalid_input_fail_closed');
+  assert.deepEqual(repo.writes, []);
+  assert.deepEqual(sensors.calls, ['all']);
+});
+
+test('policy read failure fails closed and stops all passive observation', async () => {
+  const sensors = createSensors();
+  const coordinator = new ObservationPrivacyCoordinator(
+    {
+      get: async () => {
+        throw new Error('database read failed');
+      },
+      set: async () => {
+        throw new Error('must not write after failed read');
+      },
+    },
+    sensors.controller,
+  );
+
+  const result = await coordinator.apply({
+    event: 'unlock_privacy',
+    nowMs: 900,
+    reactivationChecks: REACTIVATION_OK,
+  });
+
+  assert.equal(result.state, 'privacy_lock');
+  assert.equal(result.persisted, false);
+  assert.equal(result.sensorStopConfirmed, true);
+  assert.equal(result.allowed, false);
+  assert.equal(result.reason, 'policy_read_failed_fail_closed');
+  assert.deepEqual(sensors.calls, ['all']);
+});
+
+test('stale broadening is denied against a newer persisted restriction', async () => {
+  const repo = createRepository(snapshot('privacy_lock', { updatedAtMs: 1_000 }));
+  const sensors = createSensors();
+  const coordinator = new ObservationPrivacyCoordinator(
+    repo.repository,
+    sensors.controller,
+  );
+
+  const result = await coordinator.apply({
+    event: 'unlock_privacy',
+    nowMs: 999,
+    reactivationChecks: REACTIVATION_OK,
+  });
+
+  assert.equal(result.state, 'privacy_lock');
+  assert.equal(result.persisted, true);
+  assert.equal(result.allowed, false);
+  assert.equal(result.reason, 'stale_broadening_denied');
   assert.deepEqual(repo.writes, []);
   assert.deepEqual(sensors.calls, []);
+});
+
+test('restrictive writes never move the persisted privacy clock backwards', async () => {
+  const repo = createRepository(snapshot('active', { updatedAtMs: 1_000 }));
+  const sensors = createSensors();
+  const coordinator = new ObservationPrivacyCoordinator(
+    repo.repository,
+    sensors.controller,
+  );
+
+  const result = await coordinator.apply({
+    event: 'lock_privacy',
+    nowMs: 900,
+  });
+
+  assert.equal(result.state, 'privacy_lock');
+  assert.equal(result.allowed, true);
+  assert.equal(repo.writes.length, 1);
+  assert.equal(repo.writes[0].updatedAtMs, 1_000);
+});
+
+test('privacy commands execute in invocation order so a later lock cannot be overtaken', async () => {
+  let current = snapshot('privacy_lock', { updatedAtMs: 100 });
+  const writes = [];
+  let releaseActiveWrite;
+  let markActiveWriteStarted;
+  const activeWriteGate = new Promise((resolve) => {
+    releaseActiveWrite = resolve;
+  });
+  const activeWriteStarted = new Promise((resolve) => {
+    markActiveWriteStarted = resolve;
+  });
+
+  const repository = {
+    get: async () => current,
+    set: async (input) => {
+      writes.push(input);
+      if (input.state === 'active') {
+        markActiveWriteStarted();
+        await activeWriteGate;
+      }
+      current = snapshot(input.state, {
+        reason: input.reason,
+        updatedAtMs: input.updatedAtMs,
+      });
+      return current;
+    },
+  };
+  const sensors = createSensors();
+  const coordinator = new ObservationPrivacyCoordinator(
+    repository,
+    sensors.controller,
+  );
+
+  const unlockPromise = coordinator.apply({
+    event: 'unlock_privacy',
+    nowMs: 200,
+    reactivationChecks: REACTIVATION_OK,
+  });
+
+  await activeWriteStarted;
+
+  const lockPromise = coordinator.apply({
+    event: 'lock_privacy',
+    nowMs: 300,
+  });
+
+  await Promise.resolve();
+  assert.deepEqual(writes.map((write) => write.state), ['active']);
+
+  releaseActiveWrite();
+  const [unlockResult, lockResult] = await Promise.all([
+    unlockPromise,
+    lockPromise,
+  ]);
+
+  assert.equal(unlockResult.state, 'active');
+  assert.equal(lockResult.state, 'privacy_lock');
+  assert.equal(current.state, 'privacy_lock');
+  assert.deepEqual(
+    writes.map((write) => write.state),
+    ['active', 'privacy_lock'],
+  );
+  assert.deepEqual(sensors.calls, ['all']);
 });
