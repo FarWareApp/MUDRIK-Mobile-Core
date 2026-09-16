@@ -57,6 +57,7 @@ test(
         {
           granted: false,
           status: 'limited',
+          canAskAgain: true,
         },
       ),
       {
