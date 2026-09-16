@@ -24,14 +24,18 @@ type Props = {
   permission: AppPermissionRecord;
   disabled?: boolean;
   requesting?: boolean;
+  openingSettings?: boolean;
   onRequest: () => void;
+  onOpenSettings: () => void;
 };
 
 export function PermissionRow({
   permission,
   disabled = false,
   requesting = false,
+  openingSettings = false,
   onRequest,
+  onOpenSettings,
 }: Props) {
   const { colors } = useTheme();
   const { reducedMotion } = useAccessibility();
@@ -54,13 +58,34 @@ export function PermissionRow({
   const canRequest =
     permission.status !== 'granted' &&
     permission.canAskAgain;
-  const actionDisabled = disabled || requesting;
+  const canOpenSettings =
+    permission.status === 'denied' &&
+    !permission.canAskAgain;
+  const actionDisabled =
+    disabled ||
+    requesting ||
+    openingSettings;
   const statusColor =
     permission.status === 'granted'
       ? colors.success
       : permission.status === 'denied'
         ? colors.warning
         : colors.textSecondary;
+
+  const actionLabel = canOpenSettings
+    ? openingSettings
+      ? t('openingPermissionSettings')
+      : t('openPermissionSettings')
+    : t('allowPermission');
+
+  const onAction = canOpenSettings
+    ? onOpenSettings
+    : onRequest;
+  const actionBusy = canOpenSettings
+    ? openingSettings
+    : requesting;
+  const showAction =
+    canRequest || canOpenSettings;
 
   return (
     <View
@@ -106,16 +131,16 @@ export function PermissionRow({
         </View>
       </View>
 
-      {canRequest ? (
+      {showAction ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${t('allowPermission')}: ${label}`}
+          accessibilityLabel={`${actionLabel}: ${label}`}
           accessibilityState={{
             disabled: actionDisabled,
-            busy: requesting,
+            busy: actionBusy,
           }}
           disabled={actionDisabled}
-          onPress={onRequest}
+          onPress={onAction}
           style={({ pressed }) => [
             styles.button,
             {
@@ -135,7 +160,7 @@ export function PermissionRow({
             },
           ]}
         >
-          {requesting ? (
+          {actionBusy ? (
             <ActivityIndicator
               color={colors.accent}
               size="small"
@@ -147,7 +172,7 @@ export function PermissionRow({
                 { color: colors.textPrimary },
               ]}
             >
-              {t('allowPermission')}
+              {actionLabel}
             </Text>
           )}
         </Pressable>
@@ -207,5 +232,6 @@ const styles = StyleSheet.create({
   buttonText: {
     ...typeScale.secondary,
     fontWeight: '600',
+    writingDirection: 'auto',
   },
 });
