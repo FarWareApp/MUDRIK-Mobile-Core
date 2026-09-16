@@ -125,9 +125,14 @@ export class NativePermissionService
       );
     }
 
-    return normalizePermissionRecord(
-      id,
-      await requestNotificationPermission(),
-    );
+    if (id === 'notifications') {
+      return normalizePermissionRecord(
+        id,
+        await requestNotificationPermission(),
+      );
+    }
+
+    const exhaustiveId: never = id;
+    return exhaustiveId;
   }
 }
