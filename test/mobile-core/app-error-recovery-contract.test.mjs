@@ -18,6 +18,10 @@ const localeProvider = fs.readFileSync(
   'src/core/localization/LocaleProvider.tsx',
   'utf8',
 );
+const resolvedLocale = fs.readFileSync(
+  'src/core/localization/useResolvedAppLocale.ts',
+  'utf8',
+);
 const systemLocale = fs.readFileSync(
   'src/core/localization/resolveSystemLocale.ts',
   'utf8',
@@ -101,10 +105,12 @@ test(
 );
 
 test(
-  'system locale resolution is shared and has a safe English fallback',
+  'system locale resolution is shared through a focused hook and has a safe English fallback',
   () => {
-    assert.match(localeProvider, /resolveSystemLocale\(\)/);
+    assert.match(localeProvider, /useResolvedAppLocale/);
+    assert.doesNotMatch(localeProvider, /resolveSystemLocale/);
     assert.doesNotMatch(localeProvider, /getLocales/);
+    assert.match(resolvedLocale, /resolveSystemLocale\(\)/);
     assert.match(systemLocale, /getLocales/);
     assert.match(systemLocale, /catch/);
     assert.match(systemLocale, /return 'en';/);
