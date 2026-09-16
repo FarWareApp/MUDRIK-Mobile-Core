@@ -13,5 +13,7 @@ export function getPermissionErrorTranslationKey(
       return 'permissionsLoadFailed';
     case 'request':
       return 'permissionRequestFailed';
+    case 'settings':
+      return 'permissionSettingsOpenFailed';
   }
 }
