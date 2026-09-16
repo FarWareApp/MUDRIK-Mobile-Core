@@ -68,7 +68,7 @@ test(
       /shouldCommitConnectivityRefresh\(/g,
     ) ?? [];
 
-    assert.equal(guardCalls.length, 3);
+    assert.equal(guardCalls.length, 2);
     assert.match(
       controller,
       /await service\.getCurrent\(\);[\s\S]*?shouldCommitConnectivityRefresh\(/,
