@@ -91,8 +91,40 @@ Validation on that exact implementation commit:
 - Expo Doctor: PASS;
 - Computer Agent Phase 0 tests: PASS.
 
-The CodeQL run created during the rapid sequence of playback commits was cancelled by the workflow's branch-level `cancel-in-progress` concurrency policy. This evidence-only commit intentionally leaves the branch stable so the exact final documentation head can receive a fresh CodeQL result.
+The rapid implementation sequence cancelled an intermediate CodeQL run under the workflow's branch-level `cancel-in-progress` policy. The subsequent stable hardening evidence head `61b255a252ff71557df6bd3f04e7f89b1fe5bb54` passed both Mobile Core Validation and CodeQL with the voice playback changes present.
+
+## Accessibility and Reduced Effects
+
+Accessibility system-observation hardening is present on commit `735ca7bae3592cb8268a5d825ac63a5fd5a99308`.
+
+Key controls:
+
+- native accessibility observation is isolated in `useSystemAccessibilityState.ts` while `AccessibilityProvider.tsx` remains context/composition-only;
+- `isReduceMotionEnabled()` and `isReduceTransparencyEnabled()` have explicit rejection paths, preventing unhandled native query rejections;
+- failed native preference reads conservatively fall back to reduced motion/transparency;
+- async native query commits are mounted-guarded;
+- subscriptions are removed on cleanup;
+- reduced-transparency observation remains iOS-only while reduced motion remains cross-platform;
+- native-event revisions prevent an older initial query result from overwriting a newer system accessibility event;
+- the existing design runtime contract was updated to verify native observation in the dedicated observer without weakening the public provider contract;
+- focused regression coverage exists in `test/mobile-core/accessibility-hardening-contract.test.mjs`.
+
+Validation on that exact implementation commit:
+
+- Mobile Core Validation run `35092776523`: PASS;
+- CodeQL Security Analysis run `35092776645`: PASS;
+- frozen dependency install: PASS;
+- dependency reproducibility: PASS;
+- Android configuration gate: PASS;
+- tracked sensitive-file gate: PASS;
+- full Git-history secret scan: PASS;
+- High/Critical dependency audit gate: PASS;
+- ESLint: PASS;
+- TypeScript: PASS;
+- Mobile Core regression tests: PASS;
+- Expo Doctor: PASS;
+- Computer Agent Phase 0 tests: PASS.
 
 ## Remaining Gate
 
-This evidence is pre-device only. Section 01 remains open until the real Android Layer 4 matrix is executed and the exact freeze candidate passes all final automated and security gates. In particular, microphone recording/playback and lifecycle behavior still require physical-device verification before `MOBILE-CORE-FROZEN` can be created.
+This evidence is pre-device only. Section 01 remains open until the real Android Layer 4 matrix is executed and the exact freeze candidate passes all final automated and security gates. In particular, microphone recording/playback, lifecycle behavior, accessibility/reduced-motion behavior, RTL/LTR behavior, permissions, notifications and other hardware/OS-dependent paths still require physical-device verification before `MOBILE-CORE-FROZEN` can be created.
