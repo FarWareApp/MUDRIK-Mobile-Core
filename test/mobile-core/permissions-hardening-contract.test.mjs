@@ -104,14 +104,22 @@ test(
       );
     }
 
-    assert.match(
-      nativeService,
-      /const exhaustiveId:\s*never = id/,
-    );
-    assert.doesNotMatch(
-      nativeService,
-      /return normalizePermissionRecord\(\s*id,\s*await requestNotificationPermission\(\),\s*\);\s*\}/,
-    );
+    const notificationBranchIndex =
+      nativeService.indexOf(
+        "if (id === 'notifications')",
+      );
+    const notificationRequestIndex =
+      nativeService.lastIndexOf(
+        'await requestNotificationPermission()',
+      );
+    const exhaustiveIndex =
+      nativeService.indexOf(
+        'const exhaustiveId: never = id',
+      );
+
+    assert.ok(notificationBranchIndex >= 0);
+    assert.ok(notificationRequestIndex > notificationBranchIndex);
+    assert.ok(exhaustiveIndex > notificationRequestIndex);
   },
 );
 
