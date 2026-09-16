@@ -17,6 +17,9 @@ export type PrivacyCommandResultReason =
   | 'applied'
   | 'no_change'
   | 'denied'
+  | 'invalid_input_fail_closed'
+  | 'policy_read_failed_fail_closed'
+  | 'stale_broadening_denied'
   | 'persistence_failed_restriction_retained'
   | 'sensor_stop_incomplete'
   | 'persistence_failed_broadening_denied';
@@ -30,11 +33,26 @@ export type PrivacyCommandResult = Readonly<{
   failedSensorIds: readonly string[];
 }>;
 
+const FAIL_CLOSED_POLICY: ObservationPrivacySnapshot = Object.freeze({
+  state: 'privacy_lock',
+  reason: 'privacy_state_read_failed',
+  updatedAtMs: 0,
+  recoveredFailClosed: true,
+});
+
 function isRestrictiveEvent(event: ObservationPrivacyEvent): boolean {
   return (
     event === 'stop_visual' ||
     event === 'stop_ambient' ||
     event === 'lock_privacy'
+  );
+}
+
+function isBroadeningEvent(event: ObservationPrivacyEvent): boolean {
+  return (
+    event === 'resume_visual' ||
+    event === 'resume_ambient' ||
+    event === 'unlock_privacy'
   );
 }
 
@@ -64,13 +82,19 @@ function requiresSensorReconciliation(
 }
 
 export class ObservationPrivacyCoordinator {
+  private commandTail: Promise<void> = Promise.resolve();
+
   constructor(
     private readonly repository: ObservationPrivacyRepository,
     private readonly sensorController: SensorObservationController,
   ) {}
 
   async getCurrentPolicy(): Promise<ObservationPrivacySnapshot> {
-    return this.repository.get();
+    try {
+      return await this.repository.get();
+    } catch {
+      return FAIL_CLOSED_POLICY;
+    }
   }
 
   private async stopForState(
@@ -99,23 +123,69 @@ export class ObservationPrivacyCoordinator {
     }
   }
 
+  private async failClosed(
+    reason: 'invalid_input_fail_closed' | 'policy_read_failed_fail_closed',
+  ): Promise<PrivacyCommandResult> {
+    const stopResult = await this.stopForState('privacy_lock');
+    const stopConfirmed =
+      stopResult.confirmed && stopResult.failedSensorIds.length === 0;
+
+    return {
+      state: 'privacy_lock',
+      persisted: false,
+      sensorStopConfirmed: stopConfirmed,
+      allowed: false,
+      reason: stopConfirmed ? reason : 'sensor_stop_incomplete',
+      failedSensorIds: Object.freeze([...stopResult.failedSensorIds]),
+    };
+  }
+
   async apply(input: Readonly<{
     event: ObservationPrivacyEvent;
     nowMs: number;
     reactivationChecks?: ReactivationChecks;
   }>): Promise<PrivacyCommandResult> {
+    const operation = this.commandTail.then(() => this.applySerialized(input));
+
+    this.commandTail = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+
+    return operation;
+  }
+
+  private async applySerialized(input: Readonly<{
+    event: ObservationPrivacyEvent;
+    nowMs: number;
+    reactivationChecks?: ReactivationChecks;
+  }>): Promise<PrivacyCommandResult> {
     if (!Number.isFinite(input.nowMs) || input.nowMs < 0) {
+      return this.failClosed('invalid_input_fail_closed');
+    }
+
+    let current: ObservationPrivacySnapshot;
+    try {
+      current = await this.repository.get();
+    } catch {
+      return this.failClosed('policy_read_failed_fail_closed');
+    }
+
+    if (
+      isBroadeningEvent(input.event) &&
+      !current.recoveredFailClosed &&
+      input.nowMs < current.updatedAtMs
+    ) {
       return {
-        state: 'privacy_lock',
-        persisted: false,
+        state: current.state,
+        persisted: true,
         sensorStopConfirmed: null,
         allowed: false,
-        reason: 'denied',
+        reason: 'stale_broadening_denied',
         failedSensorIds: [],
       };
     }
 
-    const current = await this.repository.get();
     const transition = transitionObservationPrivacy({
       state: current.state,
       event: input.event,
@@ -134,6 +204,9 @@ export class ObservationPrivacyCoordinator {
     }
 
     const restrictive = isRestrictiveEvent(input.event);
+    const persistedAtMs = restrictive
+      ? Math.max(input.nowMs, current.updatedAtMs)
+      : input.nowMs;
 
     if (restrictive) {
       let persisted = current.recoveredFailClosed === false && !transition.changed;
@@ -143,7 +216,7 @@ export class ObservationPrivacyCoordinator {
           await this.repository.set({
             state: transition.nextState,
             reason: persistenceReason(input.event),
-            updatedAtMs: input.nowMs,
+            updatedAtMs: persistedAtMs,
           });
           persisted = true;
         } catch {
@@ -224,7 +297,7 @@ export class ObservationPrivacyCoordinator {
       await this.repository.set({
         state: transition.nextState,
         reason: persistenceReason(input.event),
-        updatedAtMs: input.nowMs,
+        updatedAtMs: persistedAtMs,
       });
     } catch {
       return {
