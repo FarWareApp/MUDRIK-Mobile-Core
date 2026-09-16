@@ -1,6 +1,8 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -22,6 +24,10 @@ const recordingOptions = {
   ...RecordingPresets.HIGH_QUALITY,
   directory: 'document' as const,
 };
+
+type RecorderOperation =
+  | 'start'
+  | 'stop';
 
 export function useVoiceRecorderController() {
   const recorder = useAudioRecorder(recordingOptions);
@@ -45,6 +51,43 @@ export function useVoiceRecorderController() {
   const [errorCode, setErrorCode] =
     useState<VoiceRecorderErrorCode | null>(null);
 
+  const mountedRef = useRef(true);
+  const phaseRef = useRef<VoiceRecorderPhase>(phase);
+  const operationRef = useRef<RecorderOperation | null>(null);
+
+  phaseRef.current = phase;
+
+  const restorePlayback = useCallback(async () => {
+    try {
+      await audioSession.preparePlayback();
+    } catch {
+      // Best-effort cleanup must never replace the primary recorder failure.
+    }
+  }, [audioSession]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+
+      const currentPhase = phaseRef.current;
+      const recordingIsActive =
+        currentPhase === 'recording' ||
+        currentPhase === 'paused';
+
+      if (
+        recordingIsActive &&
+        operationRef.current !== 'stop'
+      ) {
+        void recorder.stop()
+          .catch(() => undefined);
+      }
+
+      void restorePlayback();
+    };
+  }, [recorder, restorePlayback]);
+
   const ensurePermission = useCallback(async () => {
     let status = await permissionService.getStatus();
 
@@ -52,14 +95,24 @@ export function useVoiceRecorderController() {
       status = await permissionService.request();
     }
 
-    setPermission(status);
+    if (mountedRef.current) {
+      setPermission(status);
+    }
+
     return status === 'granted';
   }, [permissionService]);
 
   const start = useCallback(async () => {
-    if (phase === 'recording' || phase === 'preparing') {
+    if (
+      operationRef.current ||
+      phase === 'recording' ||
+      phase === 'preparing'
+    ) {
       return;
     }
+
+    operationRef.current = 'start';
+    let recordingSessionPrepared = false;
 
     setErrorCode(null);
     setDraft(null);
@@ -68,6 +121,13 @@ export function useVoiceRecorderController() {
     try {
       const allowed = await ensurePermission();
 
+      if (
+        !mountedRef.current ||
+        operationRef.current !== 'start'
+      ) {
+        return;
+      }
+
       if (!allowed) {
         setPhase('idle');
         setErrorCode('microphone-permission-denied');
@@ -75,22 +135,57 @@ export function useVoiceRecorderController() {
       }
 
       await audioSession.prepareRecording();
+      recordingSessionPrepared = true;
+
+      if (
+        !mountedRef.current ||
+        operationRef.current !== 'start'
+      ) {
+        await restorePlayback();
+        return;
+      }
+
       await recorder.prepareToRecordAsync();
+
+      if (
+        !mountedRef.current ||
+        operationRef.current !== 'start'
+      ) {
+        await restorePlayback();
+        return;
+      }
+
       recorder.record();
       setPhase('recording');
     } catch {
+      if (recordingSessionPrepared) {
+        await restorePlayback();
+      }
+
+      if (!mountedRef.current) {
+        return;
+      }
+
       setPhase('error');
       setErrorCode('recording-start-failed');
+    } finally {
+      if (operationRef.current === 'start') {
+        operationRef.current = null;
+      }
     }
   }, [
     audioSession,
     ensurePermission,
     phase,
     recorder,
+    restorePlayback,
   ]);
 
   const pause = useCallback(() => {
-    if (phase !== 'recording') {
+    if (
+      operationRef.current ||
+      phase !== 'recording'
+    ) {
       return;
     }
 
@@ -99,7 +194,10 @@ export function useVoiceRecorderController() {
   }, [phase, recorder]);
 
   const resume = useCallback(() => {
-    if (phase !== 'paused') {
+    if (
+      operationRef.current ||
+      phase !== 'paused'
+    ) {
       return;
     }
 
@@ -108,14 +206,28 @@ export function useVoiceRecorderController() {
   }, [phase, recorder]);
 
   const stop = useCallback(async () => {
-    if (phase !== 'recording' && phase !== 'paused') {
+    if (
+      operationRef.current ||
+      (
+        phase !== 'recording' &&
+        phase !== 'paused'
+      )
+    ) {
       return;
     }
+
+    operationRef.current = 'stop';
 
     try {
       await recorder.stop();
 
       const uri = recorder.uri;
+
+      await audioSession.preparePlayback();
+
+      if (!mountedRef.current) {
+        return;
+      }
 
       if (!uri) {
         setPhase('error');
@@ -129,26 +241,44 @@ export function useVoiceRecorderController() {
         createdAt: Date.now(),
       });
 
-      await audioSession.preparePlayback();
       setPhase('stopped');
     } catch {
+      await restorePlayback();
+
+      if (!mountedRef.current) {
+        return;
+      }
+
       setPhase('error');
       setErrorCode('recording-stop-failed');
+    } finally {
+      if (operationRef.current === 'stop') {
+        operationRef.current = null;
+      }
     }
   }, [
     audioSession,
     phase,
     recorder,
     recorderState.durationMillis,
+    restorePlayback,
   ]);
 
   const discard = useCallback(() => {
+    if (operationRef.current) {
+      return;
+    }
+
     setDraft(null);
     setErrorCode(null);
     setPhase('idle');
   }, []);
 
   const dismissError = useCallback(() => {
+    if (operationRef.current) {
+      return;
+    }
+
     setErrorCode(null);
 
     if (phase === 'error') {
