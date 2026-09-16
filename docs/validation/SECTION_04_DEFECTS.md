@@ -4,7 +4,7 @@
 
 No unresolved Blocker, Critical or High defect is known in the accepted Section 04 pre-device scope.
 
-The items below were discovered by the Section 04 validation process and closed before pre-device acceptance.
+The items below were discovered by the Section 04 validation process and closed before or after the original pre-device acceptance. Later hardening remains part of the Section 04 regression contract.
 
 ---
 
@@ -75,7 +75,7 @@ Coordinator tests cover:
 - fail-closed recovered state;
 - invalid timestamp handling.
 
-Final candidate regression suite: **151/151 PASS**.
+Final original candidate regression suite: **151/151 PASS**.
 
 ---
 
@@ -127,6 +127,48 @@ It is independent of ordinary settings reset. Missing/corrupt/unreadable privacy
 ### Regression Evidence
 
 Migration and storage tests verify that ordinary settings reset is structurally unable to delete observation privacy policy.
+
+---
+
+## S04-ORDER-001 — Concurrent or stale broadening commands could race newer restrictive intent
+
+Severity: **High**
+
+Status: **Closed**
+
+### Problem
+
+`ObservationPrivacyCoordinator.apply()` previously allowed independent asynchronous commands to overlap. A delayed `unlock_privacy` or resume operation could therefore race a later restrictive command. The coordinator also did not explicitly reject a broadening command whose timestamp was older than the currently persisted privacy decision.
+
+### Risk
+
+Privacy intent is authority-sensitive. A stale or slow broadening operation must never overtake a newer stop/lock decision, and an older replay must never widen authority after a more recent restriction has been persisted.
+
+### Fix
+
+- coordinator commands are serialized in invocation order through a private command tail;
+- a rejected/failed command cannot break the queue for later commands;
+- broadening events older than the persisted privacy timestamp are rejected as `stale_broadening_denied`;
+- restrictive writes use `max(input.nowMs, current.updatedAtMs)` so the privacy clock cannot move backwards;
+- malformed timestamps and privacy-policy read failures actively fail closed and request all passive observation to stop instead of returning only a synthetic policy value.
+
+### Regression Evidence
+
+`test/mobile-core/observation-privacy-coordinator.test.mjs` now proves:
+
+- stale broadening is denied without persistence or sensor activation;
+- restrictive writes never regress the persisted privacy timestamp;
+- a delayed unlock followed by a later lock executes in invocation order and ends in `privacy_lock`;
+- policy-read failure and invalid timestamps fail closed while actively stopping passive observation.
+
+Implementation candidate:
+
+`458d250a15bf78b403cd9db10f48aede8dd7eeb9`
+
+Validation on that exact implementation candidate:
+
+- Mobile Core Validation run ID `35125961670`: **SUCCESS**;
+- CodeQL Security Analysis run ID `35125961690`: **SUCCESS**.
 
 ---
 
