@@ -17,6 +17,12 @@ import {
   diagnosticsService,
 } from '../../../core/diagnostics/DiagnosticsService';
 import {
+  ConnectivityErrorCode,
+} from '../ConnectivityErrorCode';
+import {
+  shouldCommitConnectivityRefresh,
+} from '../ConnectivityRefreshPolicy';
+import {
   connectivitySnapshotSignature,
   shouldApplyConnectivitySnapshot,
 } from '../ConnectivitySnapshotPolicy';
@@ -37,7 +43,7 @@ export function useConnectivityController(
     useState(true);
 
   const [error, setError] =
-    useState<string | null>(
+    useState<ConnectivityErrorCode | null>(
       null,
     );
 
@@ -49,6 +55,12 @@ export function useConnectivityController(
 
   const lastSignatureRef =
     useRef<string | null>(null);
+
+  const snapshotRevisionRef =
+    useRef(0);
+
+  const refreshRequestRef =
+    useRef(0);
 
   const previousForegroundRef =
     useRef(isForeground);
@@ -78,6 +90,7 @@ export function useConnectivityController(
 
       latestChangedAtRef.current =
         snapshot.changedAt;
+      snapshotRevisionRef.current += 1;
 
       const signature =
         connectivitySnapshotSignature(
@@ -106,30 +119,54 @@ export function useConnectivityController(
     useCallback(async (
       source: 'initial' | 'foreground',
     ) => {
+      const requestId =
+        refreshRequestRef.current + 1;
+      refreshRequestRef.current =
+        requestId;
+
+      const snapshotRevisionAtStart =
+        snapshotRevisionRef.current;
+
       try {
         const current =
           await service.getCurrent();
+
+        if (
+          !mountedRef.current ||
+          !shouldCommitConnectivityRefresh(
+            requestId,
+            refreshRequestRef.current,
+            snapshotRevisionAtStart,
+            snapshotRevisionRef.current,
+          )
+        ) {
+          return;
+        }
 
         applySnapshot(
           current,
           source,
         );
-      } catch (caught) {
-        if (!mountedRef.current) {
+      } catch {
+        if (
+          !mountedRef.current ||
+          !shouldCommitConnectivityRefresh(
+            requestId,
+            refreshRequestRef.current,
+            snapshotRevisionAtStart,
+            snapshotRevisionRef.current,
+          )
+        ) {
           return;
         }
 
         diagnosticsService.record(
           'connectivity',
-          caught instanceof Error
-            ? `refresh-failed:${caught.message}`
-            : 'refresh-failed:unknown',
+          'refresh-failed',
           'error',
         );
 
-        setError(
-          'Unable to read network state.',
-        );
+        setError('refresh');
         setLoading(false);
       }
     }, [
@@ -138,8 +175,6 @@ export function useConnectivityController(
     ]);
 
   useEffect(() => {
-    void refresh('initial');
-
     const unsubscribe =
       service.subscribe(
         (current) => {
@@ -149,6 +184,8 @@ export function useConnectivityController(
           );
         },
       );
+
+    void refresh('initial');
 
     return () => {
       unsubscribe();
