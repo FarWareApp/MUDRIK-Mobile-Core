@@ -26,30 +26,83 @@ export function usePermissionController(
   const [errorCode, setErrorCode] =
     useState<PermissionErrorCode | null>(null);
 
+  const mountedRef = useRef(false);
+  const serviceRevisionRef = useRef(0);
   const refreshLockRef = useRef(false);
   const requestLockRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+      serviceRevisionRef.current += 1;
+      refreshLockRef.current = false;
+      requestLockRef.current = false;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     if (refreshLockRef.current || requestLockRef.current) {
       return;
     }
 
+    const revision = serviceRevisionRef.current;
+
     refreshLockRef.current = true;
-    setLoading(true);
+
+    if (mountedRef.current) {
+      setLoading(true);
+    }
 
     try {
-      setPermissions(await service.getAll());
+      const nextPermissions =
+        await service.getAll();
+
+      if (
+        !mountedRef.current ||
+        revision !== serviceRevisionRef.current
+      ) {
+        return;
+      }
+
+      setPermissions(nextPermissions);
       setErrorCode(null);
     } catch {
+      if (
+        !mountedRef.current ||
+        revision !== serviceRevisionRef.current
+      ) {
+        return;
+      }
+
       setErrorCode('load');
     } finally {
-      refreshLockRef.current = false;
-      setLoading(false);
+      if (
+        revision === serviceRevisionRef.current
+      ) {
+        refreshLockRef.current = false;
+
+        if (mountedRef.current) {
+          setLoading(false);
+        }
+      }
     }
   }, [service]);
 
   useEffect(() => {
+    serviceRevisionRef.current += 1;
+    refreshLockRef.current = false;
+    requestLockRef.current = false;
+    setRequestingId(null);
+
     void refresh();
+
+    return () => {
+      serviceRevisionRef.current += 1;
+      refreshLockRef.current = false;
+      requestLockRef.current = false;
+    };
   }, [refresh]);
 
   const request = useCallback(
@@ -60,11 +113,28 @@ export function usePermissionController(
         return null;
       }
 
+      const revision = serviceRevisionRef.current;
+
       requestLockRef.current = true;
-      setRequestingId(id);
+
+      if (mountedRef.current) {
+        setRequestingId(id);
+      }
 
       try {
         const result = await service.request(id);
+
+        if (
+          !mountedRef.current ||
+          revision !== serviceRevisionRef.current
+        ) {
+          return null;
+        }
+
+        if (result.id !== id) {
+          setErrorCode('request');
+          return null;
+        }
 
         setPermissions((current) =>
           current.map((permission) =>
@@ -77,11 +147,25 @@ export function usePermissionController(
 
         return result;
       } catch {
+        if (
+          !mountedRef.current ||
+          revision !== serviceRevisionRef.current
+        ) {
+          return null;
+        }
+
         setErrorCode('request');
         return null;
       } finally {
-        requestLockRef.current = false;
-        setRequestingId(null);
+        if (
+          revision === serviceRevisionRef.current
+        ) {
+          requestLockRef.current = false;
+
+          if (mountedRef.current) {
+            setRequestingId(null);
+          }
+        }
       }
     },
     [service],
