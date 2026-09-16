@@ -158,6 +158,39 @@ Validation on that exact implementation head:
 - Expo Doctor: PASS;
 - Computer Agent Phase 0 tests: PASS.
 
+## Lifecycle
+
+Lifecycle observation hardening is present on validated implementation head `ef847cf38fdadfcb265cad2cd8301cb5cbf33cc7`.
+
+Key controls:
+
+- native `AppState` observation is isolated in `useSystemLifecycleState.ts` while `LifecycleProvider.tsx` remains context/composition-only;
+- lifecycle phase mapping is isolated in the pure `AppLifecyclePhaseResolver.ts` helper;
+- the native observer subscribes before reconciling `AppState.currentState`, closing the render-to-effect missed-transition window;
+- duplicate native lifecycle events are ignored and therefore do not advance `lastChangedAt` or emit duplicate transition diagnostics;
+- real lifecycle transitions advance `lastChangedAt` with a transition timestamp;
+- the native `AppState` subscription is removed on cleanup;
+- lifecycle diagnostics remain bounded to stable app-state labels rather than raw platform error content;
+- the public lifecycle context contract (`appState`, `phase`, `isForeground`, `lastChangedAt`) is preserved;
+- focused regression coverage exists in `test/mobile-core/lifecycle-hardening-contract.test.mjs`.
+
+Validation on that exact implementation head:
+
+- Mobile Core Validation run `35118220910`: PASS;
+- CodeQL Security Analysis run `35118220803`: PASS;
+- frozen dependency install: PASS;
+- dependency reproducibility: PASS;
+- Android configuration gate: PASS;
+- tracked sensitive-file gate: PASS;
+- full Git-history secret scan: PASS;
+- High/Critical dependency audit gate: PASS;
+- reviewed advisory dependency paths: PASS;
+- ESLint: PASS;
+- TypeScript: PASS;
+- Mobile Core security regression tests: PASS;
+- Expo Doctor: PASS;
+- Computer Agent Phase 0 tests: PASS.
+
 ## Remaining Gate
 
 This evidence is pre-device only. Section 01 remains open until the real Android Layer 4 matrix is executed and the exact freeze candidate passes all final automated and security gates. In particular, microphone recording/playback, lifecycle behavior, accessibility/reduced-motion behavior, RTL/LTR behavior, permissions, notifications and other hardware/OS-dependent paths still require physical-device verification before `MOBILE-CORE-FROZEN` can be created.
