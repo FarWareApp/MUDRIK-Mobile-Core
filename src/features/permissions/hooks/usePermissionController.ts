@@ -10,18 +10,25 @@ import {
   AppPermissionRecord,
   PermissionService,
 } from '../../../contracts/PermissionService';
+import type {
+  PermissionSettingsService,
+} from '../../../contracts/PermissionSettingsService';
 
 export type PermissionErrorCode =
   | 'load'
-  | 'request';
+  | 'request'
+  | 'settings';
 
 export function usePermissionController(
   service: PermissionService,
+  settingsService: PermissionSettingsService,
 ) {
   const [permissions, setPermissions] =
     useState<AppPermissionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [requestingId, setRequestingId] =
+    useState<AppPermissionId | null>(null);
+  const [openingSettingsId, setOpeningSettingsId] =
     useState<AppPermissionId | null>(null);
   const [errorCode, setErrorCode] =
     useState<PermissionErrorCode | null>(null);
@@ -30,6 +37,7 @@ export function usePermissionController(
   const serviceRevisionRef = useRef(0);
   const refreshLockRef = useRef(false);
   const requestLockRef = useRef(false);
+  const settingsLockRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -39,11 +47,16 @@ export function usePermissionController(
       serviceRevisionRef.current += 1;
       refreshLockRef.current = false;
       requestLockRef.current = false;
+      settingsLockRef.current = false;
     };
   }, []);
 
   const refresh = useCallback(async () => {
-    if (refreshLockRef.current || requestLockRef.current) {
+    if (
+      refreshLockRef.current ||
+      requestLockRef.current ||
+      settingsLockRef.current
+    ) {
       return;
     }
 
@@ -94,7 +107,9 @@ export function usePermissionController(
     serviceRevisionRef.current += 1;
     refreshLockRef.current = false;
     requestLockRef.current = false;
+    settingsLockRef.current = false;
     setRequestingId(null);
+    setOpeningSettingsId(null);
 
     void refresh();
 
@@ -102,14 +117,22 @@ export function usePermissionController(
       serviceRevisionRef.current += 1;
       refreshLockRef.current = false;
       requestLockRef.current = false;
+      settingsLockRef.current = false;
     };
-  }, [refresh]);
+  }, [
+    refresh,
+    settingsService,
+  ]);
 
   const request = useCallback(
     async (
       id: AppPermissionId,
     ) => {
-      if (requestLockRef.current || refreshLockRef.current) {
+      if (
+        requestLockRef.current ||
+        refreshLockRef.current ||
+        settingsLockRef.current
+      ) {
         return null;
       }
 
@@ -171,6 +194,63 @@ export function usePermissionController(
     [service],
   );
 
+  const openSettings = useCallback(
+    async (
+      id: AppPermissionId,
+    ) => {
+      if (
+        settingsLockRef.current ||
+        refreshLockRef.current ||
+        requestLockRef.current
+      ) {
+        return false;
+      }
+
+      const revision = serviceRevisionRef.current;
+
+      settingsLockRef.current = true;
+
+      if (mountedRef.current) {
+        setOpeningSettingsId(id);
+      }
+
+      try {
+        await settingsService.openAppSettings();
+
+        if (
+          !mountedRef.current ||
+          revision !== serviceRevisionRef.current
+        ) {
+          return false;
+        }
+
+        setErrorCode(null);
+        return true;
+      } catch {
+        if (
+          !mountedRef.current ||
+          revision !== serviceRevisionRef.current
+        ) {
+          return false;
+        }
+
+        setErrorCode('settings');
+        return false;
+      } finally {
+        if (
+          revision === serviceRevisionRef.current
+        ) {
+          settingsLockRef.current = false;
+
+          if (mountedRef.current) {
+            setOpeningSettingsId(null);
+          }
+        }
+      }
+    },
+    [settingsService],
+  );
+
   const dismissError = useCallback(() => {
     setErrorCode(null);
   }, []);
@@ -179,9 +259,11 @@ export function usePermissionController(
     permissions,
     loading,
     requestingId,
+    openingSettingsId,
     errorCode,
     refresh,
     request,
+    openSettings,
     dismissError,
   };
 }
