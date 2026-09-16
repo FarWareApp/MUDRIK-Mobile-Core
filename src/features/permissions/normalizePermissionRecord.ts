@@ -6,7 +6,7 @@ import type {
 export type NativePermissionResult = {
   granted: boolean;
   status: string;
-  canAskAgain?: boolean;
+  canAskAgain: boolean;
 };
 
 export function normalizePermissionRecord(
@@ -21,7 +21,6 @@ export function normalizePermissionRecord(
         : result.status === 'denied'
           ? 'denied'
           : 'unknown',
-    canAskAgain:
-      result.canAskAgain ?? true,
+    canAskAgain: result.canAskAgain,
   };
 }
