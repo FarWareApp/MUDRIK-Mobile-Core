@@ -33,6 +33,7 @@ export function VoiceRecordingPlayer({
     isDisabled,
     toggle,
   } = useVoicePlaybackController(uri);
+  const buttonOpacity = isDisabled ? 0.56 : 1;
 
   return (
     <View
@@ -64,11 +65,9 @@ export function VoiceRecordingPlayer({
           {
             backgroundColor: colors.accent,
             opacity:
-              isDisabled
-                ? 0.56
-                : pressed
-                  ? 0.86
-                  : 1,
+              pressed && !isDisabled
+                ? 0.86
+                : buttonOpacity,
             transform: [
               {
                 scale:
