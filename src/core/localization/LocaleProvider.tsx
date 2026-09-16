@@ -1,10 +1,14 @@
 import React, {
   createContext,
   PropsWithChildren,
+  useCallback,
   useContext,
   useMemo,
 } from 'react';
 
+import type {
+  LanguagePreference,
+} from '../../contracts/AppSettings';
 import {
   useAppSettings,
 } from '../settings/AppSettingsProvider';
@@ -12,9 +16,9 @@ import type {
   AppLocale,
 } from './AppLocale';
 import {
-  translate,
   TranslationKey,
-} from './strings';
+  translationCatalog,
+} from './translationCatalog';
 import {
   useResolvedAppLocale,
 } from './useResolvedAppLocale';
@@ -24,31 +28,16 @@ export type {
 } from './AppLocale';
 
 type LocaleContextValue = {
-  locale:
-    AppLocale;
-
-  isRTL:
-    boolean;
-
-  t: (
-    key: TranslationKey,
-  ) => string;
-
-  setLocale:
-    (
-      locale:
-        AppLocale,
-    ) => void;
-
-  useSystemLocale:
-    () => void;
+  locale: AppLocale;
+  preference: LanguagePreference;
+  isRTL: boolean;
+  setLocale: (locale: AppLocale) => void;
+  useSystemLocale: () => void;
+  t: (key: TranslationKey) => string;
 };
 
 const LocaleContext =
-  createContext<
-    LocaleContextValue
-    | null
-  >(null);
+  createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({
   children,
@@ -56,73 +45,57 @@ export function LocaleProvider({
   const {
     settings,
     update,
-  } =
-    useAppSettings();
+  } = useAppSettings();
 
   const locale =
     useResolvedAppLocale(
       settings.language,
     );
 
-  const value =
-    useMemo<
-      LocaleContextValue
-    >(
-      () => ({
-        locale,
+  const setLocale = useCallback(
+    (next: AppLocale) => {
+      void update(
+        'language',
+        next,
+      );
+    },
+    [update],
+  );
 
-        isRTL:
-          locale
-          === 'ar',
-
-        t:
-          (
-            key,
-          ) =>
-            translate(
-              locale,
-              key,
-            ),
-
-        setLocale:
-          (
-            nextLocale,
-          ) => {
-            void update({
-              language:
-                nextLocale,
-            });
-          },
-
-        useSystemLocale:
-          () => {
-            void update({
-              language:
-                'system',
-            });
-          },
-      }),
-      [
-        locale,
-        update,
-      ],
+  const useSystemLocale = useCallback(() => {
+    void update(
+      'language',
+      'system',
     );
+  }, [update]);
+
+  const value = useMemo<LocaleContextValue>(
+    () => ({
+      locale,
+      preference: settings.language,
+      isRTL: locale === 'ar',
+      setLocale,
+      useSystemLocale,
+      t: (key: TranslationKey) =>
+        translationCatalog[locale][key],
+    }),
+    [
+      locale,
+      setLocale,
+      settings.language,
+      useSystemLocale,
+    ],
+  );
 
   return (
-    <LocaleContext.Provider
-      value={value}
-    >
+    <LocaleContext.Provider value={value}>
       {children}
     </LocaleContext.Provider>
   );
 }
 
-export function useLocale():
-  LocaleContextValue {
-  const value =
-    useContext(
-      LocaleContext,
-    );
+export function useLocale(): LocaleContextValue {
+  const value = useContext(LocaleContext);
 
   if (!value) {
     throw new Error(
