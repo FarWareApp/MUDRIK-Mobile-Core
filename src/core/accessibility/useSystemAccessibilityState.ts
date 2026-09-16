@@ -29,6 +29,7 @@ export function useSystemAccessibilityState(): SystemAccessibilityState {
 
   useEffect(() => {
     let mounted = true;
+    let nativeEventRevision = 0;
 
     const commitReducedMotion = (
       enabled: boolean,
@@ -41,15 +42,26 @@ export function useSystemAccessibilityState(): SystemAccessibilityState {
     const subscription =
       AccessibilityInfo.addEventListener(
         'reduceMotionChanged',
-        commitReducedMotion,
+        (enabled) => {
+          nativeEventRevision += 1;
+          commitReducedMotion(enabled);
+        },
       );
+
+    const queryRevision = nativeEventRevision;
 
     void AccessibilityInfo
       .isReduceMotionEnabled()
-      .then(commitReducedMotion)
+      .then((enabled) => {
+        if (nativeEventRevision === queryRevision) {
+          commitReducedMotion(enabled);
+        }
+      })
       .catch(() => {
-        // Prefer less motion if the native preference cannot be read safely.
-        commitReducedMotion(true);
+        if (nativeEventRevision === queryRevision) {
+          // Prefer less motion if the native preference cannot be read safely.
+          commitReducedMotion(true);
+        }
       });
 
     return () => {
@@ -64,6 +76,7 @@ export function useSystemAccessibilityState(): SystemAccessibilityState {
     }
 
     let mounted = true;
+    let nativeEventRevision = 0;
 
     const commitReducedTransparency = (
       enabled: boolean,
@@ -76,15 +89,26 @@ export function useSystemAccessibilityState(): SystemAccessibilityState {
     const subscription =
       AccessibilityInfo.addEventListener(
         'reduceTransparencyChanged',
-        commitReducedTransparency,
+        (enabled) => {
+          nativeEventRevision += 1;
+          commitReducedTransparency(enabled);
+        },
       );
+
+    const queryRevision = nativeEventRevision;
 
     void AccessibilityInfo
       .isReduceTransparencyEnabled()
-      .then(commitReducedTransparency)
+      .then((enabled) => {
+        if (nativeEventRevision === queryRevision) {
+          commitReducedTransparency(enabled);
+        }
+      })
       .catch(() => {
-        // Prefer less transparency if the native preference cannot be read safely.
-        commitReducedTransparency(true);
+        if (nativeEventRevision === queryRevision) {
+          // Prefer less transparency if the native preference cannot be read safely.
+          commitReducedTransparency(true);
+        }
       });
 
     return () => {
