@@ -5,10 +5,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import {
-  useAudioPlayer,
-  useAudioPlayerStatus,
-} from 'expo-audio';
 
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
@@ -17,6 +13,7 @@ import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { typography } from '../../../design-system/tokens/typography';
 import { formatVoiceDurationSeconds } from '../formatters/formatVoiceDuration';
+import { useVoicePlaybackController } from '../hooks/useVoicePlaybackController';
 import { VoicePlaybackIcon } from './VoicePlaybackIcon';
 
 type Props = {
@@ -28,25 +25,14 @@ export function VoiceRecordingPlayer({
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
-
-  const player = useAudioPlayer(uri);
-  const status = useAudioPlayerStatus(player);
-
-  const toggle = async () => {
-    if (status.playing) {
-      player.pause();
-      return;
-    }
-
-    if (
-      status.duration > 0 &&
-      status.currentTime >= status.duration
-    ) {
-      await player.seekTo(0);
-    }
-
-    player.play();
-  };
+  const {
+    playing,
+    currentTime,
+    duration,
+    isBusy,
+    isDisabled,
+    toggle,
+  } = useVoicePlaybackController(uri);
 
   return (
     <View
@@ -61,10 +47,15 @@ export function VoiceRecordingPlayer({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
-          status.playing
+          playing
             ? t('voicePauseRecording')
             : t('voicePlayRecording')
         }
+        accessibilityState={{
+          busy: isBusy,
+          disabled: isDisabled,
+        }}
+        disabled={isDisabled}
         onPress={() => {
           void toggle();
         }}
@@ -72,12 +63,18 @@ export function VoiceRecordingPlayer({
           styles.button,
           {
             backgroundColor: colors.accent,
-            opacity: pressed ? 0.86 : 1,
+            opacity:
+              isDisabled
+                ? 0.56
+                : pressed
+                  ? 0.86
+                  : 1,
             transform: [
               {
-                scale: pressed
-                  ? motion.press.scale
-                  : 1,
+                scale:
+                  pressed && !isDisabled
+                    ? motion.press.scale
+                    : 1,
               },
             ],
           },
@@ -85,7 +82,7 @@ export function VoiceRecordingPlayer({
       >
         <VoicePlaybackIcon
           color={colors.accentText}
-          playing={status.playing}
+          playing={playing}
         />
       </Pressable>
 
@@ -105,9 +102,9 @@ export function VoiceRecordingPlayer({
             { color: colors.textSecondary },
           ]}
         >
-          {formatVoiceDurationSeconds(status.currentTime)}
+          {formatVoiceDurationSeconds(currentTime)}
           {' / '}
-          {formatVoiceDurationSeconds(status.duration)}
+          {formatVoiceDurationSeconds(duration)}
         </Text>
       </View>
     </View>
