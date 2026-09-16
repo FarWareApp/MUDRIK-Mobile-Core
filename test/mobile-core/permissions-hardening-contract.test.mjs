@@ -6,12 +6,40 @@ const controller = fs.readFileSync(
   'src/features/permissions/hooks/usePermissionController.ts',
   'utf8',
 );
+const foregroundRefresh = fs.readFileSync(
+  'src/features/permissions/hooks/useRefreshPermissionsOnForeground.ts',
+  'utf8',
+);
 const normalizer = fs.readFileSync(
   'src/features/permissions/normalizePermissionRecord.ts',
   'utf8',
 );
 const nativeService = fs.readFileSync(
   'src/features/permissions/services/NativePermissionService.ts',
+  'utf8',
+);
+const nativeSettingsService = fs.readFileSync(
+  'src/features/permissions/services/NativePermissionSettingsService.ts',
+  'utf8',
+);
+const permissionRow = fs.readFileSync(
+  'src/features/settings/components/PermissionRow.tsx',
+  'utf8',
+);
+const permissionList = fs.readFileSync(
+  'src/features/settings/components/SettingsPermissionList.tsx',
+  'utf8',
+);
+const settingsScreen = fs.readFileSync(
+  'src/features/settings/SettingsScreen.tsx',
+  'utf8',
+);
+const appServices = fs.readFileSync(
+  'src/core/composition/AppServices.ts',
+  'utf8',
+);
+const settingsRoute = fs.readFileSync(
+  'src/app/settings.tsx',
   'utf8',
 );
 
@@ -28,7 +56,7 @@ test(
     assert.ok(
       (controller.match(
         /revision !== serviceRevisionRef\.current/g,
-      ) ?? []).length >= 3,
+      ) ?? []).length >= 5,
     );
   },
 );
@@ -39,7 +67,7 @@ test(
     assert.ok(
       (controller.match(
         /revision === serviceRevisionRef\.current/g,
-      ) ?? []).length >= 2,
+      ) ?? []).length >= 3,
     );
     assert.match(
       controller,
@@ -48,6 +76,10 @@ test(
     assert.match(
       controller,
       /requestLockRef\.current = false/,
+    );
+    assert.match(
+      controller,
+      /settingsLockRef\.current = false/,
     );
     assert.match(controller, /void refresh\(\)/);
   },
@@ -64,6 +96,91 @@ test(
       controller,
       /setErrorCode\('request'\)/,
     );
+  },
+);
+
+test(
+  'permanent permission denial exposes a serialized app-settings recovery action',
+  () => {
+    assert.match(
+      controller,
+      /settingsService\.openAppSettings\(\)/,
+    );
+    assert.match(
+      controller,
+      /setOpeningSettingsId\(id\)/,
+    );
+    assert.match(
+      controller,
+      /setErrorCode\('settings'\)/,
+    );
+    assert.match(
+      permissionRow,
+      /permission\.status === 'denied'\s*&&\s*!permission\.canAskAgain/,
+    );
+    assert.match(
+      permissionRow,
+      /canRequest \|\| canOpenSettings/,
+    );
+    assert.match(
+      nativeSettingsService,
+      /await Linking\.openSettings\(\)/,
+    );
+  },
+);
+
+test(
+  'permission settings recovery is composed without leaking native linking into UI',
+  () => {
+    assert.match(
+      appServices,
+      /permissionSettingsService:\s*PermissionSettingsService/,
+    );
+    assert.match(
+      appServices,
+      /new NativePermissionSettingsService\(\)/,
+    );
+    assert.match(
+      settingsRoute,
+      /appServices\.permissionSettingsService/,
+    );
+    assert.match(
+      settingsScreen,
+      /usePermissionController\(\s*permissionService,\s*permissionSettingsService,?\s*\)/,
+    );
+    assert.match(
+      permissionList,
+      /onOpenSettings=\{\(\) => onOpenSettings\(permission\.id\)\}/,
+    );
+    assert.doesNotMatch(permissionRow, /Linking\./);
+    assert.doesNotMatch(settingsScreen, /Linking\./);
+  },
+);
+
+test(
+  'permission state refreshes through lifecycle composition after returning from system settings',
+  () => {
+    assert.match(
+      foregroundRefresh,
+      /useLifecycle\(\)/,
+    );
+    assert.match(
+      foregroundRefresh,
+      /phase !== 'active'/,
+    );
+    assert.match(
+      foregroundRefresh,
+      /lastChangedAt === 0/,
+    );
+    assert.match(
+      foregroundRefresh,
+      /void refresh\(\)/,
+    );
+    assert.match(
+      settingsScreen,
+      /useRefreshPermissionsOnForeground\(\s*permissions\.refresh,?\s*\)/,
+    );
+    assert.doesNotMatch(controller, /AppState/);
   },
 );
 
