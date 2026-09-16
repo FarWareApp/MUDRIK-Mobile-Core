@@ -61,6 +61,29 @@ test(
 );
 
 test(
+  'native accessibility events invalidate older initial query results',
+  () => {
+    const revisions = observer.match(
+      /let nativeEventRevision = 0;/g,
+    ) ?? [];
+    const eventAdvances = observer.match(
+      /nativeEventRevision \+= 1;/g,
+    ) ?? [];
+    const querySnapshots = observer.match(
+      /const queryRevision = nativeEventRevision;/g,
+    ) ?? [];
+    const staleGuards = observer.match(
+      /nativeEventRevision === queryRevision/g,
+    ) ?? [];
+
+    assert.equal(revisions.length, 2);
+    assert.equal(eventAdvances.length, 2);
+    assert.equal(querySnapshots.length, 2);
+    assert.equal(staleGuards.length, 4);
+  },
+);
+
+test(
   'system accessibility async state commits are mounted-guarded and subscriptions are removed',
   () => {
     const mountedGuards = observer.match(
