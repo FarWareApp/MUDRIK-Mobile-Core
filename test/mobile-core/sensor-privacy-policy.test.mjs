@@ -55,6 +55,10 @@ function activation(overrides = {}) {
   };
 }
 
+function truth(input) {
+  return evaluateObservationTruth(input, NOW);
+}
+
 test('sensor registry accepts monotonic updates and exact duplicates idempotently', () => {
   const first = applySensorState([], sensor());
   assert.equal(first.accepted, true);
@@ -209,29 +213,29 @@ test('direct interaction requires explicit user request and never changes passiv
 });
 
 test('truth resolver reports verified passive visual observation from active fresh camera', () => {
-  const truth = evaluateObservationTruth({
+  const result = truth({
     privacyState: 'active',
     records: [sensor({ state: 'active' })],
     nowMs: NOW,
   });
 
-  assert.equal(truth.status, 'passive_observation_active');
-  assert.equal(truth.fullyVerified, true);
-  assert.equal(truth.passiveObservationActive, true);
-  assert.equal(truth.visualObservationActive, true);
-  assert.deepEqual(truth.activeSensorIds, ['sens_aaaaaaaaaaaaaaaa']);
+  assert.equal(result.status, 'passive_observation_active');
+  assert.equal(result.fullyVerified, true);
+  assert.equal(result.passiveObservationActive, true);
+  assert.equal(result.visualObservationActive, true);
+  assert.deepEqual(result.activeSensorIds, ['sens_aaaaaaaaaaaaaaaa']);
 });
 
 test('truth resolver reports policy violation when passive sensor is active against privacy policy', () => {
   for (const privacyState of ['visual_off', 'ambient_off', 'privacy_lock']) {
-    const truth = evaluateObservationTruth({
+    const result = truth({
       privacyState,
       records: [sensor({ state: 'active' })],
       nowMs: NOW,
     });
 
-    assert.equal(truth.status, 'policy_violation');
-    assert.deepEqual(truth.violatingSensorIds, ['sens_aaaaaaaaaaaaaaaa']);
+    assert.equal(result.status, 'policy_violation');
+    assert.deepEqual(result.violatingSensorIds, ['sens_aaaaaaaaaaaaaaaa']);
   }
 });
 
@@ -242,18 +246,18 @@ test('truth resolver treats active sensor without current permission or device t
     { deviceTrust: 'untrusted' },
     { deviceTrust: 'unknown' },
   ]) {
-    const truth = evaluateObservationTruth({
+    const result = truth({
       privacyState: 'active',
       records: [sensor({ state: 'active', ...overrides })],
       nowMs: NOW,
     });
-    assert.equal(truth.status, 'policy_violation');
+    assert.equal(result.status, 'policy_violation');
   }
 });
 
 test('truth resolver never claims not observing when registry is empty stale unknown or unavailable', () => {
   assert.equal(
-    evaluateObservationTruth({
+    truth({
       privacyState: 'privacy_lock',
       records: [],
       nowMs: NOW,
@@ -268,18 +272,102 @@ test('truth resolver never claims not observing when registry is empty stale unk
     sensor({ state: 'unknown' }),
     sensor({ state: 'unavailable' }),
   ]) {
-    const truth = evaluateObservationTruth({
+    const result = truth({
       privacyState: 'privacy_lock',
       records: [value],
       nowMs: NOW,
     });
-    assert.equal(truth.status, 'unverifiable');
-    assert.equal(truth.fullyVerified, false);
+    assert.equal(result.status, 'unverifiable');
+    assert.equal(result.fullyVerified, false);
   }
 });
 
+test('untrusted input time cannot roll stale sensor evidence back into freshness', () => {
+  const staleVerifiedAtMs = NOW - MAX_SENSOR_STATE_FRESHNESS_MS - 1;
+  const result = evaluateObservationTruth(
+    {
+      privacyState: 'privacy_lock',
+      records: [
+        sensor({
+          verifiedAtMs: staleVerifiedAtMs,
+          lastTransitionAtMs: staleVerifiedAtMs,
+        }),
+      ],
+      nowMs: staleVerifiedAtMs,
+    },
+    NOW,
+  );
+
+  assert.equal(result.status, 'unverifiable');
+  assert.equal(result.fullyVerified, false);
+  assert.deepEqual(result.unverifiableSensorIds, ['sens_aaaaaaaaaaaaaaaa']);
+});
+
+test('untrusted freshness override can narrow but never widen the reviewed truth window', () => {
+  const widened = evaluateObservationTruth(
+    {
+      privacyState: 'privacy_lock',
+      records: [sensor()],
+      nowMs: NOW,
+      maxFreshnessMs: MAX_SENSOR_STATE_FRESHNESS_MS + 1,
+    },
+    NOW,
+  );
+  assert.equal(widened.status, 'unverifiable');
+  assert.equal(widened.fullyVerified, false);
+
+  const narrowed = evaluateObservationTruth(
+    {
+      privacyState: 'privacy_lock',
+      records: [
+        sensor({
+          verifiedAtMs: NOW - 101,
+          lastTransitionAtMs: NOW - 101,
+        }),
+      ],
+      nowMs: NOW,
+      maxFreshnessMs: 100,
+    },
+    NOW,
+  );
+  assert.equal(narrowed.status, 'unverifiable');
+});
+
+test('truth resolver requires trusted evaluation time and strict unique sensor records', () => {
+  const input = {
+    privacyState: 'privacy_lock',
+    records: [sensor()],
+    nowMs: NOW,
+  };
+
+  assert.equal(evaluateObservationTruth(input).status, 'unverifiable');
+  assert.equal(evaluateObservationTruth(input, Number.NaN).status, 'unverifiable');
+
+  assert.equal(
+    evaluateObservationTruth(
+      {
+        ...input,
+        records: [{ ...sensor(), hiddenAuthority: true }],
+      },
+      NOW,
+    ).status,
+    'unverifiable',
+  );
+
+  assert.equal(
+    evaluateObservationTruth(
+      {
+        ...input,
+        records: [sensor(), sensor()],
+      },
+      NOW,
+    ).status,
+    'unverifiable',
+  );
+});
+
 test('direct sensor interaction is distinguished from passive monitoring', () => {
-  const truth = evaluateObservationTruth({
+  const result = truth({
     privacyState: 'privacy_lock',
     records: [
       sensor({
@@ -292,19 +380,19 @@ test('direct sensor interaction is distinguished from passive monitoring', () =>
     nowMs: NOW,
   });
 
-  assert.equal(truth.status, 'direct_sensor_use_only');
-  assert.equal(truth.passiveObservationActive, false);
-  assert.equal(truth.directInteractionActive, true);
+  assert.equal(result.status, 'direct_sensor_use_only');
+  assert.equal(result.passiveObservationActive, false);
+  assert.equal(result.directInteractionActive, true);
 });
 
 test('all-fresh inactive sensor state can truthfully report not_observing', () => {
-  const truth = evaluateObservationTruth({
+  const result = truth({
     privacyState: 'privacy_lock',
     records: [sensor({ state: 'inactive' })],
     nowMs: NOW,
   });
 
-  assert.equal(truth.status, 'not_observing');
-  assert.equal(truth.fullyVerified, true);
-  assert.equal(truth.passiveObservationActive, false);
+  assert.equal(result.status, 'not_observing');
+  assert.equal(result.fullyVerified, true);
+  assert.equal(result.passiveObservationActive, false);
 });
