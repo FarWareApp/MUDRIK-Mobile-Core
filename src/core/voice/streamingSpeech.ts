@@ -202,7 +202,7 @@ export function validateStreamingSpeechSegment(
 
   if (
     typeof record.startedAtMs !== 'number' ||
-    !Number.isFinite(record.startedAtMs) ||
+    !Number.isSafeInteger(record.startedAtMs) ||
     record.startedAtMs < 0
   ) {
     return reject('invalid_timing');
@@ -212,7 +212,7 @@ export function validateStreamingSpeechSegment(
     record.endedAtMs !== null &&
     (
       typeof record.endedAtMs !== 'number' ||
-      !Number.isFinite(record.endedAtMs) ||
+      !Number.isSafeInteger(record.endedAtMs) ||
       record.endedAtMs < record.startedAtMs
     )
   ) {
