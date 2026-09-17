@@ -1,5 +1,9 @@
+import { parseTrustedEvaluationTime } from '../security/trustedEvaluationTime';
 import type { ObservationPrivacyPolicyState } from './observationPrivacyState';
-import type { SensorStateRecord } from './sensorStateRegistry';
+import {
+  parseSensorStateRecord,
+  type SensorStateRecord,
+} from './sensorStateRegistry';
 
 export type ObservationTruthStatus =
   | 'passive_observation_active'
@@ -23,7 +27,10 @@ export const MAX_SENSOR_STATE_FRESHNESS_MS = 15_000;
 
 const VISUAL_TYPES = new Set(['camera', 'spatial']);
 
-export function evaluateObservationTruth(input: unknown): ObservationTruth {
+export function evaluateObservationTruth(
+  input: unknown,
+  trustedEvaluationTimeMsInput?: unknown,
+): ObservationTruth {
   const failClosed = (): ObservationTruth => ({
     status: 'unverifiable',
     fullyVerified: false,
@@ -45,31 +52,47 @@ export function evaluateObservationTruth(input: unknown): ObservationTruth {
     return failClosed();
   }
 
+  const trustedEvaluationTimeMs = parseTrustedEvaluationTime(
+    trustedEvaluationTimeMsInput,
+  );
+
   if (
+    trustedEvaluationTimeMs === null ||
     !['active', 'visual_off', 'ambient_off', 'privacy_lock'].includes(
       String(record.privacyState),
     ) ||
     !Array.isArray(record.records) ||
     typeof record.nowMs !== 'number' ||
-    !Number.isFinite(record.nowMs)
+    !Number.isSafeInteger(record.nowMs) ||
+    record.nowMs < 0
   ) {
     return failClosed();
   }
 
   const privacyState = record.privacyState as ObservationPrivacyPolicyState;
-  const records = record.records as readonly SensorStateRecord[];
   const maxFreshnessMs =
     record.maxFreshnessMs === undefined
       ? MAX_SENSOR_STATE_FRESHNESS_MS
       : typeof record.maxFreshnessMs === 'number' &&
-          Number.isFinite(record.maxFreshnessMs) &&
+          Number.isSafeInteger(record.maxFreshnessMs) &&
           record.maxFreshnessMs > 0 &&
-          record.maxFreshnessMs <= 60_000
+          record.maxFreshnessMs <= MAX_SENSOR_STATE_FRESHNESS_MS
         ? record.maxFreshnessMs
         : null;
 
-  if (maxFreshnessMs === null || records.length === 0) {
+  if (maxFreshnessMs === null || record.records.length === 0) {
     return failClosed();
+  }
+
+  const records: SensorStateRecord[] = [];
+  const seenSensorIds = new Set<string>();
+  for (const value of record.records) {
+    const sensor = parseSensorStateRecord(value);
+    if (!sensor || seenSensorIds.has(sensor.sensorId)) {
+      return failClosed();
+    }
+    seenSensorIds.add(sensor.sensorId);
+    records.push(sensor);
   }
 
   const activeSensorIds: string[] = [];
@@ -81,19 +104,12 @@ export function evaluateObservationTruth(input: unknown): ObservationTruth {
 
   for (const sensor of records) {
     if (
-      typeof sensor !== 'object' ||
-      sensor === null ||
-      typeof sensor.sensorId !== 'string' ||
-      typeof sensor.verifiedAtMs !== 'number' ||
-      !Number.isFinite(sensor.verifiedAtMs) ||
-      sensor.verifiedAtMs > record.nowMs ||
-      record.nowMs - sensor.verifiedAtMs > maxFreshnessMs ||
+      sensor.verifiedAtMs > trustedEvaluationTimeMs ||
+      trustedEvaluationTimeMs - sensor.verifiedAtMs > maxFreshnessMs ||
       sensor.state === 'unknown' ||
       sensor.state === 'unavailable'
     ) {
-      if (typeof sensor?.sensorId === 'string') {
-        unverifiableSensorIds.push(sensor.sensorId);
-      }
+      unverifiableSensorIds.push(sensor.sensorId);
       continue;
     }
 
