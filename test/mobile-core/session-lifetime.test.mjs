@@ -42,18 +42,26 @@ function input(value, nowMs = NOW) {
 
 test('access session lifetime at the configured maximum is accepted before expiry', () => {
   const expiresAtMs = NOW + MAX_ACCESS_SESSION_LIFETIME_MS;
+  const evaluationTimeMs = NOW + 1;
 
   assert.equal(
-    evaluateSession(input(session(expiresAtMs), NOW + 1)).allowed,
+    evaluateSession(
+      input(session(expiresAtMs), evaluationTimeMs),
+      evaluationTimeMs,
+    ).allowed,
     true,
   );
 });
 
 test('access session lifetime beyond the configured maximum is rejected', () => {
   const expiresAtMs = NOW + MAX_ACCESS_SESSION_LIFETIME_MS + 1;
+  const evaluationTimeMs = NOW + 1;
 
   assert.deepEqual(
-    evaluateSession(input(session(expiresAtMs), NOW + 1)),
+    evaluateSession(
+      input(session(expiresAtMs), evaluationTimeMs),
+      evaluationTimeMs,
+    ),
     {
       allowed: false,
       reason: 'lifetime_exceeded',
