@@ -6,7 +6,7 @@ import {
 } from './loadTypeScriptModule.mjs';
 
 const {
-  evaluateAuthenticationChallenge,
+  evaluateAuthenticationChallenge: evaluateAuthenticationChallengePolicy,
   MAX_AUTH_CHALLENGE_LIFETIME_MS,
 } = loadTypeScriptModule('src/core/identity/authChallengePolicy.ts');
 
@@ -23,6 +23,10 @@ const DEVICE_B = 'dev_bbbbbbbbbbbbbbbb';
 const CHALLENGE = 'ach_aaaaaaaaaaaaaaaa';
 const NONCE = 'N'.repeat(43);
 const OTHER_NONCE = 'O'.repeat(43);
+
+function evaluateAuthenticationChallenge(input, trustedEvaluationTimeMs = NOW) {
+  return evaluateAuthenticationChallengePolicy(input, trustedEvaluationTimeMs);
+}
 
 function challenge(overrides = {}) {
   return {
@@ -123,8 +127,27 @@ test('consumed revoked expired and overlong authentication challenges fail close
         expiresAtMs: NOW + MAX_AUTH_CHALLENGE_LIFETIME_MS + 1,
         nowMs: NOW + 1,
       }),
+      NOW + 1,
     ).reason,
     'challenge_lifetime_exceeded',
+  );
+});
+
+test('untrusted challenge time cannot revive an expired challenge', () => {
+  assert.equal(
+    evaluateAuthenticationChallengePolicy(
+      challenge({
+        expiresAtMs: NOW - 1,
+        nowMs: NOW - 60_000,
+      }),
+      NOW,
+    ).reason,
+    'challenge_expired',
+  );
+
+  assert.equal(
+    evaluateAuthenticationChallengePolicy(challenge()).reason,
+    'invalid_evaluation_time',
   );
 });
 
