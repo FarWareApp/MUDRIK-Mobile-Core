@@ -1,5 +1,6 @@
 import { isIdentityId } from './identityIds';
 import type { AuthenticationAssurance } from './authAssurance';
+import { parseTrustedEvaluationTime } from './trustedEvaluationTime';
 
 export type SessionState =
   | 'active'
@@ -11,6 +12,7 @@ export type SessionState =
 export type SessionDecisionReason =
   | 'allowed'
   | 'invalid_session'
+  | 'invalid_evaluation_time'
   | 'account_mismatch'
   | 'device_mismatch'
   | 'device_key_mismatch'
@@ -59,6 +61,10 @@ function isSessionState(value: unknown): value is SessionState {
   );
 }
 
+function isEpochMs(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
+
 function parseSession(value: unknown): SessionRecord | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return null;
@@ -86,12 +92,9 @@ function parseSession(value: unknown): SessionRecord | null {
     !isIdentityId('account', record.accountId) ||
     !isIdentityId('device', record.deviceId) ||
     !isIdentityId('device_key', record.deviceKeyId) ||
-    typeof record.issuedAtMs !== 'number' ||
-    !Number.isFinite(record.issuedAtMs) ||
-    typeof record.expiresAtMs !== 'number' ||
-    !Number.isFinite(record.expiresAtMs) ||
-    typeof record.authenticatedAtMs !== 'number' ||
-    !Number.isFinite(record.authenticatedAtMs) ||
+    !isEpochMs(record.issuedAtMs) ||
+    !isEpochMs(record.expiresAtMs) ||
+    !isEpochMs(record.authenticatedAtMs) ||
     record.expiresAtMs <= record.issuedAtMs ||
     !isAssurance(record.assurance) ||
     !isSessionState(record.state)
@@ -102,7 +105,10 @@ function parseSession(value: unknown): SessionRecord | null {
   return record as SessionRecord;
 }
 
-export function evaluateSession(input: unknown): SessionDecision {
+export function evaluateSession(
+  input: unknown,
+  trustedEvaluationTimeMsInput?: unknown,
+): SessionDecision {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     return { allowed: false, reason: 'invalid_session' };
   }
@@ -123,13 +129,19 @@ export function evaluateSession(input: unknown): SessionDecision {
   const session = parseSession(wrapper.session);
   if (
     !session ||
-    typeof wrapper.nowMs !== 'number' ||
-    !Number.isFinite(wrapper.nowMs) ||
+    !isEpochMs(wrapper.nowMs) ||
     !isIdentityId('account', wrapper.expectedAccountId) ||
     !isIdentityId('device', wrapper.expectedDeviceId) ||
     !isIdentityId('device_key', wrapper.expectedDeviceKeyId)
   ) {
     return { allowed: false, reason: 'invalid_session' };
+  }
+
+  const trustedEvaluationTimeMs = parseTrustedEvaluationTime(
+    trustedEvaluationTimeMsInput,
+  );
+  if (trustedEvaluationTimeMs === null) {
+    return { allowed: false, reason: 'invalid_evaluation_time' };
   }
 
   if (session.accountId !== wrapper.expectedAccountId) {
@@ -145,8 +157,8 @@ export function evaluateSession(input: unknown): SessionDecision {
   }
 
   if (
-    session.issuedAtMs > wrapper.nowMs ||
-    session.authenticatedAtMs > wrapper.nowMs
+    session.issuedAtMs > trustedEvaluationTimeMs ||
+    session.authenticatedAtMs > trustedEvaluationTimeMs
   ) {
     return { allowed: false, reason: 'issued_in_future' };
   }
@@ -170,7 +182,10 @@ export function evaluateSession(input: unknown): SessionDecision {
     return { allowed: false, reason: 'reauthentication_required' };
   }
 
-  if (session.state === 'expired' || session.expiresAtMs <= wrapper.nowMs) {
+  if (
+    session.state === 'expired' ||
+    session.expiresAtMs <= trustedEvaluationTimeMs
+  ) {
     return { allowed: false, reason: 'expired' };
   }
 
