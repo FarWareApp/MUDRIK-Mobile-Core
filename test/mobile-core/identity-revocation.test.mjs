@@ -6,7 +6,7 @@ import {
 } from './loadTypeScriptModule.mjs';
 
 const {
-  evaluateRevocation,
+  evaluateRevocation: evaluateRevocationPolicy,
 } = loadTypeScriptModule('src/core/identity/revocationPolicy.ts');
 
 const NOW = 30_000_000;
@@ -16,6 +16,10 @@ const SESSION_A = 'sess_aaaaaaaaaaaaaaaa';
 const SESSION_B = 'sess_bbbbbbbbbbbbbbbb';
 const DEVICE_A = 'dev_aaaaaaaaaaaaaaaa';
 const DEVICE_B = 'dev_bbbbbbbbbbbbbbbb';
+
+function evaluateRevocation(input, trustedEvaluationTimeMs = NOW) {
+  return evaluateRevocationPolicy(input, trustedEvaluationTimeMs);
+}
 
 function base(overrides = {}) {
   return {
@@ -34,7 +38,7 @@ function base(overrides = {}) {
 }
 
 test('self sign-out is allowed without privileged step-up', () => {
-  assert.deepEqual(evaluateRevocation(base()), {
+  assert.deepEqual(evaluateRevocationPolicy(base()), {
     allowed: true,
     reason: 'allowed',
   });
@@ -117,6 +121,33 @@ test('global revocation requires fresh phishing-resistant authentication', () =>
       true,
     );
   }
+});
+
+test('untrusted request time cannot make stale revocation authentication fresh', () => {
+  const staleAuthentication = NOW - (16 * 60 * 1000);
+
+  assert.equal(
+    evaluateRevocationPolicy(
+      base({
+        targetSessionId: SESSION_B,
+        authenticationAssurance: 'verified',
+        authenticatedAtMs: staleAuthentication,
+        nowMs: staleAuthentication + 1_000,
+      }),
+      NOW,
+    ).reason,
+    'authentication_required',
+  );
+
+  assert.equal(
+    evaluateRevocationPolicy(
+      base({
+        targetSessionId: SESSION_B,
+        authenticationAssurance: 'verified',
+      }),
+    ).reason,
+    'invalid_evaluation_time',
+  );
 });
 
 test('revocation never crosses account boundary', () => {
