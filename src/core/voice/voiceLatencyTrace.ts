@@ -61,7 +61,7 @@ export function buildVoiceLatencyTrace(
       typeof record.milestone !== 'string' ||
       !MILESTONES.includes(record.milestone as VoiceLatencyMilestone) ||
       typeof record.atMs !== 'number' ||
-      !Number.isFinite(record.atMs) ||
+      !Number.isSafeInteger(record.atMs) ||
       record.atMs < 0 ||
       record.atMs < previousAtMs ||
       seen.has(record.milestone as VoiceLatencyMilestone)
