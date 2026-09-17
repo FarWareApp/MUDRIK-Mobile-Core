@@ -1,4 +1,5 @@
 import type { CapabilityRisk } from '../security/capabilityRisk';
+import { parseTrustedEvaluationTime } from './trustedEvaluationTime';
 
 export type AuthenticationAssurance =
   | 'none'
@@ -15,6 +16,7 @@ export type StepUpRequirement = Readonly<{
 export type AuthenticationDecisionReason =
   | 'allowed'
   | 'invalid_input'
+  | 'invalid_evaluation_time'
   | 'insufficient_assurance'
   | 'stale_authentication';
 
@@ -83,7 +85,10 @@ export function getStepUpRequirement(
   return BASELINE_STEP_UP_REQUIREMENTS[risk];
 }
 
-export function evaluateAuthenticationAssurance(input: unknown): AuthenticationDecision {
+export function evaluateAuthenticationAssurance(
+  input: unknown,
+  trustedEvaluationTimeMsInput?: unknown,
+): AuthenticationDecision {
   const fallback = BASELINE_STEP_UP_REQUIREMENTS.critical;
 
   if (
@@ -128,12 +133,29 @@ export function evaluateAuthenticationAssurance(input: unknown): AuthenticationD
     };
   }
 
+  const requiresTrustedTime =
+    requirement.maxAuthenticationAgeMs !== null ||
+    record.authenticatedAtMs !== undefined;
+
+  const trustedEvaluationTimeMs = requiresTrustedTime
+    ? parseTrustedEvaluationTime(trustedEvaluationTimeMsInput)
+    : null;
+
+  if (requiresTrustedTime && trustedEvaluationTimeMs === null) {
+    return {
+      allowed: false,
+      reason: 'invalid_evaluation_time',
+      required: requirement,
+    };
+  }
+
   if (requirement.maxAuthenticationAgeMs !== null) {
     if (
       typeof record.authenticatedAtMs !== 'number' ||
-      !Number.isFinite(record.authenticatedAtMs) ||
-      record.authenticatedAtMs > record.nowMs ||
-      record.nowMs - record.authenticatedAtMs >
+      !Number.isSafeInteger(record.authenticatedAtMs) ||
+      record.authenticatedAtMs < 0 ||
+      record.authenticatedAtMs > trustedEvaluationTimeMs! ||
+      trustedEvaluationTimeMs! - record.authenticatedAtMs >
         requirement.maxAuthenticationAgeMs
     ) {
       return {
@@ -146,8 +168,9 @@ export function evaluateAuthenticationAssurance(input: unknown): AuthenticationD
     record.authenticatedAtMs !== undefined &&
     (
       typeof record.authenticatedAtMs !== 'number' ||
-      !Number.isFinite(record.authenticatedAtMs) ||
-      record.authenticatedAtMs > record.nowMs
+      !Number.isSafeInteger(record.authenticatedAtMs) ||
+      record.authenticatedAtMs < 0 ||
+      record.authenticatedAtMs > trustedEvaluationTimeMs!
     )
   ) {
     return { allowed: false, reason: 'invalid_input', required: requirement };
