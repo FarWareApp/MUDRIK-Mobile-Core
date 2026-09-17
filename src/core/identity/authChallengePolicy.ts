@@ -1,4 +1,5 @@
 import { isIdentityId } from './identityIds';
+import { parseTrustedEvaluationTime } from './trustedEvaluationTime';
 
 export type AuthenticationChallengePurpose =
   | 'sign_in'
@@ -14,6 +15,7 @@ export type AuthenticationChallengeState =
 export type AuthenticationChallengeDecisionReason =
   | 'allowed'
   | 'invalid_challenge'
+  | 'invalid_evaluation_time'
   | 'purpose_mismatch'
   | 'account_mismatch'
   | 'session_mismatch'
@@ -51,8 +53,13 @@ function isNonce(value: unknown): value is string {
   );
 }
 
+function isEpochMs(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
+
 export function evaluateAuthenticationChallenge(
   input: unknown,
+  trustedEvaluationTimeMsInput?: unknown,
 ): AuthenticationChallengeDecision {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     return { allowed: false, reason: 'invalid_challenge' };
@@ -84,19 +91,23 @@ export function evaluateAuthenticationChallenge(
     !isPurpose(record.purpose) ||
     !isIdentityId('account', record.accountId) ||
     !isNonce(record.challengeNonce) ||
-    typeof record.issuedAtMs !== 'number' ||
-    !Number.isFinite(record.issuedAtMs) ||
-    typeof record.expiresAtMs !== 'number' ||
-    !Number.isFinite(record.expiresAtMs) ||
+    !isEpochMs(record.issuedAtMs) ||
+    !isEpochMs(record.expiresAtMs) ||
     record.expiresAtMs <= record.issuedAtMs ||
     !isState(record.state) ||
-    typeof record.nowMs !== 'number' ||
-    !Number.isFinite(record.nowMs) ||
+    !isEpochMs(record.nowMs) ||
     !isPurpose(record.expectedPurpose) ||
     !isIdentityId('account', record.expectedAccountId) ||
     !isNonce(record.presentedChallengeNonce)
   ) {
     return { allowed: false, reason: 'invalid_challenge' };
+  }
+
+  const trustedEvaluationTimeMs = parseTrustedEvaluationTime(
+    trustedEvaluationTimeMsInput,
+  );
+  if (trustedEvaluationTimeMs === null) {
+    return { allowed: false, reason: 'invalid_evaluation_time' };
   }
 
   const sessionRequired = record.purpose !== 'sign_in';
@@ -149,8 +160,8 @@ export function evaluateAuthenticationChallenge(
   }
 
   if (
-    record.issuedAtMs > record.nowMs ||
-    record.expiresAtMs <= record.nowMs
+    record.issuedAtMs > trustedEvaluationTimeMs ||
+    record.expiresAtMs <= trustedEvaluationTimeMs
   ) {
     return { allowed: false, reason: 'challenge_expired' };
   }
