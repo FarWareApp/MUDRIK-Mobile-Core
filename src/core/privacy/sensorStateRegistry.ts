@@ -84,7 +84,7 @@ function isOneOf<T extends string>(
   return typeof value === 'string' && values.includes(value as T);
 }
 
-function parseRecord(value: unknown): SensorStateRecord | null {
+export function parseSensorStateRecord(value: unknown): SensorStateRecord | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return null;
   }
@@ -209,7 +209,7 @@ export function applySensorState(
   current: readonly SensorStateRecord[],
   input: unknown,
 ): SensorRegistryUpdate {
-  const parsed = parseRecord(input);
+  const parsed = parseSensorStateRecord(input);
   if (!parsed) {
     return {
       accepted: false,
