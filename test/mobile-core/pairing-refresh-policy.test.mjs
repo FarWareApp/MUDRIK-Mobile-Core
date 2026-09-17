@@ -10,7 +10,7 @@ const {
 } = loadTypeScriptModule('src/core/identity/refreshFamilyPolicy.ts');
 
 const {
-  evaluatePairing,
+  evaluatePairing: evaluatePairingPolicy,
 } = loadTypeScriptModule('src/core/identity/pairingPolicy.ts');
 
 const NOW = 20_000_000;
@@ -23,6 +23,10 @@ const KEY_B = 'dkey_bbbbbbbbbbbbbbbb';
 const KEY_C = 'dkey_cccccccccccccccc';
 const FAMILY_A = 'rfm_aaaaaaaaaaaaaaaa';
 const PAIR_A = 'pair_aaaaaaaaaaaaaaaa';
+
+function evaluatePairing(input, trustedEvaluationTimeMs = NOW) {
+  return evaluatePairingPolicy(input, trustedEvaluationTimeMs);
+}
 
 function refreshFamily(overrides = {}) {
   return {
@@ -242,6 +246,25 @@ test('pairing challenge is one-time and expires fail-closed', () => {
       }),
     ).reason,
     'challenge_expired',
+  );
+});
+
+test('untrusted pairing time cannot revive an expired challenge or stale authentication', () => {
+  const expiredChallenge = pairingChallenge({ expiresAtMs: NOW - 1 });
+  assert.equal(
+    evaluatePairingPolicy(
+      pairingInput({
+        challenge: expiredChallenge,
+        nowMs: NOW - 60_000,
+      }),
+      NOW,
+    ).reason,
+    'challenge_expired',
+  );
+
+  assert.equal(
+    evaluatePairingPolicy(pairingInput()).reason,
+    'invalid_evaluation_time',
   );
 });
 
