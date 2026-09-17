@@ -1,5 +1,6 @@
 import { evaluateAuthenticationAssurance } from './authAssurance';
 import { isIdentityId } from './identityIds';
+import { parseTrustedEvaluationTime } from './trustedEvaluationTime';
 
 export type RevocationOperation =
   | 'sign_out_session'
@@ -10,6 +11,7 @@ export type RevocationOperation =
 export type RevocationDecisionReason =
   | 'allowed'
   | 'invalid_revocation_request'
+  | 'invalid_evaluation_time'
   | 'account_mismatch'
   | 'target_required'
   | 'authentication_required'
@@ -29,7 +31,14 @@ function isOperation(value: unknown): value is RevocationOperation {
   );
 }
 
-export function evaluateRevocation(input: unknown): RevocationDecision {
+function isEpochMs(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
+
+export function evaluateRevocation(
+  input: unknown,
+  trustedEvaluationTimeMsInput?: unknown,
+): RevocationDecision {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     return { allowed: false, reason: 'invalid_revocation_request' };
   }
@@ -59,8 +68,7 @@ export function evaluateRevocation(input: unknown): RevocationDecision {
     !isIdentityId('account', record.targetAccountId) ||
     !isIdentityId('session', record.actorSessionId) ||
     !isIdentityId('device', record.actorDeviceId) ||
-    typeof record.nowMs !== 'number' ||
-    !Number.isFinite(record.nowMs) ||
+    !isEpochMs(record.nowMs) ||
     typeof record.explicitApproval !== 'boolean'
   ) {
     return { allowed: false, reason: 'invalid_revocation_request' };
@@ -99,18 +107,28 @@ export function evaluateRevocation(input: unknown): RevocationDecision {
     return { allowed: true, reason: 'allowed' };
   }
 
+  const trustedEvaluationTimeMs = parseTrustedEvaluationTime(
+    trustedEvaluationTimeMsInput,
+  );
+  if (trustedEvaluationTimeMs === null) {
+    return { allowed: false, reason: 'invalid_evaluation_time' };
+  }
+
   const risk =
     record.operation === 'revoke_all_other_sessions' ||
     record.operation === 'revoke_all_devices'
       ? 'critical'
       : 'high';
 
-  const authDecision = evaluateAuthenticationAssurance({
-    risk,
-    assurance: record.authenticationAssurance,
-    nowMs: record.nowMs,
-    authenticatedAtMs: record.authenticatedAtMs,
-  });
+  const authDecision = evaluateAuthenticationAssurance(
+    {
+      risk,
+      assurance: record.authenticationAssurance,
+      nowMs: record.nowMs,
+      authenticatedAtMs: record.authenticatedAtMs,
+    },
+    trustedEvaluationTimeMs,
+  );
 
   if (!authDecision.allowed) {
     return { allowed: false, reason: 'authentication_required' };
