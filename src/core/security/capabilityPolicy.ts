@@ -40,6 +40,7 @@ export type CapabilityDecisionReason =
   | 'no_matching_grant'
   | 'grant_invalid'
   | 'grant_scope_required'
+  | 'invalid_evaluation_time'
   | 'grant_revoked'
   | 'grant_expired'
   | 'resource_mismatch'
@@ -86,6 +87,14 @@ function hasOnlyKeys(
 
 function isElevationLevel(value: unknown): value is ElevationLevel {
   return typeof value === 'string' && ELEVATION_VALUES.includes(value as ElevationLevel);
+}
+
+function isValidEpochMs(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isSafeInteger(value) &&
+    value >= 0
+  );
 }
 
 function normalizeDomain(value: string): string | null {
@@ -201,8 +210,7 @@ function parseRequest(value: unknown): CapabilityRequest | null {
     typeof value.capability !== 'string' ||
     value.capability.length === 0 ||
     value.capability.length > 128 ||
-    typeof value.nowMs !== 'number' ||
-    !Number.isFinite(value.nowMs)
+    !isValidEpochMs(value.nowMs)
   ) {
     return null;
   }
@@ -353,14 +361,14 @@ function parseGrant(value: unknown):
 
   if (
     value.expiresAtMs !== undefined &&
-    (typeof value.expiresAtMs !== 'number' || !Number.isFinite(value.expiresAtMs))
+    !isValidEpochMs(value.expiresAtMs)
   ) {
     return { grant: null, reason: 'grant_invalid' };
   }
 
   if (
     value.revokedAtMs !== undefined &&
-    (typeof value.revokedAtMs !== 'number' || !Number.isFinite(value.revokedAtMs))
+    !isValidEpochMs(value.revokedAtMs)
   ) {
     return { grant: null, reason: 'grant_invalid' };
   }
@@ -402,12 +410,27 @@ function parseGrant(value: unknown):
 function evaluateGrant(
   grant: CapabilityGrant,
   request: CapabilityRequest,
+  trustedEvaluationTimeMs: number | undefined,
 ): CapabilityDecision {
-  if (grant.revokedAtMs !== undefined && grant.revokedAtMs <= request.nowMs) {
+  const isTimeBound =
+    grant.revokedAtMs !== undefined ||
+    grant.expiresAtMs !== undefined;
+
+  if (isTimeBound && trustedEvaluationTimeMs === undefined) {
+    return { allowed: false, reason: 'invalid_evaluation_time' };
+  }
+
+  if (
+    grant.revokedAtMs !== undefined &&
+    grant.revokedAtMs <= trustedEvaluationTimeMs!
+  ) {
     return { allowed: false, reason: 'grant_revoked' };
   }
 
-  if (grant.expiresAtMs !== undefined && grant.expiresAtMs <= request.nowMs) {
+  if (
+    grant.expiresAtMs !== undefined &&
+    grant.expiresAtMs <= trustedEvaluationTimeMs!
+  ) {
     return { allowed: false, reason: 'grant_expired' };
   }
 
@@ -460,6 +483,7 @@ function evaluateGrant(
 export function authorizeCapability(
   requestInput: unknown,
   grants: readonly unknown[],
+  trustedEvaluationTimeMsInput?: unknown,
 ): CapabilityDecision {
   const request = parseRequest(requestInput);
   if (!request) {
@@ -468,6 +492,14 @@ export function authorizeCapability(
 
   if (!isCapabilityId(request.capability)) {
     return { allowed: false, reason: 'unknown_capability' };
+  }
+
+  let trustedEvaluationTimeMs: number | undefined;
+  if (trustedEvaluationTimeMsInput !== undefined) {
+    if (!isValidEpochMs(trustedEvaluationTimeMsInput)) {
+      return { allowed: false, reason: 'invalid_evaluation_time' };
+    }
+    trustedEvaluationTimeMs = trustedEvaluationTimeMsInput;
   }
 
   const candidates = grants.filter(
@@ -490,7 +522,11 @@ export function authorizeCapability(
       continue;
     }
 
-    const decision = evaluateGrant(parsed.grant, request);
+    const decision = evaluateGrant(
+      parsed.grant,
+      request,
+      trustedEvaluationTimeMs,
+    );
     if (decision.allowed) {
       return decision;
     }
