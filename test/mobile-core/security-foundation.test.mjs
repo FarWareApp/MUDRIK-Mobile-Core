@@ -99,6 +99,7 @@ test('revoked and expired grants fail closed', () => {
     authorizeCapability(
       request(),
       [grant({ revokedAtMs: NOW - 1 })],
+      NOW,
     ).reason,
     'grant_revoked',
   );
@@ -107,8 +108,46 @@ test('revoked and expired grants fail closed', () => {
     authorizeCapability(
       request(),
       [grant({ expiresAtMs: NOW })],
+      NOW,
     ).reason,
     'grant_expired',
+  );
+});
+
+test('untrusted request time cannot roll back temporal grant enforcement', () => {
+  assert.equal(
+    authorizeCapability(
+      request({ nowMs: 0 }),
+      [grant({ revokedAtMs: NOW - 1 })],
+      NOW,
+    ).reason,
+    'grant_revoked',
+  );
+
+  assert.equal(
+    authorizeCapability(
+      request({ nowMs: 0 }),
+      [grant({ expiresAtMs: NOW - 1 })],
+      NOW,
+    ).reason,
+    'grant_expired',
+  );
+
+  assert.equal(
+    authorizeCapability(
+      request({ nowMs: 0 }),
+      [grant({ expiresAtMs: NOW + 10_000 })],
+    ).reason,
+    'invalid_evaluation_time',
+  );
+
+  assert.equal(
+    authorizeCapability(
+      request(),
+      [grant({ expiresAtMs: NOW + 10_000 })],
+      Number.NaN,
+    ).reason,
+    'invalid_evaluation_time',
   );
 });
 
@@ -119,6 +158,7 @@ test('a later valid grant can authorize even when an earlier candidate is expire
       grant({ grantId: 'expired', expiresAtMs: NOW - 1 }),
       grant({ grantId: 'valid', expiresAtMs: NOW + 10_000 }),
     ],
+    NOW,
   );
 
   assert.deepEqual(decision, {
@@ -339,6 +379,14 @@ test('invalid request identity and timestamp fail closed', () => {
   assert.equal(
     authorizeCapability(
       request({ nowMs: Number.NaN }),
+      [grant()],
+    ).reason,
+    'invalid_request',
+  );
+
+  assert.equal(
+    authorizeCapability(
+      request({ nowMs: -1 }),
       [grant()],
     ).reason,
     'invalid_request',
