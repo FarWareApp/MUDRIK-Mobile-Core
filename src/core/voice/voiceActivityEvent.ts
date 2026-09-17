@@ -110,7 +110,7 @@ export function validateVoiceActivityEvent(
 
   if (
     typeof record.atMs !== 'number' ||
-    !Number.isFinite(record.atMs) ||
+    !Number.isSafeInteger(record.atMs) ||
     record.atMs < 0
   ) {
     return reject('invalid_timing');
