@@ -12,12 +12,12 @@ const {
 } = loadTypeScriptModule('src/core/identity/identityIds.ts');
 
 const {
-  evaluateAuthenticationAssurance,
+  evaluateAuthenticationAssurance: evaluateAuthenticationAssurancePolicy,
   getStepUpRequirement,
 } = loadTypeScriptModule('src/core/identity/authAssurance.ts');
 
 const {
-  evaluateSession,
+  evaluateSession: evaluateSessionPolicy,
 } = loadTypeScriptModule('src/core/identity/sessionPolicy.ts');
 
 const {
@@ -34,6 +34,14 @@ const KEY_B = 'dkey_bbbbbbbbbbbbbbbb';
 const SESSION_A = 'sess_aaaaaaaaaaaaaaaa';
 const THUMB_A = 'A'.repeat(43);
 const THUMB_B = 'B'.repeat(43);
+
+function evaluateAuthenticationAssurance(input, trustedEvaluationTimeMs = NOW) {
+  return evaluateAuthenticationAssurancePolicy(input, trustedEvaluationTimeMs);
+}
+
+function evaluateSession(input, trustedEvaluationTimeMs = NOW) {
+  return evaluateSessionPolicy(input, trustedEvaluationTimeMs);
+}
 
 function activeSession(overrides = {}) {
   return {
@@ -155,6 +163,35 @@ test('critical risk requires fresh phishing-resistant authentication', () => {
   );
 });
 
+test('untrusted request time cannot make stale authentication fresh', () => {
+  const authenticatedAtMs = NOW - (16 * 60 * 1000);
+
+  assert.equal(
+    evaluateAuthenticationAssurancePolicy(
+      {
+        risk: 'high',
+        assurance: 'verified',
+        nowMs: authenticatedAtMs + 1_000,
+        authenticatedAtMs,
+      },
+      NOW,
+    ).reason,
+    'stale_authentication',
+  );
+
+  assert.equal(
+    evaluateAuthenticationAssurancePolicy(
+      {
+        risk: 'high',
+        assurance: 'verified',
+        nowMs: NOW,
+        authenticatedAtMs: NOW - 1_000,
+      },
+    ).reason,
+    'invalid_evaluation_time',
+  );
+});
+
 test('authentication assurance rejects forged fields future timestamps and malformed risk', () => {
   for (const input of [
     null,
@@ -234,6 +271,23 @@ test('expired revoked reauth and suspected-reuse sessions fail closed', () => {
       sessionInput(activeSession({ state: 'suspected_reuse' })),
     ).reason,
     'suspected_reuse',
+  );
+});
+
+test('untrusted request time cannot revive an expired session', () => {
+  const expired = activeSession({ expiresAtMs: NOW - 1 });
+
+  assert.equal(
+    evaluateSessionPolicy(
+      sessionInput(expired, { nowMs: NOW - 120_000 }),
+      NOW,
+    ).reason,
+    'expired',
+  );
+
+  assert.equal(
+    evaluateSessionPolicy(sessionInput(activeSession())).reason,
+    'invalid_evaluation_time',
   );
 });
 
