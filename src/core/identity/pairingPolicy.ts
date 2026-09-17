@@ -1,5 +1,6 @@
 import { evaluateAuthenticationAssurance } from './authAssurance';
 import { isIdentityId } from './identityIds';
+import { parseTrustedEvaluationTime } from './trustedEvaluationTime';
 
 export type PairingChallengeState = 'pending' | 'consumed' | 'revoked';
 export type PairingTrustTier = 'standard' | 'privileged';
@@ -7,6 +8,7 @@ export type PairingTrustTier = 'standard' | 'privileged';
 export type PairingDecisionReason =
   | 'allowed'
   | 'invalid_pairing'
+  | 'invalid_evaluation_time'
   | 'account_mismatch'
   | 'source_device_mismatch'
   | 'target_device_mismatch'
@@ -36,6 +38,10 @@ type PairingChallenge = Readonly<{
   expiresAtMs: number;
   state: PairingChallengeState;
 }>;
+
+function isEpochMs(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
 
 function parseChallenge(value: unknown): PairingChallenge | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -68,10 +74,8 @@ function parseChallenge(value: unknown): PairingChallenge | null {
     !isIdentityId('device', record.targetDeviceId) ||
     !isIdentityId('device_key', record.targetDeviceKeyId) ||
     (record.trustTier !== 'standard' && record.trustTier !== 'privileged') ||
-    typeof record.issuedAtMs !== 'number' ||
-    !Number.isFinite(record.issuedAtMs) ||
-    typeof record.expiresAtMs !== 'number' ||
-    !Number.isFinite(record.expiresAtMs) ||
+    !isEpochMs(record.issuedAtMs) ||
+    !isEpochMs(record.expiresAtMs) ||
     record.expiresAtMs <= record.issuedAtMs ||
     (record.state !== 'pending' &&
       record.state !== 'consumed' &&
@@ -83,7 +87,10 @@ function parseChallenge(value: unknown): PairingChallenge | null {
   return record as PairingChallenge;
 }
 
-export function evaluatePairing(input: unknown): PairingDecision {
+export function evaluatePairing(
+  input: unknown,
+  trustedEvaluationTimeMsInput?: unknown,
+): PairingDecision {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     return { allowed: false, reason: 'invalid_pairing' };
   }
@@ -110,8 +117,7 @@ export function evaluatePairing(input: unknown): PairingDecision {
   const challenge = parseChallenge(wrapper.challenge);
   if (
     !challenge ||
-    typeof wrapper.nowMs !== 'number' ||
-    !Number.isFinite(wrapper.nowMs) ||
+    !isEpochMs(wrapper.nowMs) ||
     !isIdentityId('account', wrapper.expectedAccountId) ||
     !isIdentityId('device', wrapper.sourceDeviceId) ||
     !isIdentityId('account', wrapper.sourceDeviceAccountId) ||
@@ -120,6 +126,13 @@ export function evaluatePairing(input: unknown): PairingDecision {
     typeof wrapper.explicitApproval !== 'boolean'
   ) {
     return { allowed: false, reason: 'invalid_pairing' };
+  }
+
+  const trustedEvaluationTimeMs = parseTrustedEvaluationTime(
+    trustedEvaluationTimeMsInput,
+  );
+  if (trustedEvaluationTimeMs === null) {
+    return { allowed: false, reason: 'invalid_evaluation_time' };
   }
 
   if (
@@ -160,8 +173,8 @@ export function evaluatePairing(input: unknown): PairingDecision {
   }
 
   if (
-    challenge.issuedAtMs > wrapper.nowMs ||
-    challenge.expiresAtMs <= wrapper.nowMs
+    challenge.issuedAtMs > trustedEvaluationTimeMs ||
+    challenge.expiresAtMs <= trustedEvaluationTimeMs
   ) {
     return { allowed: false, reason: 'challenge_expired' };
   }
@@ -170,12 +183,15 @@ export function evaluatePairing(input: unknown): PairingDecision {
     return { allowed: false, reason: 'approval_required' };
   }
 
-  const authDecision = evaluateAuthenticationAssurance({
-    risk: challenge.trustTier === 'privileged' ? 'critical' : 'high',
-    assurance: wrapper.authenticationAssurance,
-    nowMs: wrapper.nowMs,
-    authenticatedAtMs: wrapper.authenticatedAtMs,
-  });
+  const authDecision = evaluateAuthenticationAssurance(
+    {
+      risk: challenge.trustTier === 'privileged' ? 'critical' : 'high',
+      assurance: wrapper.authenticationAssurance,
+      nowMs: wrapper.nowMs,
+      authenticatedAtMs: wrapper.authenticatedAtMs,
+    },
+    trustedEvaluationTimeMs,
+  );
 
   if (!authDecision.allowed) {
     return { allowed: false, reason: 'insufficient_authentication' };
