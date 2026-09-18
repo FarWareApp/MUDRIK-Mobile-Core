@@ -201,6 +201,12 @@ test('authentication assurance rejects forged fields future timestamps and malfo
     {
       risk: 'high',
       assurance: 'verified',
+      nowMs: Number.MAX_SAFE_INTEGER + 1,
+      authenticatedAtMs: NOW - 1,
+    },
+    {
+      risk: 'high',
+      assurance: 'verified',
       nowMs: NOW,
       authenticatedAtMs: NOW + 1,
     },
