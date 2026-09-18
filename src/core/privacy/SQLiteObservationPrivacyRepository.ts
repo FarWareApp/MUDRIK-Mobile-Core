@@ -49,7 +49,7 @@ function parseRow(row: PrivacyRow | null): ObservationPrivacySnapshot {
     !isState(row.state) ||
     !isReason(row.reason) ||
     typeof row.updated_at !== 'number' ||
-    !Number.isFinite(row.updated_at) ||
+    !Number.isSafeInteger(row.updated_at) ||
     row.updated_at < 0
   ) {
     return FAIL_CLOSED_SNAPSHOT;
@@ -92,7 +92,7 @@ export class SQLiteObservationPrivacyRepository
     if (
       !isState(input.state) ||
       !isReason(input.reason) ||
-      !Number.isFinite(input.updatedAtMs) ||
+      !Number.isSafeInteger(input.updatedAtMs) ||
       input.updatedAtMs < 0
     ) {
       throw new Error('Invalid observation privacy state');
