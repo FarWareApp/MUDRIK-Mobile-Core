@@ -157,8 +157,9 @@ export function createPrivacyAuditEvent(
     typeof record.eventId !== 'string' ||
     record.eventId.trim().length === 0 ||
     record.eventId.length > MAX_REF_LENGTH ||
-    !Number.isFinite(record.occurredAtMs) ||
-    (record.occurredAtMs as number) < 0 ||
+    typeof record.occurredAtMs !== 'number' ||
+    !Number.isSafeInteger(record.occurredAtMs) ||
+    record.occurredAtMs < 0 ||
     !isOneOf(record.kind, KINDS) ||
     !isSafeOptionalRef(record.deviceRef) ||
     !isOptionalState(record.state) ||
@@ -196,7 +197,7 @@ export function createPrivacyAuditEvent(
     eventId: record.eventId,
     type: mapping.type,
     severity: mapping.severity,
-    occurredAtMs: record.occurredAtMs as number,
+    occurredAtMs: record.occurredAtMs,
     deviceRef: record.deviceRef,
     metadata,
   });
