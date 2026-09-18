@@ -160,7 +160,7 @@ export class ObservationPrivacyCoordinator {
     nowMs: number;
     reactivationChecks?: ReactivationChecks;
   }>): Promise<PrivacyCommandResult> {
-    if (!Number.isFinite(input.nowMs) || input.nowMs < 0) {
+    if (!Number.isSafeInteger(input.nowMs) || input.nowMs < 0) {
       return this.failClosed('invalid_input_fail_closed');
     }
 
