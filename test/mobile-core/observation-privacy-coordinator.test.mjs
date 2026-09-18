@@ -328,6 +328,14 @@ test('invalid timestamp fails closed and actively stops passive observation', as
   assert.equal(result.persisted, false);
   assert.equal(result.sensorStopConfirmed, true);
   assert.equal(result.reason, 'invalid_input_fail_closed');
+
+  const unsafe = await coordinator.apply({
+    event: 'unlock_privacy',
+    nowMs: Number.MAX_SAFE_INTEGER + 1,
+    reactivationChecks: checks(),
+  });
+  assert.equal(unsafe.allowed, false);
+  assert.equal(unsafe.state, 'privacy_lock');
   assert.deepEqual(repo.writes, []);
   assert.deepEqual(sensors.calls, ['all']);
 });
