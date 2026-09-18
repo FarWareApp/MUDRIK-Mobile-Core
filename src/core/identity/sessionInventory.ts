@@ -69,9 +69,10 @@ function parseEntry(value: unknown): SessionInventoryEntry | null {
     record.deviceLabel.includes('\0') ||
     !isPlatform(record.platform) ||
     typeof record.createdAtMs !== 'number' ||
-    !Number.isFinite(record.createdAtMs) ||
+    !Number.isSafeInteger(record.createdAtMs) ||
+    record.createdAtMs < 0 ||
     typeof record.lastActiveAtMs !== 'number' ||
-    !Number.isFinite(record.lastActiveAtMs) ||
+    !Number.isSafeInteger(record.lastActiveAtMs) ||
     record.lastActiveAtMs < record.createdAtMs ||
     !isState(record.state) ||
     typeof record.isCurrent !== 'boolean'
