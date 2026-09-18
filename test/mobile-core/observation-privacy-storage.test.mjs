@@ -120,6 +120,7 @@ test('privacy repository rejects malformed writes instead of widening policy', a
     { state: 'active', reason: '', updatedAtMs: 1 },
     { state: 'active', reason: 'ok', updatedAtMs: -1 },
     { state: 'active', reason: 'ok', updatedAtMs: Number.NaN },
+    { state: 'active', reason: 'ok', updatedAtMs: Number.MAX_SAFE_INTEGER + 1 },
   ]) {
     await assert.rejects(
       repository.set(input),
