@@ -112,7 +112,11 @@ export function createSecurityEvent(input: {
   deviceRef?: string;
   metadata?: Readonly<Record<string, unknown>>;
 }): SecurityEvent {
-  if (input.eventId.trim().length === 0 || !Number.isFinite(input.occurredAtMs)) {
+  if (
+    input.eventId.trim().length === 0 ||
+    !Number.isSafeInteger(input.occurredAtMs) ||
+    input.occurredAtMs < 0
+  ) {
     throw new Error('Invalid security event identity or timestamp');
   }
 
