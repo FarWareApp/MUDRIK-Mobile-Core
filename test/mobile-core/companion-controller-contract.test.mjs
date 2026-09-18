@@ -57,6 +57,40 @@ test(
 );
 
 test(
+  'companion profile controller discards stale async results across reload source changes and unmount',
+  () => {
+    assert.match(profileController, /mountedRef/);
+    assert.match(profileController, /sourceRevisionRef/);
+    assert.match(profileController, /loadRequestIdRef/);
+    assert.match(profileController, /mutationIdRef/);
+    assert.match(
+      profileController,
+      /sourceRevisionRef\.current === sourceRevision/,
+    );
+    assert.match(
+      profileController,
+      /loadRequestIdRef\.current === requestId/,
+    );
+    assert.match(
+      profileController,
+      /mutationIdRef\.current === mutationId/,
+    );
+    assert.match(
+      profileController,
+      /loadRequestIdRef\.current \+= 1;/,
+    );
+    assert.match(
+      profileController,
+      /mountedRef\.current = false;/,
+    );
+    assert.match(
+      profileController,
+      /if \(!isCurrent\(\)\) \{\s*return(?: false)?;/s,
+    );
+  },
+);
+
+test(
   'companion session controller keeps provider details out of UI state',
   () => {
     assert.match(
