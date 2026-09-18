@@ -54,42 +54,110 @@ export function useCompanionProfileController(
   const [error, setError] =
     useState<CompanionProfileErrorCode | null>(null);
 
+  const mountedRef =
+    useRef(false);
+
+  const sourceRevisionRef =
+    useRef(0);
+
+  const loadRequestIdRef =
+    useRef(0);
+
   const mutationInFlightRef =
     useRef(false);
 
+  const mutationIdRef =
+    useRef(0);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+      sourceRevisionRef.current += 1;
+      loadRequestIdRef.current += 1;
+      mutationIdRef.current += 1;
+      mutationInFlightRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    sourceRevisionRef.current += 1;
+    loadRequestIdRef.current += 1;
+    mutationIdRef.current += 1;
+    mutationInFlightRef.current = false;
+
+    if (mountedRef.current) {
+      setSaving(false);
+    }
+  }, [repository]);
+
   const beginMutation =
-    useCallback((): boolean => {
+    useCallback((): number | null => {
       if (mutationInFlightRef.current) {
-        return false;
+        return null;
       }
 
       mutationInFlightRef.current = true;
+      const mutationId =
+        ++mutationIdRef.current;
+
+      loadRequestIdRef.current += 1;
       setSaving(true);
       setError(null);
-      return true;
+
+      return mutationId;
     }, []);
 
   const endMutation =
-    useCallback(() => {
+    useCallback((mutationId: number) => {
+      if (
+        mutationIdRef.current !== mutationId
+        || !mountedRef.current
+      ) {
+        return;
+      }
+
       mutationInFlightRef.current = false;
       setSaving(false);
     }, []);
 
   const load =
     useCallback(async () => {
-      setLoading(true);
-      setLoadFailed(false);
-      setError(null);
+      const sourceRevision =
+        sourceRevisionRef.current;
+      const requestId =
+        ++loadRequestIdRef.current;
+
+      if (mountedRef.current) {
+        setLoading(true);
+        setLoadFailed(false);
+        setError(null);
+      }
+
+      const isCurrent = () => (
+        mountedRef.current
+        && sourceRevisionRef.current === sourceRevision
+        && loadRequestIdRef.current === requestId
+      );
 
       try {
         const stored =
           await repository.getProfile();
+
+        if (!isCurrent()) {
+          return;
+        }
 
         setProfile(
           stored
             ?? createDefaultCompanionProfile(),
         );
       } catch (caught) {
+        if (!isCurrent()) {
+          return;
+        }
+
         recordCompanionProfileError(
           'load-failed',
           caught,
@@ -97,7 +165,9 @@ export function useCompanionProfileController(
         setLoadFailed(true);
         setError('load-failed');
       } finally {
-        setLoading(false);
+        if (isCurrent()) {
+          setLoading(false);
+        }
       }
     }, [repository]);
 
@@ -114,13 +184,27 @@ export function useCompanionProfileController(
           next.displayName.trim();
 
         if (!displayName) {
-          setError('name-required');
+          if (mountedRef.current) {
+            setError('name-required');
+          }
           return false;
         }
 
-        if (!beginMutation()) {
+        const mutationId =
+          beginMutation();
+
+        if (mutationId === null) {
           return false;
         }
+
+        const sourceRevision =
+          sourceRevisionRef.current;
+
+        const isCurrent = () => (
+          mountedRef.current
+          && sourceRevisionRef.current === sourceRevision
+          && mutationIdRef.current === mutationId
+        );
 
         const updated: CompanionProfile = {
           ...next,
@@ -133,10 +217,19 @@ export function useCompanionProfileController(
 
         try {
           await repository.saveProfile(updated);
+
+          if (!isCurrent()) {
+            return false;
+          }
+
           setProfile(updated);
           setError(null);
           return true;
         } catch (caught) {
+          if (!isCurrent()) {
+            return false;
+          }
+
           recordCompanionProfileError(
             'save-failed',
             caught,
@@ -144,7 +237,7 @@ export function useCompanionProfileController(
           setError('save-failed');
           return false;
         } finally {
-          endMutation();
+          endMutation(mutationId);
         }
       },
       [
@@ -159,18 +252,39 @@ export function useCompanionProfileController(
 
   const reset =
     useCallback(async (): Promise<boolean> => {
-      if (!beginMutation()) {
+      const mutationId =
+        beginMutation();
+
+      if (mutationId === null) {
         return false;
       }
 
+      const sourceRevision =
+        sourceRevisionRef.current;
+
+      const isCurrent = () => (
+        mountedRef.current
+        && sourceRevisionRef.current === sourceRevision
+        && mutationIdRef.current === mutationId
+      );
+
       try {
         await repository.clearProfile();
+
+        if (!isCurrent()) {
+          return false;
+        }
+
         setProfile(
           createDefaultCompanionProfile(),
         );
         setError(null);
         return true;
       } catch (caught) {
+        if (!isCurrent()) {
+          return false;
+        }
+
         recordCompanionProfileError(
           'reset-failed',
           caught,
@@ -178,7 +292,7 @@ export function useCompanionProfileController(
         setError('reset-failed');
         return false;
       } finally {
-        endMutation();
+        endMutation(mutationId);
       }
     }, [
       beginMutation,
@@ -188,7 +302,10 @@ export function useCompanionProfileController(
 
   const dismissError =
     useCallback(() => {
-      if (!loadFailed) {
+      if (
+        mountedRef.current
+        && !loadFailed
+      ) {
         setError(null);
       }
     }, [loadFailed]);
