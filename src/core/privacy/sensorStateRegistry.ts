@@ -157,9 +157,9 @@ export function parseSensorStateRecord(value: unknown): SensorStateRecord | null
     !Number.isSafeInteger(record.sequence) ||
     record.sequence < 0 ||
     typeof record.lastTransitionAtMs !== 'number' ||
-    !Number.isFinite(record.lastTransitionAtMs) ||
+    !Number.isSafeInteger(record.lastTransitionAtMs) ||
     typeof record.verifiedAtMs !== 'number' ||
-    !Number.isFinite(record.verifiedAtMs) ||
+    !Number.isSafeInteger(record.verifiedAtMs) ||
     record.lastTransitionAtMs < 0 ||
     record.verifiedAtMs < record.lastTransitionAtMs
   ) {
