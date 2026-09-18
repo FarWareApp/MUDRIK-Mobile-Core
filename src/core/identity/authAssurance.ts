@@ -115,7 +115,8 @@ export function evaluateAuthenticationAssurance(
     !isCapabilityRisk(record.risk) ||
     !isAssurance(record.assurance) ||
     typeof record.nowMs !== 'number' ||
-    !Number.isFinite(record.nowMs)
+    !Number.isSafeInteger(record.nowMs) ||
+    record.nowMs < 0
   ) {
     return { allowed: false, reason: 'invalid_input', required: fallback };
   }
