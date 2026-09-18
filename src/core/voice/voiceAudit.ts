@@ -161,7 +161,7 @@ export function createVoiceAuditEvent(input: unknown): SecurityEvent | null {
     typeof record.kind !== 'string' ||
     !KINDS.includes(record.kind as VoiceAuditKind) ||
     typeof record.occurredAtMs !== 'number' ||
-    !Number.isFinite(record.occurredAtMs) ||
+    !Number.isSafeInteger(record.occurredAtMs) ||
     record.occurredAtMs < 0 ||
     !isSafeOptionalRef(record.deviceRef) ||
     !isSafeOptionalRef(record.sessionRef) ||
