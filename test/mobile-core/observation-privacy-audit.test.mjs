@@ -161,3 +161,15 @@ test('privacy audit never stores objects arrays or arbitrary sensor content', ()
     false,
   );
 });
+
+
+test('privacy audit rejects unsafe finite timestamps', () => {
+  assert.equal(
+    createPrivacyAuditEvent({
+      eventId: 'evt_unsafe_time',
+      kind: 'state_changed',
+      occurredAtMs: Number.MAX_SAFE_INTEGER + 1,
+    }),
+    null,
+  );
+});
