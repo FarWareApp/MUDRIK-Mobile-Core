@@ -112,6 +112,8 @@ test('sensor registry rejects malformed trust permission ids timestamps and hidd
     sensor({ permission: 'always' }),
     sensor({ deviceTrust: 'admin' }),
     sensor({ sequence: -1 }),
+    sensor({ lastTransitionAtMs: Number.MAX_SAFE_INTEGER + 1, verifiedAtMs: Number.MAX_SAFE_INTEGER + 1 }),
+    sensor({ verifiedAtMs: Number.MAX_SAFE_INTEGER + 1 }),
     sensor({ verifiedAtMs: NOW - 200, lastTransitionAtMs: NOW }),
     { ...sensor(), rootAuthority: true },
   ]) {
