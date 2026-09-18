@@ -267,3 +267,14 @@ test('session inventory rejects malformed ordering and excessive entries', () =>
     false,
   );
 });
+
+
+test('session inventory rejects negative and unsafe finite timestamps', () => {
+  for (const value of [
+    inventoryEntry({ createdAtMs: -1 }),
+    inventoryEntry({ createdAtMs: Number.MAX_SAFE_INTEGER + 1 }),
+    inventoryEntry({ lastActiveAtMs: Number.MAX_SAFE_INTEGER + 1 }),
+  ]) {
+    assert.equal(buildSessionInventory([value]).valid, false);
+  }
+});
