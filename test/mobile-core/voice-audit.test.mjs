@@ -78,6 +78,7 @@ test('voice audit rejects malformed references generation phase reason and provi
   const invalid = [
     base({ eventId: '' }),
     base({ occurredAtMs: Number.NaN }),
+    base({ occurredAtMs: Number.MAX_SAFE_INTEGER + 1 }),
     base({ sessionRef: 'bad ref with spaces' }),
     base({ generation: -1 }),
     base({ phase: 'admin' }),
