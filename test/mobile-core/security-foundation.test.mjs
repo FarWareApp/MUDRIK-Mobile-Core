@@ -422,6 +422,15 @@ test('security event creation rejects invalid identity and preserves sanitized m
     }),
   );
 
+  assert.throws(
+    () => createSecurityEvent({
+      eventId: 'evt-unsafe-time',
+      type: 'authorization.denied',
+      severity: 'warning',
+      occurredAtMs: Number.MAX_SAFE_INTEGER + 1,
+    }),
+  );
+
   const event = createSecurityEvent({
     eventId: 'evt-1',
     type: 'authorization.denied',
