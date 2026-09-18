@@ -32,8 +32,15 @@ function sensor(overrides = {}) {
   };
 }
 
+function indicators(input, trustedEvaluationTimeMs = input?.nowMs) {
+  return buildPrivacyIndicators(
+    input,
+    trustedEvaluationTimeMs,
+  );
+}
+
 test('active allowed sensors become visible privacy indicators', () => {
-  const result = buildPrivacyIndicators({
+  const result = indicators({
     privacyState: 'active',
     nowMs: 1000,
     records: [
@@ -57,7 +64,7 @@ test('active allowed sensors become visible privacy indicators', () => {
 });
 
 test('camera active under privacy_lock is shown as policy violation', () => {
-  const result = buildPrivacyIndicators({
+  const result = indicators({
     privacyState: 'privacy_lock',
     nowMs: 1000,
     records: [sensor()],
@@ -69,7 +76,7 @@ test('camera active under privacy_lock is shown as policy violation', () => {
 });
 
 test('stale or unavailable sensor state is visible as unverifiable', () => {
-  const result = buildPrivacyIndicators({
+  const result = indicators({
     privacyState: 'ambient_off',
     nowMs: 50_000,
     records: [
@@ -98,7 +105,7 @@ test('stale or unavailable sensor state is visible as unverifiable', () => {
 });
 
 test('direct user interaction can be active without changing passive privacy policy', () => {
-  const result = buildPrivacyIndicators({
+  const result = indicators({
     privacyState: 'privacy_lock',
     nowMs: 1000,
     records: [
@@ -116,7 +123,7 @@ test('direct user interaction can be active without changing passive privacy pol
 });
 
 test('unauthorized active sensor is surfaced as policy violation', () => {
-  const result = buildPrivacyIndicators({
+  const result = indicators({
     privacyState: 'active',
     nowMs: 1000,
     records: [
@@ -130,7 +137,7 @@ test('unauthorized active sensor is surfaced as policy violation', () => {
 });
 
 test('inactive confirmed sensors do not create an active indicator', () => {
-  const result = buildPrivacyIndicators({
+  const result = indicators({
     privacyState: 'active',
     nowMs: 1000,
     records: [sensor({ state: 'inactive' })],
@@ -152,6 +159,61 @@ test('malformed indicator input fails safely to an empty model', () => {
       unexpectedAuthority: true,
     },
   ]) {
-    assert.deepEqual(buildPrivacyIndicators(input), []);
+    assert.deepEqual(indicators(input), []);
+  }
+});
+
+test('untrusted indicator time cannot revive stale sensor evidence', () => {
+  const staleVerifiedAtMs = 1000;
+  const result = buildPrivacyIndicators(
+    {
+      privacyState: 'active',
+      nowMs: staleVerifiedAtMs,
+      records: [
+        sensor({
+          lastTransitionAtMs: staleVerifiedAtMs,
+          verifiedAtMs: staleVerifiedAtMs,
+        }),
+      ],
+    },
+    50_000,
+  );
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].status, 'unverifiable');
+});
+
+test('indicator freshness cannot exceed the shared observation truth window', () => {
+  assert.deepEqual(
+    buildPrivacyIndicators(
+      {
+        privacyState: 'active',
+        nowMs: 20_000,
+        maxFreshnessMs: 60_000,
+        records: [sensor()],
+      },
+      20_000,
+    ),
+    [],
+  );
+});
+
+test('indicator model rejects malformed duplicate and unsafe timestamp sensor records', () => {
+  for (const records of [
+    [{ ...sensor(), hiddenAuthority: true }],
+    [sensor(), sensor()],
+    [sensor({ verifiedAtMs: Number.MAX_SAFE_INTEGER + 1 })],
+  ]) {
+    assert.deepEqual(
+      buildPrivacyIndicators(
+        {
+          privacyState: 'active',
+          nowMs: 1000,
+          records,
+        },
+        1000,
+      ),
+      [],
+    );
   }
 });
