@@ -1,7 +1,9 @@
+import { parseTrustedEvaluationTime } from '../security/trustedEvaluationTime';
 import type { ObservationPrivacyPolicyState } from './observationPrivacyState';
-import type {
-  SensorStateRecord,
-  SensorType,
+import {
+  parseSensorStateRecord,
+  type SensorStateRecord,
+  type SensorType,
 } from './sensorStateRegistry';
 import { MAX_SENSOR_STATE_FRESHNESS_MS } from './observationTruth';
 
@@ -66,7 +68,10 @@ function policyBlocksPassive(
   );
 }
 
-export function buildPrivacyIndicators(input: unknown): readonly PrivacyIndicator[] {
+export function buildPrivacyIndicators(
+  input: unknown,
+  trustedEvaluationTimeMsInput?: unknown,
+): readonly PrivacyIndicator[] {
   if (
     typeof input !== 'object' ||
     input === null ||
@@ -83,12 +88,19 @@ export function buildPrivacyIndicators(input: unknown): readonly PrivacyIndicato
     'maxFreshnessMs',
   ]);
 
+  const trustedEvaluationTimeMs =
+    parseTrustedEvaluationTime(
+      trustedEvaluationTimeMsInput,
+    );
+
   if (
     Object.keys(record).some((key) => !allowedKeys.has(key)) ||
+    trustedEvaluationTimeMs === null ||
     !POLICY_STATES.includes(record.privacyState as ObservationPrivacyPolicyState) ||
     !Array.isArray(record.records) ||
     typeof record.nowMs !== 'number' ||
-    !Number.isFinite(record.nowMs)
+    !Number.isSafeInteger(record.nowMs) ||
+    record.nowMs < 0
   ) {
     return [];
   }
@@ -97,9 +109,9 @@ export function buildPrivacyIndicators(input: unknown): readonly PrivacyIndicato
     record.maxFreshnessMs === undefined
       ? MAX_SENSOR_STATE_FRESHNESS_MS
       : typeof record.maxFreshnessMs === 'number' &&
-          Number.isFinite(record.maxFreshnessMs) &&
+          Number.isSafeInteger(record.maxFreshnessMs) &&
           record.maxFreshnessMs > 0 &&
-          record.maxFreshnessMs <= 60_000
+          record.maxFreshnessMs <= MAX_SENSOR_STATE_FRESHNESS_MS
         ? record.maxFreshnessMs
         : null;
 
@@ -107,8 +119,24 @@ export function buildPrivacyIndicators(input: unknown): readonly PrivacyIndicato
     return [];
   }
 
+  const records: SensorStateRecord[] = [];
+  const seenSensorIds = new Set<string>();
+
+  for (const value of record.records) {
+    const parsed = parseSensorStateRecord(value);
+
+    if (
+      !parsed ||
+      seenSensorIds.has(parsed.sensorId)
+    ) {
+      return [];
+    }
+
+    seenSensorIds.add(parsed.sensorId);
+    records.push(parsed);
+  }
+
   const privacyState = record.privacyState as ObservationPrivacyPolicyState;
-  const records = record.records as readonly SensorStateRecord[];
   const grouped = new Map<
     PrivacyIndicatorCategory,
     {
@@ -126,25 +154,14 @@ export function buildPrivacyIndicators(input: unknown): readonly PrivacyIndicato
   };
 
   for (const sensor of records) {
-    if (
-      typeof sensor !== 'object' ||
-      sensor === null ||
-      typeof sensor.sensorId !== 'string' ||
-      typeof sensor.type !== 'string'
-    ) {
-      continue;
-    }
-
-    const category = categoryFor(sensor.type as SensorType);
+    const category = categoryFor(sensor.type);
     if (!category) {
       continue;
     }
 
     const stale =
-      typeof sensor.verifiedAtMs !== 'number' ||
-      !Number.isFinite(sensor.verifiedAtMs) ||
-      sensor.verifiedAtMs > record.nowMs ||
-      record.nowMs - sensor.verifiedAtMs > maxFreshnessMs;
+      sensor.verifiedAtMs > trustedEvaluationTimeMs ||
+      trustedEvaluationTimeMs - sensor.verifiedAtMs > maxFreshnessMs;
 
     let status: PrivacyIndicatorStatus | null = null;
 
@@ -160,7 +177,7 @@ export function buildPrivacyIndicators(input: unknown): readonly PrivacyIndicato
         sensor.deviceTrust !== 'trusted';
       const policyViolation =
         sensor.usage === 'passive_observation' &&
-        policyBlocksPassive(privacyState, sensor.type as SensorType);
+        policyBlocksPassive(privacyState, sensor.type);
 
       status =
         unauthorized || policyViolation
@@ -177,8 +194,8 @@ export function buildPrivacyIndicators(input: unknown): readonly PrivacyIndicato
       grouped.set(category, {
         status,
         sensorIds: [sensor.sensorId],
-        processingModes: new Set([String(sensor.processing)]),
-        retentionModes: new Set([String(sensor.retention)]),
+        processingModes: new Set([sensor.processing]),
+        retentionModes: new Set([sensor.retention]),
       });
       continue;
     }
@@ -187,8 +204,8 @@ export function buildPrivacyIndicators(input: unknown): readonly PrivacyIndicato
       existing.status = status;
     }
     existing.sensorIds.push(sensor.sensorId);
-    existing.processingModes.add(String(sensor.processing));
-    existing.retentionModes.add(String(sensor.retention));
+    existing.processingModes.add(sensor.processing);
+    existing.retentionModes.add(sensor.retention);
   }
 
   return Object.freeze(
