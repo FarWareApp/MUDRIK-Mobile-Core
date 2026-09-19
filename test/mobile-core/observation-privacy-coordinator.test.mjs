@@ -337,7 +337,7 @@ test('invalid timestamp fails closed and actively stops passive observation', as
   assert.equal(unsafe.allowed, false);
   assert.equal(unsafe.state, 'privacy_lock');
   assert.deepEqual(repo.writes, []);
-  assert.deepEqual(sensors.calls, ['all']);
+  assert.deepEqual(sensors.calls, ['all', 'all']);
 });
 
 test('policy read failure fails closed and stops all passive observation', async () => {
