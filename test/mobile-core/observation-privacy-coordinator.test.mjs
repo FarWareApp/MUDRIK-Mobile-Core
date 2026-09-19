@@ -332,7 +332,7 @@ test('invalid timestamp fails closed and actively stops passive observation', as
   const unsafe = await coordinator.apply({
     event: 'unlock_privacy',
     nowMs: Number.MAX_SAFE_INTEGER + 1,
-    reactivationChecks: checks(),
+    reactivationChecks: REACTIVATION_OK,
   });
   assert.equal(unsafe.allowed, false);
   assert.equal(unsafe.state, 'privacy_lock');
