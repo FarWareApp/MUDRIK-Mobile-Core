@@ -84,6 +84,7 @@ test('stale or unavailable sensor state is visible as unverifiable', () => {
         sensorId: 'sens_location_main_01',
         type: 'location',
         state: 'active',
+        lastTransitionAtMs: 1,
         verifiedAtMs: 1,
       }),
       sensor({
