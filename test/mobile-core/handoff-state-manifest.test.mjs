@@ -122,3 +122,25 @@ test(
     );
   },
 );
+
+
+test(
+  'handoff manifest rejects credential-shaped references',
+  () => {
+    for (const credentialRef of [
+      'token.secret-value',
+      'api_key.secret-value',
+      'ghp.secret-value',
+    ]) {
+      assert.equal(
+        parseHandoffStateManifest(
+          manifest({
+            conversationRef:
+              credentialRef,
+          }),
+        ),
+        null,
+      );
+    }
+  },
+);
