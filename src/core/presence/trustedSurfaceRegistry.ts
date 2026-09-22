@@ -7,6 +7,10 @@ import {
 } from '../identity/identityIds';
 
 import {
+  parseTrustedEvaluationTime,
+} from '../security/trustedEvaluationTime';
+
+import {
   isSurfaceId,
   parseSurfaceDescriptor,
 } from './surfaceContract';
@@ -32,7 +36,9 @@ export type TrustedSurfaceUpdateResult = Readonly<{
     | 'device_not_trusted'
     | 'device_binding_mismatch'
     | 'stale_revision'
-    | 'revision_gap';
+    | 'revision_gap'
+    | 'future_approval'
+    | 'non_monotonic_approval';
 }>;
 
 const REGISTRATION_KEYS = new Set([
@@ -94,7 +100,12 @@ export class TrustedSurfaceRegistry {
 
   register(
     input: unknown,
+    trustedEvaluationTimeInput: unknown,
   ): TrustedSurfaceUpdateResult {
+    const trustedEvaluationTimeMs =
+      parseTrustedEvaluationTime(
+        trustedEvaluationTimeInput,
+      );
     if (
       typeof input !== 'object'
       || input === null
@@ -121,6 +132,7 @@ export class TrustedSurfaceRegistry {
       || !isSafeNonNegativeInteger(record.revision)
       || !isSafeNonNegativeInteger(record.approvedAt)
       || typeof record.explicitUserApproval !== 'boolean'
+      || trustedEvaluationTimeMs === null
     ) {
       return {
         accepted: false,
@@ -144,6 +156,13 @@ export class TrustedSurfaceRegistry {
       return {
         accepted: false,
         reason: 'explicit_approval_required',
+      };
+    }
+
+    if (record.approvedAt > trustedEvaluationTimeMs) {
+      return {
+        accepted: false,
+        reason: 'future_approval',
       };
     }
 
@@ -196,6 +215,13 @@ export class TrustedSurfaceRegistry {
         return {
           accepted: false,
           reason: 'revision_gap',
+        };
+      }
+
+      if (record.approvedAt < current.approvedAt) {
+        return {
+          accepted: false,
+          reason: 'non_monotonic_approval',
         };
       }
 
