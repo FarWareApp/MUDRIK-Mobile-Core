@@ -11,6 +11,10 @@ import type {
 } from '../privacy/observationPrivacyState';
 
 import {
+  parseTrustedEvaluationTime,
+} from '../security/trustedEvaluationTime';
+
+import {
   parsePresenceObservation,
 } from './presenceRegistry';
 
@@ -66,7 +70,6 @@ type CandidateInput = Readonly<{
 type ResolutionInput = Readonly<{
   presenceSessionId: string;
   accountId: string;
-  now: number;
   followMeEnabled: boolean;
   manualHandoff: boolean;
   currentPrimarySurfaceId: string | null;
@@ -90,7 +93,6 @@ const PRESENCE_SESSION_PATTERN =
 const TOP_LEVEL_KEYS = new Set([
   'presenceSessionId',
   'accountId',
-  'now',
   'followMeEnabled',
   'manualHandoff',
   'currentPrimarySurfaceId',
@@ -263,7 +265,6 @@ function parseInput(
       'account',
       record.accountId,
     )
-    || !isSafeTimestamp(record.now)
     || typeof record.followMeEnabled !== 'boolean'
     || typeof record.manualHandoff !== 'boolean'
     || currentPrimarySurfaceId === undefined
@@ -325,7 +326,6 @@ function parseInput(
     presenceSessionId:
       record.presenceSessionId,
     accountId: record.accountId,
-    now: record.now,
     followMeEnabled:
       record.followMeEnabled,
     manualHandoff:
@@ -440,6 +440,20 @@ function audioPrivacyAllowed(
   return true;
 }
 
+function privacyPreferenceRank(
+  sensitivity: ContentSensitivity,
+  surface: SurfaceDescriptor,
+): number {
+  if (
+    sensitivity !== 'public'
+    && surface.privacyClass !== 'personal_private'
+  ) {
+    return 1;
+  }
+
+  return 0;
+}
+
 function scoreCandidate(
   surface: SurfaceDescriptor,
   presence: PresenceObservation,
@@ -491,6 +505,7 @@ function scoreCandidate(
 function buildEligibleCandidates(
   input: ResolutionInput,
   surfaceRegistry: TrustedSurfaceRegistry,
+  trustedEvaluationTimeMs: number,
 ): readonly EligibleCandidate[] {
   const eligible: EligibleCandidate[] = [];
 
@@ -534,8 +549,8 @@ function buildEligibleCandidates(
 
     if (
       presence.availability === 'offline'
-      || presence.expiresAt < input.now
-      || presence.observedAt > input.now
+      || presence.expiresAt <= trustedEvaluationTimeMs
+      || presence.observedAt > trustedEvaluationTimeMs
       || !hasRequiredCapabilities(
         surface,
         input.requiredCapabilities,
@@ -582,11 +597,17 @@ function buildEligibleCandidates(
 export function resolvePresenceSurface(
   rawInput: unknown,
   surfaceRegistry: TrustedSurfaceRegistry,
+  trustedEvaluationTimeInput: unknown,
 ): PresenceResolution {
   const input = parseInput(rawInput);
+  const trustedEvaluationTimeMs =
+    parseTrustedEvaluationTime(
+      trustedEvaluationTimeInput,
+    );
 
   if (
     !input
+    || trustedEvaluationTimeMs === null
     || !surfaceRegistry
     || typeof surfaceRegistry.getActiveSurface !== 'function'
   ) {
@@ -597,6 +618,7 @@ export function resolvePresenceSurface(
     buildEligibleCandidates(
       input,
       surfaceRegistry,
+      trustedEvaluationTimeMs,
     );
 
   const bySurfaceId =
@@ -671,6 +693,20 @@ export function resolvePresenceSurface(
 
   const ranked = [...eligible]
     .sort((left, right) => {
+      const privacyDifference =
+        privacyPreferenceRank(
+          input.contentSensitivity,
+          left.surface,
+        )
+        - privacyPreferenceRank(
+          input.contentSensitivity,
+          right.surface,
+        );
+
+      if (privacyDifference !== 0) {
+        return privacyDifference;
+      }
+
       if (left.score !== right.score) {
         return right.score - left.score;
       }
