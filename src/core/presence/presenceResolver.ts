@@ -166,16 +166,6 @@ function invalidDecision(): PresenceResolution {
   });
 }
 
-function isSafeTimestamp(
-  value: unknown,
-): value is number {
-  return (
-    typeof value === 'number'
-    && Number.isSafeInteger(value)
-    && value >= 0
-  );
-}
-
 function parseRequiredCapabilities(
   value: unknown,
 ): readonly SurfacePresentationCapability[] | null {
