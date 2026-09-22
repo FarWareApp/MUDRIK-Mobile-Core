@@ -113,7 +113,7 @@ function registryWith(...descriptors) {
       explicitUserApproval: true,
       deviceTrustInput:
         trustForSurface(descriptor),
-    });
+    }, 10_000);
 
     assert.equal(result.reason, 'accepted');
   });
