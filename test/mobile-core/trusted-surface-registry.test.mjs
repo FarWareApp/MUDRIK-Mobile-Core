@@ -109,6 +109,7 @@ test(
     assert.equal(
       registry.register(
         registration({ revision: 1 }),
+        2_000,
       ).reason,
       'stale_revision',
     );
@@ -116,6 +117,7 @@ test(
     assert.equal(
       registry.register(
         registration({ revision: 3 }),
+        2_000,
       ).reason,
       'revision_gap',
     );
@@ -164,6 +166,7 @@ test(
     assert.equal(
       registry.register(
         registration({ revision: 2 }),
+        2_000,
       ).reason,
       'stale_revision',
     );
