@@ -110,7 +110,7 @@ export function parsePresenceObservation(
   }
 
   if (
-    record.expiresAt < record.observedAt
+    record.expiresAt <= record.observedAt
     || record.expiresAt - record.observedAt
       > MAX_OBSERVATION_TTL_MS
   ) {
