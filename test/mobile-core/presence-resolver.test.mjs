@@ -28,6 +28,10 @@ const SESSION = 'psess_aaaaaaaaaaaaaaaa';
 const THUMB_A = 'A'.repeat(43);
 const THUMB_B = 'B'.repeat(43);
 
+function resolve(rawInput, registry, trustedTime = 2_000) {
+  return resolvePresenceSurface(rawInput, registry, trustedTime);
+}
+
 function surface({
   surfaceId = SURFACE_A,
   deviceId = DEVICE_A,
@@ -136,7 +140,6 @@ function input(overrides = {}) {
   return {
     presenceSessionId: SESSION,
     accountId: ACCOUNT,
-    now: 2_000,
     followMeEnabled: true,
     manualHandoff: false,
     currentPrimarySurfaceId: null,
@@ -168,7 +171,7 @@ test(
     );
 
     assert.equal(
-      resolvePresenceSurface(
+      resolve(
         input({
           candidates: [revokedEvidence],
         }),
@@ -181,7 +184,7 @@ test(
       new TrustedSurfaceRegistry();
 
     assert.equal(
-      resolvePresenceSurface(
+      resolve(
         input(),
         emptyRegistry,
       ).selectedSurfaceId,
@@ -201,7 +204,7 @@ test(
     });
     const registry = registryWith(shared);
 
-    const decision = resolvePresenceSurface(
+    const decision = resolve(
       input({
         contentSensitivity: 'private',
         userConfirmedDisclosure: true,
@@ -220,7 +223,7 @@ test(
     const descriptor = surface();
     const registry = registryWith(descriptor);
 
-    const kept = resolvePresenceSurface(
+    const kept = resolve(
       input({
         followMeEnabled: false,
         currentPrimarySurfaceId: SURFACE_A,
@@ -231,7 +234,7 @@ test(
     assert.equal(kept.selectedSurfaceId, SURFACE_A);
     assert.equal(kept.reason, 'kept_current');
 
-    const noAutomatic = resolvePresenceSurface(
+    const noAutomatic = resolve(
       input({
         followMeEnabled: false,
         currentPrimarySurfaceId: null,
@@ -256,7 +259,7 @@ test(
     const limitedRegistry = registryWith(limited);
 
     assert.equal(
-      resolvePresenceSurface(
+      resolve(
         input({
           contentSensitivity: 'sensitive',
           requiredCapabilities: ['audio_output'],
@@ -271,7 +274,7 @@ test(
     const fullRegistry = registryWith(full);
 
     assert.equal(
-      resolvePresenceSurface(
+      resolve(
         input({
           contentSensitivity: 'sensitive',
           requiredCapabilities: ['audio_output'],
@@ -296,7 +299,7 @@ test(
     const c = candidate(descriptor);
 
     assert.equal(
-      resolvePresenceSurface(
+      resolve(
         input({
           userConfirmedDisclosure: true,
           candidates: [c],
@@ -306,7 +309,7 @@ test(
       null,
     );
 
-    const manual = resolvePresenceSurface(
+    const manual = resolve(
       input({
         manualHandoff: true,
         pinnedSurfaceId: descriptor.surfaceId,
@@ -333,7 +336,7 @@ test(
     const descriptor = surface();
     const registry = registryWith(descriptor);
 
-    const decision = resolvePresenceSurface(
+    const decision = resolve(
       input({
         pinnedSurfaceId: SURFACE_B,
       }),
@@ -363,11 +366,11 @@ test(
     const a = candidate(aSurface);
     const b = candidate(bSurface);
 
-    const first = resolvePresenceSurface(
+    const first = resolve(
       input({ candidates: [b, a] }),
       registry,
     );
-    const second = resolvePresenceSurface(
+    const second = resolve(
       input({ candidates: [a, b] }),
       registry,
     );
@@ -382,7 +385,7 @@ test(
   () => {
     const descriptor = surface();
     const registry = registryWith(descriptor);
-    const decision = resolvePresenceSurface(
+    const decision = resolve(
       input({
         privacyState: 'privacy_lock',
       }),
@@ -422,14 +425,14 @@ test(
     );
 
     assert.equal(
-      resolvePresenceSurface(
+      resolve(
         input({ candidates: [future] }),
         registry,
       ).selectedSurfaceId,
       null,
     );
 
-    const duplicate = resolvePresenceSurface(
+    const duplicate = resolve(
       input({
         candidates: [
           candidate(descriptor),
@@ -447,7 +450,7 @@ test(
   'unknown resolver fields fail closed to no surface and privacy lock',
   () => {
     const registry = registryWith(surface());
-    const decision = resolvePresenceSurface(
+    const decision = resolve(
       {
         ...input(),
         unexpected: true,
@@ -461,5 +464,89 @@ test(
       decision.preservedPrivacyState,
       'privacy_lock',
     );
+  },
+);
+
+test(
+  'resolver uses trusted evaluation time and treats exact expiry as expired',
+  () => {
+    const descriptor = surface();
+    const registry = registryWith(descriptor);
+
+    const expired = candidate(descriptor, {
+      presence: presence(SURFACE_A, {
+        expiresAt: 2_000,
+      }),
+    });
+
+    assert.equal(
+      resolve(
+        input({ candidates: [expired] }),
+        registry,
+        2_000,
+      ).selectedSurfaceId,
+      null,
+    );
+
+    const invalidClock = resolve(
+      input(),
+      registry,
+      Number.NaN,
+    );
+
+    assert.equal(invalidClock.selectedSurfaceId, null);
+    assert.equal(invalidClock.reason, 'invalid_input');
+    assert.equal(
+      invalidClock.preservedPrivacyState,
+      'privacy_lock',
+    );
+  },
+);
+
+test(
+  'private content prefers an eligible personal-private surface over a higher-scoring shared surface',
+  () => {
+    const shared = surface({
+      surfaceId: SURFACE_A,
+      deviceId: DEVICE_A,
+      privacyClass: 'personal_shared_space',
+      sharedSpace: true,
+      capabilities: ['text'],
+    });
+    const privateSurface = surface({
+      surfaceId: SURFACE_B,
+      deviceId: DEVICE_B,
+      privacyClass: 'personal_private',
+      sharedSpace: false,
+      capabilities: ['text'],
+    });
+    const registry = registryWith(shared, privateSurface);
+
+    const sharedCandidate = candidate(shared, {
+      presence: presence(SURFACE_A, {
+        confidence: 100,
+        recentDirectInteraction: true,
+        explicitRoomMatch: true,
+        estimatedLatencyMs: 0,
+      }),
+    });
+    const privateCandidate = candidate(privateSurface, {
+      presence: presence(SURFACE_B, {
+        confidence: 80,
+        deviceActive: false,
+        estimatedLatencyMs: 5_000,
+      }),
+    });
+
+    const decision = resolve(
+      input({
+        contentSensitivity: 'private',
+        userConfirmedDisclosure: true,
+        candidates: [sharedCandidate, privateCandidate],
+      }),
+      registry,
+    );
+
+    assert.equal(decision.selectedSurfaceId, SURFACE_B);
   },
 );
