@@ -30,6 +30,9 @@ export type HandoffStateManifest = Readonly<{
 const REFERENCE_PATTERN =
   /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 
+const CREDENTIAL_SHAPE =
+  /(?:^|[._:-])(?:sk|api[_-]?key|bearer|token|secret|ghp|github[_-]?pat|aiza)(?:[._:-]|$)/i;
+
 const PRIVACY_STATES: readonly ObservationPrivacyPolicyState[] = [
   'active',
   'visual_off',
@@ -73,6 +76,7 @@ function parseReference(
   if (
     typeof value === 'string'
     && REFERENCE_PATTERN.test(value)
+    && !CREDENTIAL_SHAPE.test(value)
   ) {
     return value;
   }
