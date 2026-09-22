@@ -68,6 +68,7 @@ test(
         registration({
           explicitUserApproval: false,
         }),
+        2_000,
       ).reason,
       'explicit_approval_required',
     );
@@ -77,6 +78,7 @@ test(
         registration({
           deviceTrustInput: trust('revoked'),
         }),
+        2_000,
       ).reason,
       'device_not_trusted',
     );
@@ -84,6 +86,7 @@ test(
     assert.equal(
       registry.register(
         registration(),
+        2_000,
       ).reason,
       'accepted',
     );
@@ -101,7 +104,7 @@ test(
   'surface registration revision is strictly monotonic',
   () => {
     const registry = new TrustedSurfaceRegistry();
-    registry.register(registration());
+    registry.register(registration(), 2_000);
 
     assert.equal(
       registry.register(
@@ -127,6 +130,7 @@ test(
             sharedSpace: true,
           }),
         }),
+        2_000,
       ).reason,
       'accepted',
     );
@@ -143,7 +147,7 @@ test(
   'revoked surface is unavailable and cannot be revived by stale registration',
   () => {
     const registry = new TrustedSurfaceRegistry();
-    registry.register(registration());
+    registry.register(registration(), 2_000);
 
     assert.equal(
       registry.revoke(SURFACE, 2).reason,
@@ -175,7 +179,7 @@ test(
       registry.register({
         ...registration(),
         extra: true,
-      }).reason,
+      }, 2_000).reason,
       'invalid_registration',
     );
 
@@ -187,8 +191,44 @@ test(
               'dev_bbbbbbbbbbbbbbbb',
           }),
         }),
+        2_000,
       ).reason,
       'device_binding_mismatch',
+    );
+  },
+);
+
+
+test(
+  'trusted surface approval rejects future and non-monotonic approval timestamps',
+  () => {
+    const registry = new TrustedSurfaceRegistry();
+
+    assert.equal(
+      registry.register(
+        registration({ approvedAt: 3_000 }),
+        2_000,
+      ).reason,
+      'future_approval',
+    );
+
+    assert.equal(
+      registry.register(
+        registration({ approvedAt: 1_000 }),
+        2_000,
+      ).reason,
+      'accepted',
+    );
+
+    assert.equal(
+      registry.register(
+        registration({
+          revision: 2,
+          approvedAt: 999,
+        }),
+        2_000,
+      ).reason,
+      'non_monotonic_approval',
     );
   },
 );
