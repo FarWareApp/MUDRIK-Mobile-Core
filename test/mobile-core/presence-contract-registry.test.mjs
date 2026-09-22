@@ -150,6 +150,17 @@ test(
       registry.update(
         observation({
           sequence: 2,
+          observedAt: 999,
+          expiresAt: 60_999,
+        }),
+      ).reason,
+      'non_monotonic_time',
+    );
+
+    assert.equal(
+      registry.update(
+        observation({
+          sequence: 2,
         }),
       ).reason,
       'accepted',
@@ -185,6 +196,15 @@ test(
       registry.update(
         observation({
           expiresAt: 200_000,
+        }),
+      ).reason,
+      'invalid_observation',
+    );
+
+    assert.equal(
+      registry.update(
+        observation({
+          expiresAt: 1_000,
         }),
       ).reason,
       'invalid_observation',
