@@ -27,7 +27,8 @@ export type PresenceRegistryUpdate = Readonly<{
     | 'duplicate'
     | 'invalid_observation'
     | 'stale_sequence'
-    | 'sequence_conflict';
+    | 'sequence_conflict'
+    | 'non_monotonic_time';
 }>;
 
 const MAX_OBSERVATION_TTL_MS =
@@ -212,6 +213,13 @@ export class PresenceRegistry {
       return {
         accepted: false,
         reason: 'sequence_conflict',
+      };
+    }
+
+    if (next.observedAt < current.observedAt) {
+      return {
+        accepted: false,
+        reason: 'non_monotonic_time',
       };
     }
 
