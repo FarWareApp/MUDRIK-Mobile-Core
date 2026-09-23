@@ -32,6 +32,7 @@ import { InlineErrorBanner } from '../../../shared/components/InlineErrorBanner'
 import { CompanionEditorHeader } from './CompanionEditorHeader';
 import { CompanionNumericStepper } from './CompanionNumericStepper';
 import { CompanionOptionGroup } from './CompanionOptionGroup';
+import { CompanionResetControl } from './CompanionResetControl';
 import { CompanionToggleRow } from './CompanionToggleRow';
 
 type Props = {
@@ -41,6 +42,7 @@ type Props = {
   errorMessage?: string | null;
   onCancel: () => void;
   onSave: (profile: CompanionProfile) => void;
+  onReset: () => void;
 };
 
 export function CompanionProfileEditorModal({
@@ -50,6 +52,7 @@ export function CompanionProfileEditorModal({
   errorMessage = null,
   onCancel,
   onSave,
+  onReset,
 }: Props) {
   const { colors, mode } = useTheme();
   const { reducedMotion } = useAccessibility();
@@ -364,6 +367,12 @@ export function CompanionProfileEditorModal({
               }
             />
           </View>
+
+          <CompanionResetControl
+            active={visible}
+            disabled={saving}
+            onReset={onReset}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
