@@ -46,6 +46,10 @@ const toggle = fs.readFileSync(
   'src/features/companion/components/CompanionToggleRow.tsx',
   'utf8',
 );
+const resetControl = fs.readFileSync(
+  'src/features/companion/components/CompanionResetControl.tsx',
+  'utf8',
+);
 const screenState = fs.readFileSync(
   'src/features/companion/components/CompanionScreenState.tsx',
   'utf8',
@@ -157,6 +161,23 @@ test(
     assert.match(editorHeader, /accessibilityState=\{\{ disabled: saving \}\}/);
     assert.match(editorHeader, /busy:\s*saving/);
     assert.match(editorHeader, /ActivityIndicator/);
+    assert.match(editor, /CompanionResetControl/);
+    assert.match(screen, /onReset=\{\(\) =>/);
+  },
+);
+
+test(
+  'companion reset requires explicit confirmation and remains disabled during persistence',
+  () => {
+    assert.match(resetControl, /useState\(false\)/);
+    assert.match(resetControl, /setConfirming\(true\)/);
+    assert.match(resetControl, /confirmCompanionReset/);
+    assert.match(resetControl, /cancelCompanionReset/);
+    assert.match(resetControl, /disabled=\{disabled\}/);
+    assert.match(resetControl, /accessibilityRole="button"/);
+    assert.match(resetControl, /minHeight:\s*44/);
+    assert.match(resetControl, /!active \|\| disabled/);
+    assert.match(resetControl, /onReset\(\);/);
   },
 );
 
@@ -281,6 +302,11 @@ test(
       'companionNameRequired',
       'companionSaveFailed',
       'companionResetFailed',
+      'companionResetTitle',
+      'companionResetDescription',
+      'resetCompanion',
+      'confirmCompanionReset',
+      'cancelCompanionReset',
       'companionSessionFailed',
       'retryLoadingCompanion',
       'companionPhaseIdle',
