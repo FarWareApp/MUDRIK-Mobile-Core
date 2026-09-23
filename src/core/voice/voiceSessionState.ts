@@ -49,7 +49,8 @@ export type VoiceSessionTransition = Readonly<{
     | 'applied'
     | 'idempotent'
     | 'invalid_event'
-    | 'invalid_state';
+    | 'invalid_state'
+    | 'generation_exhausted';
   actions: readonly VoiceRuntimeAction[];
 }>;
 
@@ -177,6 +178,12 @@ function nextState(
   });
 }
 
+function canAdvanceGeneration(
+  state: VoiceSessionState,
+): boolean {
+  return state.generation < Number.MAX_SAFE_INTEGER;
+}
+
 export function transitionVoiceSession(input: unknown): VoiceSessionTransition {
   if (
     typeof input !== 'object' ||
@@ -222,14 +229,27 @@ export function transitionVoiceSession(input: unknown): VoiceSessionTransition {
   const event = record.event;
 
   if (event === 'reset') {
+    const actions =
+      state.phase === 'assistant_speaking'
+        ? ['stop_tts', 'stop_input'] as const
+        : ['stop_input'] as const;
+
+    if (!canAdvanceGeneration(state)) {
+      return result(
+        state,
+        nextState(state, 'ended'),
+        true,
+        'generation_exhausted',
+        actions,
+      );
+    }
+
     return result(
       state,
       nextState(state, 'idle', null, true),
       true,
       'applied',
-      state.phase === 'assistant_speaking'
-        ? ['stop_tts', 'stop_input']
-        : ['stop_input'],
+      actions,
     );
   }
 
@@ -295,6 +315,20 @@ export function transitionVoiceSession(input: unknown): VoiceSessionTransition {
     }
 
     const target = state.cancellationTarget;
+
+    if (
+      target === 'listening'
+      && !canAdvanceGeneration(state)
+    ) {
+      return result(
+        state,
+        nextState(state, 'ended'),
+        true,
+        'generation_exhausted',
+        ['none'],
+      );
+    }
+
     return result(
       state,
       nextState(
