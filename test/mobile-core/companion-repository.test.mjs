@@ -183,3 +183,52 @@ test('repository rejects malformed persisted language data', async () => {
     /Invalid persisted companion profile/,
   );
 });
+
+
+test('repository rejects malformed persisted sqlite boolean values', async () => {
+  const baseRow = {
+    companion_id: 'companion_primary',
+    enabled: 1,
+    display_name: 'MUDRIK',
+    presentation: 'male',
+    voice_preference: 'auto',
+    voice_profile_id: null,
+    avatar_profile_id: null,
+    interaction_style: 'balanced',
+    personality_preset: 'balanced',
+    warmth: 55,
+    directness: 55,
+    humor: 20,
+    initiative: 20,
+    verbosity: 50,
+    speaking_rate: 1,
+    preferred_languages_json: '[]',
+    memory_policy_id: null,
+    presence_level: 'normal',
+    show_captions: 1,
+    revision: 1,
+    created_at: 1000,
+    updated_at: 1000,
+  };
+
+  for (const corruptRow of [
+    { ...baseRow, enabled: 2 },
+    { ...baseRow, enabled: -1 },
+    { ...baseRow, show_captions: 2 },
+    { ...baseRow, show_captions: -1 },
+  ]) {
+    const database = {
+      getFirstAsync: async () => corruptRow,
+    };
+
+    const repository =
+      new SQLiteCompanionRepository(
+        async () => database,
+      );
+
+    await assert.rejects(
+      repository.getProfile(),
+      /Invalid persisted companion profile/,
+    );
+  }
+});
