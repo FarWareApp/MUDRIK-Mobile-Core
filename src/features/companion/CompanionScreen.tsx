@@ -183,6 +183,9 @@ export function CompanionScreen({
             }
           })();
         }}
+        onReset={() => {
+          void profile.reset();
+        }}
       />
     </SafeAreaView>
   );
