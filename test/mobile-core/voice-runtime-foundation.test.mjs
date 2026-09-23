@@ -524,3 +524,51 @@ test('voice provider failures normalize hostile payloads to safe unknown state',
     providerSafeMessage: null,
   });
 });
+
+
+test('voice generation exhaustion terminates reset fail-closed without unsafe rollover', () => {
+  const state = {
+    phase: 'assistant_speaking',
+    generation: Number.MAX_SAFE_INTEGER,
+    cancellationTarget: null,
+  };
+
+  const transition = sessionModule.transitionVoiceSession({
+    state,
+    event: 'reset',
+  });
+
+  assert.equal(transition.accepted, true);
+  assert.equal(transition.reason, 'generation_exhausted');
+  assert.equal(transition.next.phase, 'ended');
+  assert.equal(
+    transition.next.generation,
+    Number.MAX_SAFE_INTEGER,
+  );
+  assert.deepEqual(
+    transition.actions,
+    ['stop_tts', 'stop_input'],
+  );
+});
+
+test('voice generation exhaustion after barge-in cancellation never restarts input on the same generation', () => {
+  const state = {
+    phase: 'cancelling',
+    generation: Number.MAX_SAFE_INTEGER,
+    cancellationTarget: 'listening',
+  };
+
+  const transition = sessionModule.transitionVoiceSession({
+    state,
+    event: 'cancel_complete',
+  });
+
+  assert.equal(transition.accepted, true);
+  assert.equal(transition.reason, 'generation_exhausted');
+  assert.equal(transition.next.phase, 'ended');
+  assert.equal(
+    transition.next.generation,
+    Number.MAX_SAFE_INTEGER,
+  );
+  assert.deepEqual(transition.actions, ['none']);
+});
