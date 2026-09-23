@@ -91,6 +91,32 @@ test(
 );
 
 test(
+  'companion profile reset preserves monotonic revision and cannot bypass repository stale-write protection',
+  () => {
+    assert.match(
+      profileController,
+      /const resetProfile: CompanionProfile = \{[\s\S]*revision: profile\.revision \+ 1,[\s\S]*updatedAt: Math\.max\([\s\S]*Date\.now\(\),[\s\S]*profile\.updatedAt,[\s\S]*\),[\s\S]*\};/,
+    );
+    assert.match(
+      profileController,
+      /await repository\.saveProfile\(resetProfile\);/,
+    );
+    assert.doesNotMatch(
+      profileController,
+      /await repository\.clearProfile\(\);/,
+    );
+    assert.match(
+      profileController,
+      /if \(mutationInFlightRef\.current\) \{\s*return;\s*\}/,
+    );
+    assert.match(
+      profileController,
+      /updatedAt: Math\.max\([\s\S]*Date\.now\(\),[\s\S]*profile\.updatedAt/,
+    );
+  },
+);
+
+test(
   'companion session controller keeps provider details out of UI state',
   () => {
     assert.match(
