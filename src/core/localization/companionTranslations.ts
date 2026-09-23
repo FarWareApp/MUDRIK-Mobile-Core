@@ -8,6 +8,16 @@ export const companionTranslations = {
       'تعذر حفظ إعدادات الرفيق.',
     companionResetFailed:
       'تعذر إعادة ضبط إعدادات الرفيق.',
+    companionResetTitle:
+      'إعادة ضبط إعدادات الرفيق',
+    companionResetDescription:
+      'يعيد التفضيلات إلى القيم الافتراضية دون حذف المحادثات أو المشاريع.',
+    resetCompanion:
+      'إعادة الضبط',
+    confirmCompanionReset:
+      'تأكيد إعادة الضبط',
+    cancelCompanionReset:
+      'إلغاء إعادة الضبط',
     companionSessionFailed:
       'حدث خطأ في جلسة الرفيق.',
     retryLoadingCompanion:
@@ -36,6 +46,16 @@ export const companionTranslations = {
       'Die Begleiter-Einstellungen konnten nicht gespeichert werden.',
     companionResetFailed:
       'Die Begleiter-Einstellungen konnten nicht zurückgesetzt werden.',
+    companionResetTitle:
+      'Begleiter-Einstellungen zurücksetzen',
+    companionResetDescription:
+      'Stellt die Einstellungen auf Standardwerte zurück, ohne Unterhaltungen oder Projekte zu löschen.',
+    resetCompanion:
+      'Zurücksetzen',
+    confirmCompanionReset:
+      'Zurücksetzen bestätigen',
+    cancelCompanionReset:
+      'Zurücksetzen abbrechen',
     companionSessionFailed:
       'In der Begleiter-Sitzung ist ein Fehler aufgetreten.',
     retryLoadingCompanion:
@@ -64,6 +84,16 @@ export const companionTranslations = {
       'Unable to save companion settings.',
     companionResetFailed:
       'Unable to reset companion settings.',
+    companionResetTitle:
+      'Reset companion settings',
+    companionResetDescription:
+      'Restores preferences to their defaults without deleting conversations or projects.',
+    resetCompanion:
+      'Reset',
+    confirmCompanionReset:
+      'Confirm reset',
+    cancelCompanionReset:
+      'Cancel reset',
     companionSessionFailed:
       'The companion session encountered an error.',
     retryLoadingCompanion:
