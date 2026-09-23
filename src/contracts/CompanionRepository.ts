@@ -9,7 +9,4 @@ export interface CompanionRepository {
   saveProfile(
     profile: CompanionProfile,
   ): Promise<void>;
-
-  clearProfile():
-    Promise<void>;
 }
