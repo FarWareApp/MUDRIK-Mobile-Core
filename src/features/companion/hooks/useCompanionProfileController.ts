@@ -124,6 +124,10 @@ export function useCompanionProfileController(
 
   const load =
     useCallback(async () => {
+      if (mutationInFlightRef.current) {
+        return;
+      }
+
       const sourceRevision =
         sourceRevisionRef.current;
       const requestId =
@@ -212,7 +216,10 @@ export function useCompanionProfileController(
           displayName,
           createdAt: profile.createdAt,
           revision: profile.revision + 1,
-          updatedAt: Date.now(),
+          updatedAt: Math.max(
+            Date.now(),
+            profile.updatedAt,
+          ),
         };
 
         try {
@@ -246,6 +253,7 @@ export function useCompanionProfileController(
         profile.companionId,
         profile.createdAt,
         profile.revision,
+        profile.updatedAt,
         repository,
       ],
     );
@@ -268,16 +276,25 @@ export function useCompanionProfileController(
         && mutationIdRef.current === mutationId
       );
 
+      const resetProfile: CompanionProfile = {
+        ...createDefaultCompanionProfile(),
+        companionId: profile.companionId,
+        createdAt: profile.createdAt,
+        revision: profile.revision + 1,
+        updatedAt: Math.max(
+          Date.now(),
+          profile.updatedAt,
+        ),
+      };
+
       try {
-        await repository.clearProfile();
+        await repository.saveProfile(resetProfile);
 
         if (!isCurrent()) {
           return false;
         }
 
-        setProfile(
-          createDefaultCompanionProfile(),
-        );
+        setProfile(resetProfile);
         setError(null);
         return true;
       } catch (caught) {
@@ -297,6 +314,10 @@ export function useCompanionProfileController(
     }, [
       beginMutation,
       endMutation,
+      profile.companionId,
+      profile.createdAt,
+      profile.revision,
+      profile.updatedAt,
       repository,
     ]);
 
