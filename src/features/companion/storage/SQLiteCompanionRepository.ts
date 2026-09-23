@@ -52,13 +52,30 @@ function parseLanguages(
   }
 }
 
+function parseSqliteBoolean(
+  value: unknown,
+): boolean | undefined {
+  if (value === 0) {
+    return false;
+  }
+
+  if (value === 1) {
+    return true;
+  }
+
+  return undefined;
+}
+
 function mapRow(
   row: CompanionRow,
 ): CompanionProfile {
   const validated =
     validateCompanionProfile({
       companionId: row.companion_id,
-      enabled: row.enabled === 1,
+      enabled:
+        parseSqliteBoolean(
+          row.enabled,
+        ),
       displayName: row.display_name,
       presentation: row.presentation,
       voicePreference: row.voice_preference,
@@ -79,7 +96,9 @@ function mapRow(
       memoryPolicyId: row.memory_policy_id,
       presenceLevel: row.presence_level,
       showCaptions:
-        row.show_captions === 1,
+        parseSqliteBoolean(
+          row.show_captions,
+        ),
       revision: row.revision,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
