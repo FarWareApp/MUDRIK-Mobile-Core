@@ -60,10 +60,10 @@ export function CompanionProfileEditorModal({
   const [draft, setDraft] = useState(profile);
 
   useEffect(() => {
-    if (visible && !saving) {
+    if (visible) {
       setDraft(profile);
     }
-  }, [profile, saving, visible]);
+  }, [profile, visible]);
 
   const presentationOptions: readonly (
     readonly [CompanionPresentation, string]
