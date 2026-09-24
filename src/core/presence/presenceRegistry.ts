@@ -1,4 +1,8 @@
 import {
+  isPresenceSessionId,
+} from './presenceSessionId';
+
+import {
   isSurfaceId,
 } from './surfaceContract';
 
@@ -8,6 +12,7 @@ export type SurfaceAvailability =
   | 'offline';
 
 export type PresenceObservation = Readonly<{
+  presenceSessionId: string;
   surfaceId: string;
   sequence: number;
   observedAt: number;
@@ -38,6 +43,7 @@ const MAX_LATENCY_MS =
   60_000;
 
 const ALLOWED_KEYS = new Set([
+  'presenceSessionId',
   'surfaceId',
   'sequence',
   'observedAt',
@@ -94,7 +100,8 @@ export function parsePresenceObservation(
   }
 
   if (
-    !isSurfaceId(record.surfaceId)
+    !isPresenceSessionId(record.presenceSessionId)
+    || !isSurfaceId(record.surfaceId)
     || !isSafeNonNegativeInteger(record.sequence)
     || !isSafeNonNegativeInteger(record.observedAt)
     || !isSafeNonNegativeInteger(record.expiresAt)
@@ -119,6 +126,8 @@ export function parsePresenceObservation(
   }
 
   return Object.freeze({
+    presenceSessionId:
+      record.presenceSessionId,
     surfaceId: record.surfaceId,
     sequence: record.sequence,
     observedAt: record.observedAt,
@@ -140,7 +149,9 @@ function observationsEqual(
   right: PresenceObservation,
 ): boolean {
   return (
-    left.surfaceId === right.surfaceId
+    left.presenceSessionId
+      === right.presenceSessionId
+    && left.surfaceId === right.surfaceId
     && left.sequence === right.sequence
     && left.observedAt === right.observedAt
     && left.expiresAt === right.expiresAt
@@ -154,6 +165,13 @@ function observationsEqual(
     && left.estimatedLatencyMs
       === right.estimatedLatencyMs
   );
+}
+
+function observationKey(
+  presenceSessionId: string,
+  surfaceId: string,
+): string {
+  return `${presenceSessionId}:${surfaceId}`;
 }
 
 export class PresenceRegistry {
@@ -173,14 +191,17 @@ export class PresenceRegistry {
       };
     }
 
+    const key = observationKey(
+      next.presenceSessionId,
+      next.surfaceId,
+    );
+
     const current =
-      this.observations.get(
-        next.surfaceId,
-      );
+      this.observations.get(key);
 
     if (!current) {
       this.observations.set(
-        next.surfaceId,
+        key,
         next,
       );
 
@@ -224,7 +245,7 @@ export class PresenceRegistry {
     }
 
     this.observations.set(
-      next.surfaceId,
+      key,
       next,
     );
 
@@ -235,16 +256,38 @@ export class PresenceRegistry {
   }
 
   get(
+    presenceSessionId: string,
     surfaceId: string,
   ): PresenceObservation | null {
+    if (
+      !isPresenceSessionId(presenceSessionId)
+      || !isSurfaceId(surfaceId)
+    ) {
+      return null;
+    }
+
     return this.observations.get(
-      surfaceId,
+      observationKey(
+        presenceSessionId,
+        surfaceId,
+      ),
     ) ?? null;
   }
 
-  list(): readonly PresenceObservation[] {
+  listForSession(
+    presenceSessionId: string,
+  ): readonly PresenceObservation[] {
+    if (!isPresenceSessionId(presenceSessionId)) {
+      return Object.freeze([]);
+    }
+
     return Object.freeze(
-      [...this.observations.values()],
+      [...this.observations.values()]
+        .filter(
+          (observation) =>
+            observation.presenceSessionId
+              === presenceSessionId,
+        ),
     );
   }
 
