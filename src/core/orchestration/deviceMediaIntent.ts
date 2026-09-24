@@ -95,6 +95,25 @@ const INTENT_ID =
 const OPAQUE_REFERENCE =
   /^[a-z][a-z0-9_-]{1,23}_[a-z0-9][a-z0-9._:-]{1,95}$/;
 
+export function isOrchestrationSessionId(
+  value: unknown,
+): value is string {
+  return (
+    typeof value === 'string'
+    && ORCHESTRATION_SESSION_ID.test(value)
+  );
+}
+
+export function isDeviceMediaIntentId(
+  value: unknown,
+): value is string {
+  return (
+    typeof value === 'string'
+    && INTENT_ID.test(value)
+  );
+}
+
+
 const CREDENTIAL_SHAPE =
   /(?:^|[._:-])(?:sk|api[_-]?key|bearer|token|secret|ghp|github[_-]?pat|aiza)(?:[._:-]|$)/i;
 
@@ -234,12 +253,12 @@ function parseBase(
   record: Record<string, unknown>,
 ): BaseIntent | null {
   if (
-    typeof record.orchestrationSessionId !== 'string'
-    || !ORCHESTRATION_SESSION_ID.test(
+    !isOrchestrationSessionId(
       record.orchestrationSessionId,
     )
-    || typeof record.intentId !== 'string'
-    || !INTENT_ID.test(record.intentId)
+    || !isDeviceMediaIntentId(
+      record.intentId,
+    )
     || !isSafeNonNegativeInteger(record.sequence)
     || !isKind(record.kind)
     || !isIdentityId(
