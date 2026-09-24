@@ -290,17 +290,4 @@ export class SQLiteCompanionRepository
       );
     }
   }
-
-  async clearProfile():
-    Promise<void> {
-    const database =
-      await this.getDatabase();
-
-    await database.runAsync(
-      `
-        DELETE FROM companion_profile
-        WHERE id = 1
-      `,
-    );
-  }
 }
