@@ -220,8 +220,7 @@ export function parseMediaSessionSnapshot(
     contentRef,
     positionMs,
     playbackState:
-      record.playbackState
-        as MediaPlaybackState,
+      record.playbackState as MediaPlaybackState,
     observedAt: record.observedAt,
     expiresAt: record.expiresAt,
     grantsInheritedAuthority: false,
