@@ -325,3 +325,26 @@ test(
     }
   },
 );
+
+
+test(
+  'companion editor preserves the user draft when a persistence attempt fails',
+  () => {
+    assert.match(
+      editor,
+      /if \(visible\) \{\s*setDraft\(profile\);\s*\}/s,
+    );
+    assert.match(
+      editor,
+      /\}, \[profile, visible\]\);/,
+    );
+    assert.doesNotMatch(
+      editor,
+      /\[profile, saving, visible\]/,
+    );
+    assert.doesNotMatch(
+      editor,
+      /visible && !saving/,
+    );
+  },
+);
