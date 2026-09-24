@@ -167,8 +167,7 @@ export function evaluateDisplayPrivacy(
   }
 
   const sensitivity =
-    record.contentSensitivity
-      as DisplayContentSensitivity;
+    record.contentSensitivity as DisplayContentSensitivity;
 
   if (
     sensitivity === 'sensitive'
