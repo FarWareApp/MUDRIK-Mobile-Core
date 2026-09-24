@@ -72,6 +72,24 @@ test('repository save uses monotonic revision protection', async () => {
   );
 });
 
+test('repository exposes no destructive clear path that can erase the revision fence', async () => {
+  const database = {
+    runAsync: async () => ({
+      changes: 1,
+    }),
+  };
+
+  const repository =
+    new SQLiteCompanionRepository(
+      async () => database,
+    );
+
+  assert.equal(
+    typeof repository.clearProfile,
+    'undefined',
+  );
+});
+
 test('repository rejects a write that did not advance revision', async () => {
   const database = {
     runAsync: async () => ({
