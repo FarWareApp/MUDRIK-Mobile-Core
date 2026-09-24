@@ -95,7 +95,10 @@ const PROFILE_REF =
   /^(?:voice|avatar|memory)_[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 
 const CREDENTIAL_SHAPE =
-  /(?:^|[_-])(?:sk|api[_-]?key|bearer|token|secret|ghp|github[_-]?pat|aiza)(?:[_-]|$)/i;
+  /(?:^|[_-])(?:sk|api[_-]?key|bearer|token|secret|ghp|github[_-]?pat)(?:[_-]|$)/i;
+
+const HIGH_CONFIDENCE_SECRET_PREFIX =
+  /(?:^|[_-])AIza[A-Za-z0-9_-]{8,}$/i;
 
 const LANGUAGE_TAG =
   /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/;
@@ -157,6 +160,7 @@ function isProfileReference(
       && value.startsWith(`${prefix}_`)
       && PROFILE_REF.test(value)
       && !CREDENTIAL_SHAPE.test(value)
+      && !HIGH_CONFIDENCE_SECRET_PREFIX.test(value)
     )
   );
 }
