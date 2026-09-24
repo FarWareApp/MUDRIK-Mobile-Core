@@ -221,3 +221,62 @@ test(
     );
   },
 );
+
+
+test(
+  'handoff rejects time rollback and a predecessor that was already inactive at target issuance',
+  () => {
+    const rollback =
+      new PrimarySurfaceLeaseRegistry();
+
+    assert.equal(
+      rollback.claim(
+        lease({
+          issuedAt: 2_000,
+          expiresAt: 32_000,
+        }),
+        2_500,
+      ).reason,
+      'accepted',
+    );
+
+    assert.equal(
+      rollback.claim(
+        lease({
+          surfaceId: SURFACE_B,
+          generation: 1,
+          issuedAt: 1_500,
+          expiresAt: 31_500,
+        }),
+        2_500,
+      ).reason,
+      'non_monotonic_time',
+    );
+
+    const inactive =
+      new PrimarySurfaceLeaseRegistry();
+
+    assert.equal(
+      inactive.claim(
+        lease({
+          expiresAt: 2_000,
+        }),
+        1_500,
+      ).reason,
+      'accepted',
+    );
+
+    assert.equal(
+      inactive.claim(
+        lease({
+          surfaceId: SURFACE_B,
+          generation: 1,
+          issuedAt: 2_000,
+          expiresAt: 32_000,
+        }),
+        2_500,
+      ).reason,
+      'previous_lease_inactive',
+    );
+  },
+);
