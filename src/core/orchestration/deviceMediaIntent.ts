@@ -198,7 +198,7 @@ function hasExactKeys(
   );
 }
 
-function isKind(
+export function isDeviceMediaIntentKind(
   value: unknown,
 ): value is DeviceMediaIntentKind {
   return (
@@ -274,7 +274,7 @@ function parseBase(
       record.intentId,
     )
     || !isSafeNonNegativeInteger(record.sequence)
-    || !isKind(record.kind)
+    || !isDeviceMediaIntentKind(record.kind)
   ) {
     return null;
   }
@@ -307,7 +307,7 @@ function freezeIntent<T extends NormalizedDeviceMediaIntent>(
 export function parseDeviceMediaIntent(
   input: unknown,
 ): NormalizedDeviceMediaIntent | null {
-  if (!isRecord(input) || !isKind(input.kind)) {
+  if (!isRecord(input) || !isDeviceMediaIntentKind(input.kind)) {
     return null;
   }
 
