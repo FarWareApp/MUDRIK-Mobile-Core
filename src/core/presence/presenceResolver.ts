@@ -523,6 +523,8 @@ function buildEligibleCandidates(
     if (
       !surface
       || !presence
+      || presence.presenceSessionId
+        !== input.presenceSessionId
       || presence.surfaceId !== surface.surfaceId
     ) {
       continue;
