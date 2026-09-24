@@ -77,13 +77,11 @@ export function normalizeDeviceMediaAdapterError(
     if (
       typeof record.code === 'string'
       && CODES.includes(
-        record.code
-          as DeviceMediaAdapterErrorCode,
+        record.code as DeviceMediaAdapterErrorCode,
       )
     ) {
       code =
-        record.code
-          as DeviceMediaAdapterErrorCode;
+        record.code as DeviceMediaAdapterErrorCode;
     }
 
     detail =
