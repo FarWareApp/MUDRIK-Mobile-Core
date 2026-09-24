@@ -22,6 +22,8 @@ export const MUDRIK_CAPABILITIES = [
   'clipboard.read',
   'clipboard.write',
   'device.control',
+  'device.locate',
+  'device.ring',
   'app.open',
   'app.close',
   'media.control',
