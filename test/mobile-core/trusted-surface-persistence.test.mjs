@@ -241,3 +241,31 @@ test(
     assert.equal(reads, 0);
   },
 );
+
+
+test(
+  'trusted surface persistence rejects approval timestamp rollback',
+  async () => {
+    const state = createDatabase();
+    const repository =
+      new SQLiteTrustedSurfaceRepository(
+        async () => state.database,
+      );
+
+    await repository.save(
+      record({
+        approvedAt: 2_000,
+      }),
+    );
+
+    await assert.rejects(
+      repository.save(
+        record({
+          revision: 2,
+          approvedAt: 1_999,
+        }),
+      ),
+      /non-monotonic approval/,
+    );
+  },
+);
