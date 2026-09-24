@@ -409,3 +409,46 @@ test('every companion interaction decision carries zero authority', () => {
     );
   }
 });
+
+
+test('profile references reject additional high-confidence credential shapes', () => {
+  const jwtLike = [
+    'voice_',
+    ['eyJ', 'abcdef'].join(''),
+    '.',
+    ['eyJ', 'ghijkl'].join(''),
+    '.',
+    'mnopqrstu',
+  ].join('');
+
+  const awsLike = [
+    'avatar_',
+    'AK',
+    'IA',
+    'ABCDEFGHIJKLMNOP',
+  ].join('');
+
+  const slackLike = [
+    'memory_',
+    'xo',
+    'xb-',
+    'abcdefghijklmno',
+  ].join('');
+
+  for (const candidate of [
+    { voiceProfileId: jwtLike },
+    { avatarProfileId: awsLike },
+    { memoryPolicyId: slackLike },
+  ]) {
+    const result =
+      validateCompanionProfile(
+        profile(candidate),
+      );
+
+    assert.equal(result.accepted, false);
+    assert.equal(
+      result.reason,
+      'invalid_profile_reference',
+    );
+  }
+});
