@@ -46,8 +46,8 @@ export type DeviceMediaTargetResolution = Readonly<{
   grantsAuthority: false;
 }>;
 
-type CandidateInput = Readonly<{
-  adapter: unknown;
+type ParsedCandidate = Readonly<{
+  adapter: DeviceMediaAdapterDescriptor;
   deviceTrustInput: unknown;
   deviceActive: boolean;
   recentDirectInteraction: boolean;
@@ -60,7 +60,7 @@ type ResolverInput = Readonly<{
   currentPrimaryDeviceId: string | null;
   activeMediaDeviceId: string | null;
   recentlyAddressedDeviceId: string | null;
-  candidates: readonly CandidateInput[];
+  candidates: readonly ParsedCandidate[];
 }>;
 
 type EligibleCandidate = Readonly<{
@@ -179,7 +179,7 @@ function parseInput(
     return null;
   }
 
-  const candidates: CandidateInput[] = [];
+  const candidates: ParsedCandidate[] = [];
   const candidateDeviceIds = new Set<string>();
 
   for (const value of record.candidates) {
@@ -280,9 +280,7 @@ function trustBindingMatches(
 
 function scoreCandidate(
   input: ResolverInput,
-  candidate: CandidateInput & {
-    adapter: DeviceMediaAdapterDescriptor;
-  },
+  candidate: ParsedCandidate,
 ): number {
   let score =
     candidate.adapter.status === 'ready'
@@ -378,10 +376,7 @@ export function resolveDeviceMediaTarget(
         adapter,
         score: scoreCandidate(
           input,
-          candidate as CandidateInput & {
-            adapter:
-              DeviceMediaAdapterDescriptor;
-          },
+          candidate,
         ),
       }),
     );
