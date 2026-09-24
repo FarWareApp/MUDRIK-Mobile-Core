@@ -27,6 +27,7 @@ export const CAPABILITY_RISK: Readonly<Record<CapabilityId, CapabilityRisk>> = {
   'clipboard.write': 'medium',
   'device.control': 'high',
   'app.open': 'low',
+  'app.close': 'medium',
   'media.control': 'low',
   'media.search': 'low',
   'media.transfer': 'medium',
