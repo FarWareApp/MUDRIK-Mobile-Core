@@ -2,7 +2,16 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted pre-device candidate:
+
+`b40b643a1b7f5856f8d727c471269f1829f0bfc1`
+
+Automated evidence:
+
+- `docs/validation/SECTION_08_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_08_DEFECTS.md`
 
 Section 08 establishes a provider-neutral orchestration layer for safe device, application, media, content, game and companion-placement intents. It resolves **what authorized operation should be requested and where it should be routed**; it does not create device trust, grant capabilities, expose a raw remote shell, install software, purchase content, or bypass later Computer Agent / Control Plane boundaries.
 
