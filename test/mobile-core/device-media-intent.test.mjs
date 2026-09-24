@@ -419,3 +419,41 @@ test(
     );
   },
 );
+
+
+test(
+  'normalized intent may defer device choice without inventing an identity',
+  () => {
+    const contextual =
+      intentModule
+        .parseDeviceMediaIntent(
+          base('app.open', {
+            targetDeviceId: null,
+            appRef: 'app_youtube_01',
+          }),
+        );
+
+    assert.ok(contextual);
+    assert.equal(
+      contextual.targetDeviceId,
+      null,
+    );
+
+    const transfer =
+      intentModule
+        .parseDeviceMediaIntent(
+          base('media.transfer_session', {
+            targetDeviceId: null,
+            sourceDeviceId: null,
+            mediaSessionRef:
+              'media_session_01',
+          }),
+        );
+
+    assert.ok(transfer);
+    assert.equal(
+      transfer.sourceDeviceId,
+      null,
+    );
+  },
+);
