@@ -76,11 +76,11 @@ The re-audit closed additional profile/runtime gaps:
 - stale async profile operations across repository replacement/unmount;
 - destructive reset semantics that could erase the monotonic revision fence;
 - corrupt SQLite boolean coercion;
-- an uncovered high-confidence Google-style credential shape inside provider-neutral profile references.
+- uncovered high-confidence credential shapes inside provider-neutral profile references, including Google-style, JWT-shaped, AWS access-key-ID-shaped, and Slack-token-shaped values.
 
 The companion remains presentation policy only and grants zero execution, sensor, memory or disclosure authority.
 
-See `SECTION_06_DEFECTS.md` / `S06-ASYNC-001`, `S06-DATA-002`, `S06-DATA-003` and `S06-SECRET-001`.
+See `SECTION_06_DEFECTS.md` / `S06-ASYNC-001`, `S06-DATA-002`, `S06-DATA-003`, `S06-SECRET-001` and `S06-SECRET-002`.
 
 ## Cross-Section Compatibility Result
 
