@@ -98,7 +98,7 @@ const CREDENTIAL_SHAPE =
   /(?:^|[_-])(?:sk|api[_-]?key|bearer|token|secret|ghp|github[_-]?pat)(?:[_-]|$)/i;
 
 const HIGH_CONFIDENCE_SECRET_PREFIX =
-  /(?:^|[_-])AIza[A-Za-z0-9_-]{8,}$/i;
+  /(?:^|[_-])(?:AIza[A-Za-z0-9_-]{8,}|(?:AKIA|ASIA)[A-Z0-9]{16}|xox(?:a|b|p|r|s)-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,})$/i;
 
 const LANGUAGE_TAG =
   /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/;
