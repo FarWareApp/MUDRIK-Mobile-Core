@@ -254,6 +254,7 @@ test(
           intent({
             targetDeviceId:
               DEVICE_A,
+            sourceDeviceId: null,
           }),
           session(),
           DEVICE_A,
