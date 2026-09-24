@@ -2,6 +2,11 @@ import {
   isIdentityId,
 } from '../identity/identityIds';
 
+import {
+  hasCredentialOrExecutableShape,
+  parseOpaqueOrchestrationReference,
+} from './orchestrationReference';
+
 export type DeviceMediaIntentKind =
   | 'media.play'
   | 'media.pause'
@@ -92,9 +97,6 @@ const ORCHESTRATION_SESSION_ID =
 const INTENT_ID =
   /^dmi_[a-z0-9][a-z0-9_-]{15,63}$/;
 
-const OPAQUE_REFERENCE =
-  /^[a-z][a-z0-9_-]{1,23}_[a-z0-9][a-z0-9._:-]{1,95}$/;
-
 export function isOrchestrationSessionId(
   value: unknown,
 ): value is string {
@@ -114,11 +116,6 @@ export function isDeviceMediaIntentId(
 }
 
 
-const CREDENTIAL_SHAPE =
-  /(?:^|[._:-])(?:sk|api[_-]?key|bearer|token|secret|ghp|github[_-]?pat|aiza)(?:[._:-]|$)/i;
-
-const URL_OR_SCRIPT_SHAPE =
-  /(?:^[a-z][a-z0-9+.-]*:|\/\/|\b(?:bash|zsh|sh)\s+-c\b|\b(?:powershell|pwsh)\b|\bcmd(?:\.exe)?\s+\/c\b|&&|\|\||`|\$\()/i;
 
 const KINDS: readonly DeviceMediaIntentKind[] = [
   'media.play',
@@ -209,24 +206,6 @@ export function isDeviceMediaIntentKind(
   );
 }
 
-function parseOpaqueReference(
-  value: unknown,
-  prefix: 'app' | 'media' | 'content' | 'game' | 'channel',
-): string | null {
-  if (
-    typeof value !== 'string'
-    || value.length > 120
-    || !value.startsWith(`${prefix}_`)
-    || !OPAQUE_REFERENCE.test(value)
-    || CREDENTIAL_SHAPE.test(value)
-    || URL_OR_SCRIPT_SHAPE.test(value)
-  ) {
-    return null;
-  }
-
-  return value;
-}
-
 function parseSearchQuery(
   value: unknown,
 ): string | null {
@@ -240,8 +219,9 @@ function parseSearchQuery(
     normalized.length === 0
     || normalized.length > 512
     || /[\u0000-\u001F\u007F]/.test(normalized)
-    || URL_OR_SCRIPT_SHAPE.test(normalized)
-    || CREDENTIAL_SHAPE.test(normalized)
+    || hasCredentialOrExecutableShape(
+      normalized,
+    )
   ) {
     return null;
   }
@@ -373,7 +353,7 @@ export function parseDeviceMediaIntent(
 
     case 'media.transfer_session': {
       const mediaSessionRef =
-        parseOpaqueReference(
+        parseOpaqueOrchestrationReference(
           input.mediaSessionRef,
           'media',
         );
@@ -413,7 +393,7 @@ export function parseDeviceMediaIntent(
 
     case 'tv.channel.set': {
       const channelRef =
-        parseOpaqueReference(
+        parseOpaqueOrchestrationReference(
           input.channelRef,
           'channel',
         );
@@ -435,7 +415,7 @@ export function parseDeviceMediaIntent(
     case 'app.open':
     case 'app.close': {
       const appRef =
-        parseOpaqueReference(
+        parseOpaqueOrchestrationReference(
           input.appRef,
           'app',
         );
@@ -476,7 +456,7 @@ export function parseDeviceMediaIntent(
 
     case 'content.play': {
       const contentRef =
-        parseOpaqueReference(
+        parseOpaqueOrchestrationReference(
           input.contentRef,
           'content',
         );
@@ -497,7 +477,7 @@ export function parseDeviceMediaIntent(
 
     case 'game.launch': {
       const gameRef =
-        parseOpaqueReference(
+        parseOpaqueOrchestrationReference(
           input.gameRef,
           'game',
         );
