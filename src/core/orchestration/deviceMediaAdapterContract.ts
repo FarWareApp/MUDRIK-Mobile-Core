@@ -185,11 +185,9 @@ export function parseDeviceMediaAdapterDescriptor(
     adapterId: record.adapterId,
     deviceId: record.deviceId,
     deviceClass:
-      record.deviceClass
-        as DeviceMediaAdapterClass,
+      record.deviceClass as DeviceMediaAdapterClass,
     status:
-      record.status
-        as DeviceMediaAdapterStatus,
+      record.status as DeviceMediaAdapterStatus,
     supportedIntents:
       Object.freeze(supportedIntents),
     revision: record.revision,
