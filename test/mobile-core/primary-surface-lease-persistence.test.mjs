@@ -247,3 +247,58 @@ test(
     assert.equal(reads, 0);
   },
 );
+
+
+test(
+  'primary lease persistence rejects timestamp rollback and inactive predecessor handoff',
+  async () => {
+    const rollbackState = createDatabase();
+    const rollbackRepository =
+      new SQLitePrimarySurfaceLeaseRepository(
+        async () => rollbackState.database,
+      );
+
+    await rollbackRepository.save(
+      lease({
+        issuedAt: 2_000,
+        expiresAt: 32_000,
+      }),
+    );
+
+    await assert.rejects(
+      rollbackRepository.save(
+        lease({
+          surfaceId: SURFACE_B,
+          generation: 1,
+          issuedAt: 1_500,
+          expiresAt: 31_500,
+        }),
+      ),
+      /non-monotonic time/,
+    );
+
+    const inactiveState = createDatabase();
+    const inactiveRepository =
+      new SQLitePrimarySurfaceLeaseRepository(
+        async () => inactiveState.database,
+      );
+
+    await inactiveRepository.save(
+      lease({
+        expiresAt: 2_000,
+      }),
+    );
+
+    await assert.rejects(
+      inactiveRepository.save(
+        lease({
+          surfaceId: SURFACE_B,
+          generation: 1,
+          issuedAt: 2_000,
+          expiresAt: 32_000,
+        }),
+      ),
+      /previous lease inactive/,
+    );
+  },
+);
