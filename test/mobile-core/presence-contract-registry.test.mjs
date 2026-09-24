@@ -19,6 +19,10 @@ const {
 
 const SURFACE =
   'surf_aaaaaaaaaaaaaaaa';
+const SESSION =
+  'psess_aaaaaaaaaaaaaaaa';
+const SESSION_B =
+  'psess_bbbbbbbbbbbbbbbb';
 const DEVICE =
   'dev_aaaaaaaaaaaaaaaa';
 
@@ -41,6 +45,7 @@ function surface(overrides = {}) {
 
 function observation(overrides = {}) {
   return {
+    presenceSessionId: SESSION,
     surfaceId: SURFACE,
     sequence: 1,
     observedAt: 1_000,
@@ -216,6 +221,50 @@ test(
         extraSignal: 1,
       }).reason,
       'invalid_observation',
+    );
+  },
+);
+
+
+test(
+  'presence registry isolates monotonic ordering by logical session',
+  () => {
+    const registry =
+      new PresenceRegistry();
+
+    assert.equal(
+      registry.update(
+        observation({
+          sequence: 5,
+        }),
+      ).reason,
+      'accepted',
+    );
+
+    assert.equal(
+      registry.update(
+        observation({
+          presenceSessionId: SESSION_B,
+          sequence: 0,
+        }),
+      ).reason,
+      'accepted',
+    );
+
+    assert.equal(
+      registry.get(
+        SESSION,
+        SURFACE,
+      )?.sequence,
+      5,
+    );
+
+    assert.equal(
+      registry.get(
+        SESSION_B,
+        SURFACE,
+      )?.sequence,
+      0,
     );
   },
 );
