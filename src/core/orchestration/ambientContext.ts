@@ -255,8 +255,7 @@ export function parseAmbientContext(
     expiresAt: record.expiresAt,
     roomRef,
     timeOfDay:
-      record.timeOfDay
-        as AmbientTimeOfDay,
+      record.timeOfDay as AmbientTimeOfDay,
     lightingLevel,
     lightingSceneRef,
     activeDisplayDeviceId,
