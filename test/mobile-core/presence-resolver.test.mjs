@@ -25,6 +25,7 @@ const KEY_B = 'dkey_bbbbbbbbbbbbbbbb';
 const SURFACE_A = 'surf_aaaaaaaaaaaaaaaa';
 const SURFACE_B = 'surf_bbbbbbbbbbbbbbbb';
 const SESSION = 'psess_aaaaaaaaaaaaaaaa';
+const SESSION_B = 'psess_bbbbbbbbbbbbbbbb';
 const THUMB_A = 'A'.repeat(43);
 const THUMB_B = 'B'.repeat(43);
 
@@ -52,6 +53,7 @@ function surface({
 
 function presence(surfaceId = SURFACE_A, overrides = {}) {
   return {
+    presenceSessionId: SESSION,
     surfaceId,
     sequence: 1,
     observedAt: 1_000,
@@ -548,5 +550,42 @@ test(
     );
 
     assert.equal(decision.selectedSurfaceId, SURFACE_B);
+  },
+);
+
+
+test(
+  'resolver rejects fresh presence evidence replayed from another logical session',
+  () => {
+    const descriptor = surface();
+    const registry = registryWith(descriptor);
+
+    const replayed = candidate(
+      descriptor,
+      {
+        presence: presence(
+          descriptor.surfaceId,
+          {
+            presenceSessionId: SESSION_B,
+          },
+        ),
+      },
+    );
+
+    const decision = resolve(
+      input({
+        candidates: [replayed],
+      }),
+      registry,
+    );
+
+    assert.equal(
+      decision.selectedSurfaceId,
+      null,
+    );
+    assert.equal(
+      decision.reason,
+      'no_eligible_surface',
+    );
   },
 );
