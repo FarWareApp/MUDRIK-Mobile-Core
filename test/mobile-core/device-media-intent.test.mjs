@@ -61,6 +61,8 @@ const validCases = [
       sourceDeviceId: DEVICE_B,
       mediaSessionRef:
         'media_session_01',
+        expectedMediaRevision: 1,
+        expectedTransferGeneration: 0,
     }),
     'media.transfer',
   ],
@@ -288,6 +290,8 @@ test(
         sourceDeviceId: DEVICE_A,
         mediaSessionRef:
           'media_session_01',
+        expectedMediaRevision: 1,
+        expectedTransferGeneration: 0,
       }),
       base(
         'display.companion.move',
@@ -447,6 +451,8 @@ test(
             sourceDeviceId: null,
             mediaSessionRef:
               'media_session_01',
+        expectedMediaRevision: 1,
+        expectedTransferGeneration: 0,
           }),
         );
 
