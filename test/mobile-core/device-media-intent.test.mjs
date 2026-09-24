@@ -206,7 +206,7 @@ test(
       }),
       base('game.launch', {
         gameRef:
-          'game_bash-c_payload',
+          'game_secret_payload',
       }),
       base('tv.channel.set', {
         channelRef:
