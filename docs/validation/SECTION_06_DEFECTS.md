@@ -200,3 +200,28 @@ The existing provider-neutral reference filter covered delimiter-shaped secret n
 
 - implementation: `src/core/companion/companionProfilePolicy.ts`;
 - regression: `test/mobile-core/companion-core.test.mjs`.
+
+
+## S06-UX-002 — Failed persistence could discard the in-editor draft
+
+- Severity: **Medium**
+- Status: **Closed**
+- Found during: deep Section 01–06 re-audit
+- Area: companion profile editor recovery
+
+### Problem
+
+The profile editor synchronized its local draft whenever the `saving` flag changed. After a failed save or reset, the controller correctly kept the editor open and exposed an error, but the transition from `saving=true` back to `saving=false` caused the effect to replace the user's draft with the previously persisted profile. The failure was therefore visible, but the unsaved edits could be silently lost.
+
+### Repair
+
+- draft synchronization no longer depends on the transient `saving` state;
+- opening the editor still loads the current profile;
+- successful save/reset still synchronizes through the changed persisted profile;
+- failed persistence keeps the user's draft intact so retry/correction remains possible.
+
+### Regression Evidence
+
+- implementation: `891c4294fc260a23a571c37a1a4ee926d4f44ed3`;
+- regression: `84f96e780206a3873e1787b771c99180c7df0e0d`;
+- `test/mobile-core/companion-ui-contract.test.mjs`.
