@@ -177,3 +177,26 @@ A dedicated high-confidence secret-prefix guard now rejects the Google-style key
 - regression coverage: `test/mobile-core/companion-core.test.mjs`;
 - the synthetic credential-shape fixture is assembled at runtime so the full-history scanner is not weakened.
 
+
+
+## S06-SECRET-002 — Additional high-confidence credential shapes could pass provider-neutral references
+
+- Severity: **Medium**
+- Status: **Closed**
+- Area: voice/avatar/memory profile references
+
+### Problem
+
+The existing provider-neutral reference filter covered delimiter-shaped secret names and a Google-style key shape, but it did not reject several other high-confidence credential encodings when they were embedded after an otherwise valid `voice_`, `avatar_`, or `memory_` prefix. In particular, JWT-shaped values, AWS access-key-ID-shaped values, and Slack-token-shaped values could satisfy the reference grammar.
+
+### Repair
+
+- extended the high-confidence credential-shape guard for provider-neutral references;
+- retained strict provider-neutral reference syntax and exact profile-key validation;
+- added regression fixtures assembled from fragments so no usable credential material is committed to repository history;
+- no companion reference grants provider, execution, sensor, memory, or disclosure authority.
+
+### Regression Evidence
+
+- implementation: `src/core/companion/companionProfilePolicy.ts`;
+- regression: `test/mobile-core/companion-core.test.mjs`.
