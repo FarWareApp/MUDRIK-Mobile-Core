@@ -247,6 +247,14 @@ export class SQLiteTrustedSurfaceRepository
           );
         }
 
+        if (
+          safe.approvedAt < current.approvedAt
+        ) {
+          throw new Error(
+            'Trusted surface non-monotonic approval.',
+          );
+        }
+
         const updated =
           await transaction.runAsync(
             `
