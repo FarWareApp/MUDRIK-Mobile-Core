@@ -183,8 +183,7 @@ export function parseAmbientContext(
     || typeof record.timeOfDay
       !== 'string'
     || !TIMES.includes(
-      record.timeOfDay
-        as AmbientTimeOfDay,
+      record.timeOfDay as AmbientTimeOfDay,
     )
     || typeof record.householdQuietMode
       !== 'boolean'
