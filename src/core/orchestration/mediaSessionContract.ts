@@ -155,8 +155,7 @@ export function parseMediaSessionSnapshot(
     )
     || typeof record.playbackState !== 'string'
     || !PLAYBACK_STATES.includes(
-      record.playbackState
-        as MediaPlaybackState,
+      record.playbackState as MediaPlaybackState,
     )
     || !isSafeNonNegativeInteger(
       record.observedAt,
