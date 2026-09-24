@@ -18,7 +18,19 @@ const SOURCE =
 const TARGET =
   'surf_bbbbbbbbbbbbbbbb';
 
-function lease(overrides = {}) {
+function sourceLease(overrides = {}) {
+  return {
+    presenceSessionId: SESSION,
+    surfaceId: SOURCE,
+    generation: 0,
+    issuedAt: 1_000,
+    expiresAt: 31_000,
+    privacyState: 'privacy_lock',
+    ...overrides,
+  };
+}
+
+function targetLease(overrides = {}) {
   return {
     presenceSessionId: SESSION,
     surfaceId: TARGET,
@@ -49,15 +61,24 @@ function manifest(overrides = {}) {
   };
 }
 
+function evaluate(
+  manifestInput = manifest(),
+  sourceLeaseInput = sourceLease(),
+  targetLeaseInput = targetLease(),
+  trustedTime = 2_500,
+) {
+  return evaluateHandoffLeaseBinding(
+    manifestInput,
+    sourceLeaseInput,
+    targetLeaseInput,
+    trustedTime,
+  );
+}
+
 test(
-  'matching active lease authorizes state transfer without inheriting authority',
+  'matching previous and active target leases authorize state transfer without inherited authority',
   () => {
-    const decision =
-      evaluateHandoffLeaseBinding(
-        manifest(),
-        lease(),
-        2_500,
-      );
+    const decision = evaluate();
 
     assert.equal(decision.accepted, true);
     assert.equal(
@@ -72,7 +93,7 @@ test(
 );
 
 test(
-  'handoff target generation and session must match the active lease',
+  'handoff target generation and session must match the active target lease',
   () => {
     for (const bad of [
       manifest({
@@ -87,12 +108,7 @@ test(
           'psess_bbbbbbbbbbbbbbbb',
       }),
     ]) {
-      const decision =
-        evaluateHandoffLeaseBinding(
-          bad,
-          lease(),
-          2_500,
-        );
+      const decision = evaluate(bad);
 
       assert.equal(decision.accepted, false);
       assert.equal(
@@ -104,20 +120,64 @@ test(
 );
 
 test(
-  'privacy downgrade during handoff fails closed',
+  'handoff source must be the immediately previous primary owner',
   () => {
-    const decision =
-      evaluateHandoffLeaseBinding(
-        manifest({
-          privacyState: 'active',
-        }),
-        lease(),
-        2_500,
-      );
-
-    assert.equal(decision.accepted, false);
+    const forgedSource = evaluate(
+      manifest({
+        sourceSurfaceId:
+          'surf_cccccccccccccccc',
+      }),
+    );
     assert.equal(
-      decision.reason,
+      forgedSource.reason,
+      'source_lease_mismatch',
+    );
+
+    const wrongGeneration = evaluate(
+      manifest(),
+      sourceLease({
+        generation: 2,
+      }),
+    );
+    assert.equal(
+      wrongGeneration.reason,
+      'source_lease_mismatch',
+    );
+
+    const sourceExpiredBeforeTarget = evaluate(
+      manifest(),
+      sourceLease({
+        expiresAt: 2_000,
+      }),
+    );
+    assert.equal(
+      sourceExpiredBeforeTarget.reason,
+      'source_lease_mismatch',
+    );
+  },
+);
+
+test(
+  'privacy downgrade during handoff fails closed across source target and manifest',
+  () => {
+    const manifestDowngrade = evaluate(
+      manifest({
+        privacyState: 'active',
+      }),
+    );
+    assert.equal(
+      manifestDowngrade.reason,
+      'privacy_state_mismatch',
+    );
+
+    const sourceMismatch = evaluate(
+      manifest(),
+      sourceLease({
+        privacyState: 'ambient_off',
+      }),
+    );
+    assert.equal(
+      sourceMismatch.reason,
       'privacy_state_mismatch',
     );
   },
@@ -126,40 +186,34 @@ test(
 test(
   'future stale and expired handoff evidence fails closed',
   () => {
-    const future =
-      evaluateHandoffLeaseBinding(
-        manifest({
-          createdAt: 3_000,
-        }),
-        lease(),
-        2_500,
-      );
+    const future = evaluate(
+      manifest({
+        createdAt: 3_000,
+      }),
+    );
     assert.equal(
       future.reason,
       'future_manifest',
     );
 
-    const stale =
-      evaluateHandoffLeaseBinding(
-        manifest({
-          createdAt: 1_999,
-        }),
-        lease(),
-        2_500,
-      );
+    const stale = evaluate(
+      manifest({
+        createdAt: 1_999,
+      }),
+    );
     assert.equal(
       stale.reason,
       'stale_manifest',
     );
 
-    const expired =
-      evaluateHandoffLeaseBinding(
-        manifest(),
-        lease({
-          expiresAt: 2_500,
-        }),
-        2_500,
-      );
+    const expired = evaluate(
+      manifest(),
+      sourceLease(),
+      targetLease({
+        expiresAt: 2_500,
+      }),
+      2_500,
+    );
     assert.equal(
       expired.reason,
       'inactive_lease',
@@ -170,15 +224,10 @@ test(
 test(
   'malformed hidden authority fields fail closed',
   () => {
-    const decision =
-      evaluateHandoffLeaseBinding(
-        {
-          ...manifest(),
-          toolScopes: ['*'],
-        },
-        lease(),
-        2_500,
-      );
+    const decision = evaluate({
+      ...manifest(),
+      toolScopes: ['*'],
+    });
 
     assert.equal(decision.accepted, false);
     assert.equal(
