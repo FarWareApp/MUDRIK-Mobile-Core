@@ -35,7 +35,7 @@ type BaseIntent = Readonly<{
   intentId: string;
   sequence: number;
   kind: DeviceMediaIntentKind;
-  targetDeviceId: string;
+  targetDeviceId: string | null;
 }>;
 
 export type NormalizedDeviceMediaIntent =
@@ -58,7 +58,7 @@ export type NormalizedDeviceMediaIntent =
     }>)
   | (BaseIntent & Readonly<{
       kind: 'media.transfer_session';
-      sourceDeviceId: string;
+      sourceDeviceId: string | null;
       mediaSessionRef: string;
     }>)
   | (BaseIntent & Readonly<{
@@ -249,6 +249,20 @@ function parseSearchQuery(
   return normalized;
 }
 
+function parseNullableDeviceId(
+  value: unknown,
+): string | null | undefined {
+  if (value === null) {
+    return null;
+  }
+
+  if (isIdentityId('device', value)) {
+    return value;
+  }
+
+  return undefined;
+}
+
 function parseBase(
   record: Record<string, unknown>,
 ): BaseIntent | null {
@@ -261,11 +275,16 @@ function parseBase(
     )
     || !isSafeNonNegativeInteger(record.sequence)
     || !isKind(record.kind)
-    || !isIdentityId(
-      'device',
-      record.targetDeviceId,
-    )
   ) {
+    return null;
+  }
+
+  const targetDeviceId =
+    parseNullableDeviceId(
+      record.targetDeviceId,
+    );
+
+  if (targetDeviceId === undefined) {
     return null;
   }
 
@@ -275,8 +294,7 @@ function parseBase(
     intentId: record.intentId,
     sequence: record.sequence,
     kind: record.kind,
-    targetDeviceId:
-      record.targetDeviceId,
+    targetDeviceId,
   };
 }
 
@@ -368,12 +386,15 @@ export function parseDeviceMediaIntent(
             'mediaSessionRef',
           ],
         )
-        || !isIdentityId(
-          'device',
+        || parseNullableDeviceId(
           input.sourceDeviceId,
+        ) === undefined
+        || (
+          input.sourceDeviceId !== null
+          && base.targetDeviceId !== null
+          && input.sourceDeviceId
+            === base.targetDeviceId
         )
-        || input.sourceDeviceId
-          === base.targetDeviceId
         || !mediaSessionRef
       ) {
         return null;
@@ -383,7 +404,9 @@ export function parseDeviceMediaIntent(
         ...base,
         kind: 'media.transfer_session',
         sourceDeviceId:
-          input.sourceDeviceId,
+          parseNullableDeviceId(
+            input.sourceDeviceId,
+          ) as string | null,
         mediaSessionRef,
       });
     }
