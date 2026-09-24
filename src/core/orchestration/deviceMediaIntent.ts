@@ -65,6 +65,8 @@ export type NormalizedDeviceMediaIntent =
       kind: 'media.transfer_session';
       sourceDeviceId: string | null;
       mediaSessionRef: string;
+      expectedMediaRevision: number;
+      expectedTransferGeneration: number;
     }>)
   | (BaseIntent & Readonly<{
       kind: 'tv.channel.set';
@@ -364,6 +366,8 @@ export function parseDeviceMediaIntent(
           [
             'sourceDeviceId',
             'mediaSessionRef',
+            'expectedMediaRevision',
+            'expectedTransferGeneration',
           ],
         )
         || parseNullableDeviceId(
@@ -376,6 +380,13 @@ export function parseDeviceMediaIntent(
             === base.targetDeviceId
         )
         || !mediaSessionRef
+        || !isSafeNonNegativeInteger(
+          input.expectedMediaRevision,
+        )
+        || input.expectedMediaRevision < 1
+        || !isSafeNonNegativeInteger(
+          input.expectedTransferGeneration,
+        )
       ) {
         return null;
       }
@@ -388,6 +399,10 @@ export function parseDeviceMediaIntent(
             input.sourceDeviceId,
           ) as string | null,
         mediaSessionRef,
+        expectedMediaRevision:
+          input.expectedMediaRevision,
+        expectedTransferGeneration:
+          input.expectedTransferGeneration,
       });
     }
 
