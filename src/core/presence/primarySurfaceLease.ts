@@ -30,6 +30,8 @@ export type PrimarySurfaceLeaseResult = Readonly<{
     | 'stale_generation'
     | 'generation_gap'
     | 'generation_conflict'
+    | 'non_monotonic_time'
+    | 'previous_lease_inactive'
     | 'privacy_state_mismatch';
 }>;
 
@@ -215,6 +217,24 @@ export class PrimarySurfaceLeaseRegistry {
       return {
         accepted: false,
         reason: 'generation_gap',
+      };
+    }
+
+    if (
+      lease.issuedAt < current.issuedAt
+    ) {
+      return {
+        accepted: false,
+        reason: 'non_monotonic_time',
+      };
+    }
+
+    if (
+      current.expiresAt <= lease.issuedAt
+    ) {
+      return {
+        accepted: false,
+        reason: 'previous_lease_inactive',
       };
     }
 
