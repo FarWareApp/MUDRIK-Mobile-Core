@@ -50,3 +50,30 @@ The scanner does **not** exempt the entire test file or weaken the global creden
 - Fix commit: `256d55f2b93f33468d3c98d9e3a8192e2c584e1f`
 - Result: root workspace authority remains denied, now with `grant_scope_required`, clearly distinguishing malformed data from prohibited breadth.
 - Retest: 57/57 Mobile/Security regressions PASS.
+
+---
+
+## S02-TIME-001 — Request-controlled time could revive time-bound capability grants
+
+- Severity: **High**
+- Status: **Closed**
+- Found during: deep Section 01–06 re-audit
+- Affected area: `src/core/security/capabilityPolicy.ts`
+
+### Problem
+
+The capability request carried `nowMs`, and the grant evaluator used request-controlled time when deciding whether a grant was expired or revoked. A hostile or stale request could therefore roll its clock backwards and make a time-bound grant appear valid after the trusted runtime time had already passed the expiry/revocation boundary.
+
+### Repair
+
+- time-bound grants now require a separate trusted evaluation time;
+- malformed or missing trusted time fails closed for grants that depend on expiry/revocation;
+- request `nowMs` is no longer the authority for grant validity;
+- the shared trusted-time primitive is available under `src/core/security/trustedEvaluationTime.ts`.
+
+### Regression Evidence
+
+- implementation: `1b5846e5659d313559142b211921eff87f79777f`;
+- regression coverage: `de380f7b1e958948137adf69489433023ec16071`;
+- `test/mobile-core/security-foundation.test.mjs` proves clock rollback cannot revive an expired/revoked grant.
+

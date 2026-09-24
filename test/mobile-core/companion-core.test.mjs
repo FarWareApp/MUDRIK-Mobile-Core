@@ -92,6 +92,13 @@ test('profile references reject credential-shaped values', () => {
       memoryPolicyId:
         'memory_secret_value',
     },
+    {
+      voiceProfileId:
+        [
+          'voice_AI',
+          'zasyExampleCredentialShape123456789',
+        ].join(''),
+    },
   ]) {
     const result =
       validateCompanionProfile(

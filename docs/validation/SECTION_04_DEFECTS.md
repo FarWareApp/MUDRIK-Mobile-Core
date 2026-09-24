@@ -175,3 +175,55 @@ Validation on that exact implementation candidate:
 ## Closure Rule
 
 Any future change that weakens the behavior above reopens the relevant defect and blocks Section 04 final closure until it is fixed and revalidated.
+
+---
+
+## S04-TRUTH-001 — Untrusted clock/freshness input could make stale sensor evidence look current
+
+Severity: **High**
+
+Status: **Closed**
+
+### Problem
+
+Observation truth originally evaluated sensor freshness from `nowMs` and a caller-supplied freshness window in the same untrusted input. A rolled-back clock or widened freshness window could therefore classify stale sensor evidence as current and undermine truthful privacy-state reporting.
+
+### Fix
+
+- observation truth requires a separate trusted evaluation time;
+- the caller may only narrow, never widen, the fixed maximum freshness window;
+- every sensor record is parsed through the strict runtime parser before use;
+- duplicate sensor identities fail closed;
+- future, stale, unknown and unavailable sensor evidence becomes explicitly unverifiable.
+
+### Regression Evidence
+
+- strict parser exposure: `bbc4640510b2b77f3ce2d2c95f591f7beab9aec6`;
+- trusted-time repair: `0e81914838921accf0bf40f2020e39843dcdadf4`;
+- rollback/freshness regressions: `78cb131fa80e8279719189c7b7854fabeb175db3`.
+
+## S04-TIME-002 — Unsafe finite timestamps could poison privacy monotonicity
+
+Severity: **Medium**
+
+Status: **Closed**
+
+### Problem
+
+Several privacy/audit/storage paths rejected NaN/Infinity but still admitted finite numbers outside JavaScript's safe-integer range. Such values are not reliably ordered as millisecond revisions and could poison later monotonic comparisons or durable state.
+
+### Fix
+
+Security-sensitive privacy timestamps are now non-negative safe integers across command, sensor, persistence, audit and indicator paths. Dedicated regressions cover unsafe persisted/runtime values.
+
+### Regression Evidence
+
+Implementation and regression commits include:
+
+- `478652004f79deda70e3773991b72266ba39c954`;
+- `efe8d4f7fca1fac994594c07257c5d4b64fd4274`;
+- `abad368535afc21e3221a9cd7e57c18771c16894`;
+- `c7f18d0cbe024e50c06e4e326d8d85381dea0ef9`;
+- `1c299187e7113611c41f3fb1870d74f5087a05da`;
+- follow-up unsafe-value regressions on 2026-09-18.
+

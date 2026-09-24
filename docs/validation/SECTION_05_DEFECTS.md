@@ -127,3 +127,45 @@ At accepted pre-device candidate:
 - unresolved High Section 05 defects: **0 known**.
 
 This statement is limited to the automated pre-device scope. Layer 4 physical/provider/acoustic testing may discover additional defects and remains mandatory before final production closure.
+
+## S05-VOICE-006 — Oversized finite timestamps could poison voice ordering
+
+- Severity: **Medium**
+- Status: **Closed**
+- Area: VAD / streaming STT / latency / audit ordering
+
+### Problem
+
+Voice parsers rejected NaN/Infinity and negative timestamps but admitted finite values beyond `Number.MAX_SAFE_INTEGER`. An oversized event could become the monotonic high-water mark and make subsequent legitimate events appear stale or non-monotonic.
+
+### Repair
+
+Voice event/segment/latency/audit timestamps are now restricted to non-negative safe integers.
+
+### Regression Evidence
+
+- `d8021613b2348c80059526cda76fa20bdb82ea24` — VAD timestamps;
+- `a159c24705c67225e4206f85031e13facfb63608` — streaming speech timestamps;
+- `022c2f6bbf20a66b24d1a435c70f3c5f3313492f` — latency timestamps;
+- `8c0d3c253b2493ead053b0dcaca8c1d06151cc3c` — combined regressions;
+- later voice-audit safe-integer hardening is covered by the whole-core suite.
+
+## S05-VOICE-007 — Generation counter exhaustion could break replay ordering
+
+- Severity: **High**
+- Status: **Closed**
+- Area: voice session generation/replay boundary
+
+### Problem
+
+Generation rotation used ordinary numeric increment. At `Number.MAX_SAFE_INTEGER`, another rotation would leave the safe-integer domain and invalidate the monotonic replay boundary.
+
+### Repair
+
+Generation-advancing transitions now detect exhaustion and fail closed instead of producing an unsafe generation.
+
+### Regression Evidence
+
+- implementation: `41b7bf1f3868d116200ca2c48d50373b064b36ee`;
+- regression: `d755fd48ab33f40bc5ed8a6171532f2c27839588`.
+
