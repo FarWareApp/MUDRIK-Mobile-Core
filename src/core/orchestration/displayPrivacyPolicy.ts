@@ -99,8 +99,7 @@ export function evaluateDisplayPrivacy(
     || typeof record.contentSensitivity
       !== 'string'
     || !SENSITIVITIES.includes(
-      record.contentSensitivity
-        as DisplayContentSensitivity,
+      record.contentSensitivity as DisplayContentSensitivity,
     )
     || !Array.isArray(
       record.requestedModes,
