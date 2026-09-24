@@ -2,7 +2,25 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted implementation candidate:
+
+`dabc897cd78133bd2cbaf17cbe3e637f5f9d7b21`
+
+Automated acceptance evidence:
+
+- Mobile Core Validation run `#614` / ID `35939368198`: **SUCCESS**;
+- CodeQL Security Analysis run `#509` / ID `35939368142`: **SUCCESS**;
+- Mobile Core regressions: **529/529 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- no known unresolved Critical/High Section 07 defect.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_07_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_07_DEFECTS.md`
 
 Section 07 establishes a deterministic, privacy-aware cross-device presence layer for the one logical MUDRIK companion session. It selects and hands presentation between already-authorized surfaces; it does not pair devices, grant device trust, grant sensor access, broaden privacy state, or grant execution/memory/disclosure authority.
 
@@ -156,6 +174,8 @@ Before final closure, verify where supported:
 
 ## Layer 5 — Evidence / Release Gate
 
+Status: **PASS for automated/pre-device scope** on implementation candidate `dabc897cd78133bd2cbaf17cbe3e637f5f9d7b21`.
+
 Pre-device completion requires:
 
 - exact candidate SHA;
@@ -167,7 +187,7 @@ Pre-device completion requires:
 - defect/evidence records;
 - Layer 4 obligations remain explicit.
 
-Production/final Section 07 closure requires Layer 4 and exact-candidate revalidation.
+All automated/pre-device requirements above are satisfied at the accepted implementation candidate. Production/final Section 07 closure still requires Layer 4 and exact-candidate revalidation.
 
 ## Core Acceptance Rule
 
