@@ -17,6 +17,7 @@ export type HandoffLeaseBindingReason =
   | 'future_manifest'
   | 'stale_manifest'
   | 'lease_mismatch'
+  | 'source_lease_mismatch'
   | 'privacy_state_mismatch';
 
 export type HandoffLeaseBindingDecision = Readonly<{
@@ -38,16 +39,21 @@ function result(
 
 export function evaluateHandoffLeaseBinding(
   manifestInput: unknown,
-  leaseInput: unknown,
+  sourceLeaseInput: unknown,
+  targetLeaseInput: unknown,
   trustedEvaluationTimeInput: unknown,
 ): HandoffLeaseBindingDecision {
   const manifest =
     parseHandoffStateManifest(
       manifestInput,
     );
-  const lease =
+  const sourceLease =
     parsePrimarySurfaceLease(
-      leaseInput,
+      sourceLeaseInput,
+    );
+  const targetLease =
+    parsePrimarySurfaceLease(
+      targetLeaseInput,
     );
   const trustedEvaluationTimeMs =
     parseTrustedEvaluationTime(
@@ -56,7 +62,8 @@ export function evaluateHandoffLeaseBinding(
 
   if (
     !manifest
-    || !lease
+    || !sourceLease
+    || !targetLease
     || trustedEvaluationTimeMs === null
   ) {
     return result(
@@ -66,9 +73,9 @@ export function evaluateHandoffLeaseBinding(
   }
 
   if (
-    lease.issuedAt
+    targetLease.issuedAt
       > trustedEvaluationTimeMs
-    || lease.expiresAt
+    || targetLease.expiresAt
       <= trustedEvaluationTimeMs
   ) {
     return result(
@@ -89,7 +96,7 @@ export function evaluateHandoffLeaseBinding(
 
   if (
     manifest.createdAt
-      < lease.issuedAt
+      < targetLease.issuedAt
   ) {
     return result(
       false,
@@ -99,11 +106,11 @@ export function evaluateHandoffLeaseBinding(
 
   if (
     manifest.presenceSessionId
-      !== lease.presenceSessionId
+      !== targetLease.presenceSessionId
     || manifest.targetSurfaceId
-      !== lease.surfaceId
+      !== targetLease.surfaceId
     || manifest.generation
-      !== lease.generation
+      !== targetLease.generation
   ) {
     return result(
       false,
@@ -112,8 +119,28 @@ export function evaluateHandoffLeaseBinding(
   }
 
   if (
+    sourceLease.presenceSessionId
+      !== manifest.presenceSessionId
+    || sourceLease.surfaceId
+      !== manifest.sourceSurfaceId
+    || sourceLease.generation + 1
+      !== manifest.generation
+    || sourceLease.issuedAt
+      > targetLease.issuedAt
+    || sourceLease.expiresAt
+      <= targetLease.issuedAt
+  ) {
+    return result(
+      false,
+      'source_lease_mismatch',
+    );
+  }
+
+  if (
     manifest.privacyState
-      !== lease.privacyState
+      !== targetLease.privacyState
+    || sourceLease.privacyState
+      !== targetLease.privacyState
   ) {
     return result(
       false,
