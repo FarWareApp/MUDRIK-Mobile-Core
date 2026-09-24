@@ -196,6 +196,22 @@ export class SQLitePrimarySurfaceLeaseRepository
         }
 
         if (
+          safe.issuedAt < current.issuedAt
+        ) {
+          throw new Error(
+            'Primary surface lease non-monotonic time.',
+          );
+        }
+
+        if (
+          current.expiresAt <= safe.issuedAt
+        ) {
+          throw new Error(
+            'Primary surface previous lease inactive.',
+          );
+        }
+
+        if (
           safe.privacyState
           !== current.privacyState
         ) {
