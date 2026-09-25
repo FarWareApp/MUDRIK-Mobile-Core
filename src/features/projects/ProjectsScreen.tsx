@@ -47,6 +47,8 @@ export function ProjectsScreen({
   });
 
   const loadProjects = controller.load;
+  const deleteProject = controller.deleteProject;
+  const toggleArchived = controller.toggleArchived;
 
   useFocusEffect(
     useCallback(() => {
@@ -78,20 +80,20 @@ export function ProjectsScreen({
             text: t('delete'),
             style: 'destructive',
             onPress: () => {
-              void controller.deleteProject(project.id);
+              void deleteProject(project.id);
             },
           },
         ],
       );
     },
-    [controller.deleteProject, t],
+    [deleteProject, t],
   );
 
   const archiveProject = useCallback(
     (project: ProjectRecord) => {
-      void controller.toggleArchived(project);
+      void toggleArchived(project);
     },
-    [controller.toggleArchived],
+    [toggleArchived],
   );
 
   const errorMessage =
