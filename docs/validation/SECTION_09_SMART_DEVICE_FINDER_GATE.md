@@ -2,7 +2,25 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted pre-device candidate:
+
+`936cb35ee4a9e79fa84a9edddb1313fccdd85dd2`
+
+Automated evidence:
+
+- `docs/validation/SECTION_09_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_09_DEFECTS.md`
+
+Accepted-candidate validation:
+
+- Mobile Core Validation run `#706` / ID `36133983162`: **SUCCESS**;
+- CodeQL Security Analysis run `#601` / ID `36133983176`: **SUCCESS**;
+- Mobile Core regressions: **649/649 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- no known unresolved Critical/High Section 09 defect in automated/pre-device scope.
 
 Section 09 establishes a privacy-preserving, evidence-bounded device-finding layer for already-authorized paired devices. It may resolve a target, evaluate authorized locating evidence, produce a bounded location/confidence result, and request a supported locate action such as ring or guided search. It never creates trust, activates sensors by itself, tracks people, or fabricates precision.
 
