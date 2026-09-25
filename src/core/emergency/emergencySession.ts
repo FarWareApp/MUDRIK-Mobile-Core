@@ -23,7 +23,8 @@ export type EmergencySession = Readonly<{
   accountId: string;
   sourceDeviceId: string;
   configId: string;
-  configRevision: number;  mode: EmergencyGuardianMode;
+  configRevision: number;
+  mode: EmergencyGuardianMode;
   openedAtMs: number;
   simulationOnly: boolean;
   grantsAuthority: false;
@@ -51,7 +52,8 @@ const INPUT_KEYS = new Set([
 function result(
   accepted: boolean,
   session: EmergencySession | null,
-  reason: EmergencySessionOpenResult['reason'],): EmergencySessionOpenResult {
+  reason: EmergencySessionOpenResult['reason'],
+): EmergencySessionOpenResult {
   return Object.freeze({
     accepted,
     session,
@@ -83,7 +85,9 @@ export function openEmergencySession(
   }
 
   const record =
-    input as Record<string, unknown>;  if (
+    input as Record<string, unknown>;
+
+  if (
     Object.keys(record).length
       !== INPUT_KEYS.size
     || Object.keys(record).some(
@@ -118,7 +122,8 @@ export function openEmergencySession(
     return result(
       false,
       null,
-      'invalid_input',    );
+      'invalid_input',
+    );
   }
 
   if (!config.enabled) {
