@@ -475,8 +475,7 @@ export function fuseDeviceFindingEvidence(
     )
     || typeof record.component !== 'string'
     || !COMPONENTS.includes(
-      record.component
-        as DeviceFindingComponent,
+      record.component as DeviceFindingComponent,
     )
     || !Array.isArray(record.evidence)
     || record.evidence.length === 0
@@ -550,8 +549,7 @@ export function fuseDeviceFindingEvidence(
       Object.freeze({
         signal,
         freshness:
-          authorization.freshness
-            as AcceptedEvidence['freshness'],
+          authorization.freshness as AcceptedEvidence['freshness'],
       }),
     );
   }
