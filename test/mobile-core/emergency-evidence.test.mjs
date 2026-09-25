@@ -234,8 +234,36 @@ test('session listing is bounded to the requested valid session', () => {
     sensorId: null,
   }), NOW);
 
-  const listed = registry.listForSession('ems_0123456789abcdef');
+  const listed = registry.listForSession(
+    'ems_0123456789abcdef',
+    NOW,
+  );
   assert.equal(listed.length, 2);
-  assert.equal(registry.listForSession('invalid').length, 0);
-  assert.equal(registry.getLast('bad'), null);
+  assert.equal(
+    registry.listForSession('invalid', NOW).length,
+    0,
+  );
+  assert.equal(registry.getLast('bad', NOW), null);
+});
+
+test('registry recomputes freshness at read and duplicate time', () => {
+  const registry = new registryModule.EmergencyEvidenceRegistry();
+  const value = evidence({ observedAtMs: 95_000 });
+
+  assert.equal(registry.apply(value, NOW).freshness, 'fresh');
+  assert.equal(
+    registry.getLast(value.evidenceId, 140_000).freshness,
+    'historical',
+  );
+  assert.equal(
+    registry.listForSession(
+      value.emergencySessionId,
+      1_000_001,
+    )[0].freshness,
+    'expired',
+  );
+  assert.equal(
+    registry.apply(value, 140_000).freshness,
+    'historical',
+  );
 });

@@ -33,7 +33,6 @@ export type EmergencyEvidenceRegistryResult =
 type EvidenceState = {
   last: EmergencyEvidence;
   lastFingerprint: string;
-  freshness: EmergencyEvidenceFreshness;
 };
 
 type EvidenceBinding = Readonly<{
@@ -175,7 +174,6 @@ export class EmergencyEvidenceRegistry {
           last: evidence,
           lastFingerprint:
             fingerprint(evidence),
-          freshness: time.freshness,
         },
       );
 
@@ -210,8 +208,7 @@ export class EmergencyEvidenceRegistry {
         return {
           accepted: true,
           idempotent: true,
-          freshness:
-            current.freshness,
+          freshness: time.freshness,
           reason: 'duplicate',
         };
       }
@@ -239,8 +236,6 @@ export class EmergencyEvidenceRegistry {
     current.last = evidence;
     current.lastFingerprint =
       fingerprint(evidence);
-    current.freshness =
-      time.freshness;
 
     return {
       accepted: true,
@@ -252,6 +247,7 @@ export class EmergencyEvidenceRegistry {
 
   getLast(
     evidenceId: string,
+    trustedEvaluationTimeInput: unknown,
   ): Readonly<{
     evidence: EmergencyEvidence;
     freshness:
@@ -264,17 +260,25 @@ export class EmergencyEvidenceRegistry {
     const state =
       this.states.get(evidenceId);
 
-    return state
-      ? Object.freeze({
-          evidence: state.last,
-          freshness:
-            state.freshness,
-        })
-      : null;
+    if (!state) {
+      return null;
+    }
+
+    const time =
+      evaluateEmergencyEvidenceTime(
+        state.last,
+        trustedEvaluationTimeInput,
+      );
+
+    return Object.freeze({
+      evidence: state.last,
+      freshness: time.freshness,
+    });
   }
 
   listForSession(
     emergencySessionId: string,
+    trustedEvaluationTimeInput: unknown,
   ): readonly Readonly<{
     evidence: EmergencyEvidence;
     freshness:
@@ -296,13 +300,18 @@ export class EmergencyEvidenceRegistry {
           state.last.emergencySessionId
             === emergencySessionId,
       )
-      .map(
-        (state) => Object.freeze({
+      .map((state) => {
+        const time =
+          evaluateEmergencyEvidenceTime(
+            state.last,
+            trustedEvaluationTimeInput,
+          );
+
+        return Object.freeze({
           evidence: state.last,
-          freshness:
-            state.freshness,
-        }),
-      )
+          freshness: time.freshness,
+        });
+      })
       .sort(
         (left, right) =>
           left.evidence.evidenceId
