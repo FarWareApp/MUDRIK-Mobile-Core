@@ -480,12 +480,18 @@ This exception permits continued engineering progress without redefining incompl
 
 ## Current Pre-Device Workstream
 
-**Section 4 — Privacy, Permissions and Observation Control — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
+**Section 10 — Emergency Guardian — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
 
 Pre-device completed/open sections:
 
 - Section 2 — Platform Security Foundation;
-- Section 3 — Account Identity, Authentication and Device Trust.
+- Section 3 — Account Identity, Authentication and Device Trust;
+- Section 4 — Privacy, Permissions and Observation Control;
+- Section 5 — Voice Runtime;
+- Section 6 — Smart Companion;
+- Section 7 — Cross-Device Presence and Handoff;
+- Section 8 — Ambient Device and Media Orchestration;
+- Section 9 — Smart Device Finder and Spatial Locating.
 
 ## Completion Definition
 

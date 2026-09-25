@@ -1,6 +1,6 @@
 # MUDRIK Project Status
 
-Last consolidated: 2026-09-13
+Last consolidated: 2026-09-25
 
 ## Authoritative Execution Model
 
@@ -165,24 +165,78 @@ Detailed evidence:
 
 ### Section 07 — Cross-Device Presence
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
 
-Section 07 is now the only active implementation section.
+Accepted candidate:
 
-Primary objectives:
+`dabc897cd78133bd2cbaf17cbe3e637f5f9d7b21`
 
-- trusted-surface/device presence model;
-- one logical companion session with one primary interactive surface;
-- deterministic presence confidence and surface ranking;
-- device trust/privacy classification before presentation;
-- explicit user pinning and handoff control;
-- replay/stale/conflicting presence update protection;
-- private-content suppression on shared/untrusted surfaces;
-- handoff that preserves session/profile/task/privacy state without granting new authority;
-- prevention of multiple surfaces simultaneously owning microphone/spoken-output turn-taking;
-- safe offline/reconnect behavior without split-brain companion identities.
+Evidence:
 
-Physical multi-device handoff tests remain Layer 4 and will be deferred under the recorded exception. Section 07 pre-device work must use simulated/contract-level trusted devices and must not pretend real hardware handoff has passed.
+- Mobile Core Validation #614 / `35939368198`: SUCCESS;
+- CodeQL #509 / `35939368142`: SUCCESS;
+- regressions: **529/529 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency High/Critical gate: PASS;
+- full-history secret scan: PASS.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_07_CROSS_DEVICE_PRESENCE_GATE.md`
+- `docs/validation/SECTION_07_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_07_DEFECTS.md`
+
+### Section 08 — Ambient Device and Media Orchestration
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`b40b643a1b7f5856f8d727c471269f1829f0bfc1`
+
+Evidence:
+
+- Mobile Core Validation #673 / `36054482695`: SUCCESS;
+- CodeQL #568 / `36054482697`: SUCCESS;
+- regressions: **591/591 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- full-history secret scan: PASS.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_08_AMBIENT_DEVICE_MEDIA_GATE.md`
+- `docs/validation/SECTION_08_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_08_DEFECTS.md`
+
+### Section 09 — Smart Device Finder and Spatial Locating
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`936cb35ee4a9e79fa84a9edddb1313fccdd85dd2`
+
+Evidence:
+
+- Mobile Core Validation #706 / `36133983162`: SUCCESS;
+- CodeQL #601 / `36133983176`: SUCCESS;
+- regressions: **649/649 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- Computer Agent Phase 0: **10/10 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- full-history secret scan: PASS;
+- no known unresolved Critical/High Section 09 defect.
+
+Implemented boundaries include strict find requests, trusted target resolution, separately authorized locating evidence, replay-resistant signal sequencing, deterministic confidence/precision fusion, strict fusion-result parsing, re-authorized ring/vibrate/flash/wake actions, surface-privacy disclosure and evidence-bounded guided search.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_09_SMART_DEVICE_FINDER_GATE.md`
+- `docs/validation/SECTION_09_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_09_DEFECTS.md`
 
 ## UI/UX Detail Preservation Rule
 
@@ -240,8 +294,8 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Execute Section 07 Cross-Device Presence from contracts/policy first, not hardware-specific UI.
-2. Preserve Sections 01–06 as open for their deferred Layer 4 obligations.
+1. Execute Section 10 Emergency Guardian from contracts/policy first; do not perform live emergency actions during pre-device work.
+2. Preserve Sections 01–09 as open for their deferred Layer 4 obligations where applicable.
 3. Keep UI/UX detail changes registered and do not silently drop future intended work.
 4. Do not couple production AI/server/sensor authority merely to satisfy pre-device tests.
 
