@@ -143,13 +143,11 @@ function parseResult(
     )
     || typeof record.confidence !== 'string'
     || !CONFIDENCES.includes(
-      record.confidence
-        as DeviceFindingConfidence,
+      record.confidence as DeviceFindingConfidence,
     )
     || typeof record.precision !== 'string'
     || !PRECISIONS.includes(
-      record.precision
-        as DeviceFindingSpatialPrecision,
+      record.precision as DeviceFindingSpatialPrecision,
     )
     || typeof record.historical !== 'boolean'
     || record.grantsAuthority !== false
@@ -196,8 +194,7 @@ function parseResult(
     }
   }
 
-  return record
-    as unknown
+  return record as unknown
     as DeviceFindingFusionResult;
 }
 
