@@ -19,24 +19,37 @@ const SESSION =
   'find_0123456789abcdef';
 const NOW = 10_000_000;
 
-function trust() {
+function trust(
+  deviceId = COLLECTOR,
+  state = 'active',
+) {
+  const isTarget =
+    deviceId === TARGET;
+  const suffix =
+    isTarget
+      ? '0123456789abcdef'
+      : 'fedcba9876543210';
+  const thumb =
+    isTarget
+      ? 'A'.repeat(43)
+      : 'B'.repeat(43);
+
   return {
     device: {
-      deviceId: COLLECTOR,
+      deviceId,
       accountId: ACCOUNT,
       deviceKeyId:
-        'dkey_fedcba9876543210',
-      publicKeyThumbprint:
-        'B'.repeat(43),
-      state: 'active',
+        `dkey_${suffix}`,
+      publicKeyThumbprint: thumb,
+      state,
       hardwareBacked: true,
     },
     expectedAccountId: ACCOUNT,
-    expectedDeviceId: COLLECTOR,
+    expectedDeviceId: deviceId,
     expectedDeviceKeyId:
-      'dkey_fedcba9876543210',
+      `dkey_${suffix}`,
     expectedPublicKeyThumbprint:
-      'B'.repeat(43),
+      thumb,
   };
 }
 
@@ -101,7 +114,10 @@ function evidence(
     accountId: ACCOUNT,
     expectedTargetDeviceId: TARGET,
     collectorDeviceId: COLLECTOR,
-    collectorDeviceTrustInput: trust(),
+    targetDeviceTrustInput:
+      trust(TARGET),
+    collectorDeviceTrustInput:
+      trust(COLLECTOR),
     signal: nextSignal,
     sensorAuthorization: sensor,
     ...overrides.envelope,
@@ -471,6 +487,40 @@ test(
                 sensorAuthorization: {
                   ...sensorAuthorization(),
                   permission: 'denied',
+                },
+              },
+            ),
+          ]),
+          NOW,
+        );
+
+    assert.equal(
+      result.status,
+      'unknown',
+    );
+    assert.equal(
+      result.reason,
+      'insufficient_evidence',
+    );
+  },
+);
+
+test(
+  'target revocation during a search prevents later evidence from producing a location',
+  () => {
+    const result =
+      fusionModule
+        .fuseDeviceFindingEvidence(
+          fusionInput([
+            evidence(
+              'fds_cececececececece',
+              {
+                envelope: {
+                  targetDeviceTrustInput:
+                    trust(
+                      TARGET,
+                      'revoked',
+                    ),
                 },
               },
             ),
