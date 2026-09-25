@@ -51,6 +51,7 @@ export type DeviceFindingEvidenceAuthorization = Readonly<{
     | 'accepted'
     | 'invalid_input'
     | 'target_mismatch'
+    | 'target_untrusted'
     | 'collector_untrusted'
     | 'sensor_authorization_required'
     | 'sensor_not_authorized'
@@ -64,6 +65,7 @@ const INPUT_KEYS = new Set([
   'accountId',
   'expectedTargetDeviceId',
   'collectorDeviceId',
+  'targetDeviceTrustInput',
   'collectorDeviceTrustInput',
   'signal',
   'sensorAuthorization',
@@ -102,7 +104,7 @@ function result(
   });
 }
 
-function collectorTrustMatches(
+function trustBindingMatches(
   input: unknown,
   accountId: string,
   collectorDeviceId: string,
@@ -267,7 +269,22 @@ export function authorizeDeviceFindingEvidence(
   }
 
   if (
-    !collectorTrustMatches(
+    !trustBindingMatches(
+      record.targetDeviceTrustInput,
+      record.accountId,
+      record.expectedTargetDeviceId,
+    )
+  ) {
+    return result(
+      false,
+      null,
+      null,
+      'target_untrusted',
+    );
+  }
+
+  if (
+    !trustBindingMatches(
       record.collectorDeviceTrustInput,
       record.accountId,
       record.collectorDeviceId,
