@@ -18,25 +18,36 @@ const COLLECTOR =
 const NOW = 10_000_000;
 
 function trust(
+  deviceId = COLLECTOR,
   state = 'active',
 ) {
+  const isTarget =
+    deviceId === TARGET;
+  const suffix =
+    isTarget
+      ? '0123456789abcdef'
+      : 'fedcba9876543210';
+  const thumb =
+    isTarget
+      ? 'A'.repeat(43)
+      : 'B'.repeat(43);
+
   return {
     device: {
-      deviceId: COLLECTOR,
+      deviceId,
       accountId: ACCOUNT,
       deviceKeyId:
-        'dkey_fedcba9876543210',
-      publicKeyThumbprint:
-        'B'.repeat(43),
+        `dkey_${suffix}`,
+      publicKeyThumbprint: thumb,
       state,
       hardwareBacked: true,
     },
     expectedAccountId: ACCOUNT,
-    expectedDeviceId: COLLECTOR,
+    expectedDeviceId: deviceId,
     expectedDeviceKeyId:
-      'dkey_fedcba9876543210',
+      `dkey_${suffix}`,
     expectedPublicKeyThumbprint:
-      'B'.repeat(43),
+      thumb,
   };
 }
 
@@ -80,7 +91,10 @@ function evidence(overrides = {}) {
     accountId: ACCOUNT,
     expectedTargetDeviceId: TARGET,
     collectorDeviceId: COLLECTOR,
-    collectorDeviceTrustInput: trust(),
+    targetDeviceTrustInput:
+      trust(TARGET),
+    collectorDeviceTrustInput:
+      trust(COLLECTOR),
     signal: signal(),
     sensorAuthorization:
       sensorAuthorization(),
@@ -117,7 +131,7 @@ test(
         .authorizeDeviceFindingEvidence(
           evidence({
             collectorDeviceTrustInput:
-              trust('revoked'),
+              trust(COLLECTOR, 'revoked'),
           }),
           NOW,
         );
@@ -132,7 +146,7 @@ test(
         .authorizeDeviceFindingEvidence(
           evidence({
             collectorDeviceTrustInput: {
-              ...trust(),
+              ...trust(COLLECTOR),
               expectedDeviceId: TARGET,
             },
           }),
@@ -142,6 +156,33 @@ test(
     assert.equal(
       mismatched.reason,
       'collector_untrusted',
+    );
+  },
+);
+
+test(
+  'target revoked after resolution cannot continue locating evidence',
+  () => {
+    const revoked =
+      evidenceModule
+        .authorizeDeviceFindingEvidence(
+          evidence({
+            targetDeviceTrustInput:
+              trust(
+                TARGET,
+                'revoked',
+              ),
+          }),
+          NOW,
+        );
+
+    assert.equal(
+      revoked.accepted,
+      false,
+    );
+    assert.equal(
+      revoked.reason,
+      'target_untrusted',
     );
   },
 );
