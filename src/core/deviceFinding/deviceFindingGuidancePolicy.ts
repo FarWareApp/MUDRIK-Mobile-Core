@@ -1,6 +1,6 @@
-import type {
-  DeviceFindingConfidence,
-} from './deviceFindingFusion';
+import {
+  parseDeviceFindingFusionResult,
+} from './deviceFindingFusionResult';
 
 import type {
   DeviceFindingSpatialPrecision,
@@ -43,46 +43,12 @@ const INPUT_KEYS = new Set([
   'capabilities',
 ]);
 
-const RESULT_KEYS = new Set([
-  'status',
-  'confidence',
-  'precision',
-  'roomRef',
-  'zoneRef',
-  'furnitureRef',
-  'distanceMeters',
-  'directionDegrees',
-  'supportingSignalIds',
-  'historical',
-  'reason',
-  'grantsAuthority',
-]);
-
 const CAPABILITIES:
   readonly DeviceFindingGuidanceCapability[] = [
     'direction',
     'distance',
     'room_navigation',
     'proximity_trend',
-  ];
-
-const PRECISIONS:
-  readonly DeviceFindingSpatialPrecision[] = [
-    'unknown',
-    'proximity',
-    'room',
-    'zone',
-    'furniture',
-    'exact',
-  ];
-
-const CONFIDENCES:
-  readonly DeviceFindingConfidence[] = [
-    'confirmed',
-    'high',
-    'medium',
-    'low',
-    'unknown',
   ];
 
 function decision(
@@ -144,73 +110,6 @@ function parseCapabilities(
   return Object.freeze(result);
 }
 
-function parseResult(
-  input: unknown,
-): Readonly<Record<string, unknown>> | null {
-  if (
-    typeof input !== 'object'
-    || input === null
-    || Array.isArray(input)
-  ) {
-    return null;
-  }
-
-  const record =
-    input as Record<string, unknown>;
-
-  if (
-    Object.keys(record).length !== RESULT_KEYS.size
-    || Object.keys(record).some(
-      (key) => !RESULT_KEYS.has(key),
-    )
-    || (
-      record.status !== 'located'
-      && record.status !== 'historical'
-      && record.status !== 'unknown'
-      && record.status !== 'invalid_input'
-    )
-    || typeof record.precision !== 'string'
-    || !PRECISIONS.includes(
-      record.precision as DeviceFindingSpatialPrecision,
-    )
-    || typeof record.confidence !== 'string'
-    || !CONFIDENCES.includes(
-      record.confidence as DeviceFindingConfidence,
-    )
-    || typeof record.historical !== 'boolean'
-    || record.grantsAuthority !== false
-    || (
-      record.roomRef !== null
-      && typeof record.roomRef !== 'string'
-    )
-    || (
-      record.distanceMeters !== null
-      && (
-        typeof record.distanceMeters !== 'number'
-        || !Number.isFinite(
-          record.distanceMeters,
-        )
-        || record.distanceMeters < 0
-      )
-    )
-    || (
-      record.directionDegrees !== null
-      && (
-        typeof record.directionDegrees !== 'number'
-        || !Number.isFinite(
-          record.directionDegrees,
-        )
-        || record.directionDegrees < 0
-        || record.directionDegrees >= 360
-      )
-    )
-  ) {
-    return null;
-  }
-
-  return record;
-}
-
 export function chooseDeviceFindingGuidance(
   input: unknown,
 ): DeviceFindingGuidanceDecision {
@@ -251,7 +150,7 @@ export function chooseDeviceFindingGuidance(
   }
 
   const result =
-    parseResult(record.result);
+    parseDeviceFindingFusionResult(record.result);
   const capabilities =
     parseCapabilities(
       record.capabilities,
