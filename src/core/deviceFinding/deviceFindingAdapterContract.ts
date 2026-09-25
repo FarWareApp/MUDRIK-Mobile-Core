@@ -103,8 +103,7 @@ export function parseDeviceFindingAdapterDescriptor(
     )
     || typeof record.status !== 'string'
     || !STATUSES.includes(
-      record.status
-        as DeviceFindingAdapterStatus,
+      record.status as DeviceFindingAdapterStatus,
     )
     || !Array.isArray(
       record.supportedActions,
@@ -157,8 +156,7 @@ export function parseDeviceFindingAdapterDescriptor(
     adapterId: record.adapterId,
     deviceId: record.deviceId,
     status:
-      record.status
-        as DeviceFindingAdapterStatus,
+      record.status as DeviceFindingAdapterStatus,
     supportedActions:
       Object.freeze(supportedActions),
     revision: record.revision,
