@@ -194,8 +194,7 @@ function parseResult(
     }
   }
 
-  return record as unknown
-    as DeviceFindingFusionResult;
+  return record as unknown as DeviceFindingFusionResult;
 }
 
 function project(
