@@ -171,13 +171,11 @@ function parseResult(
     )
     || typeof record.precision !== 'string'
     || !PRECISIONS.includes(
-      record.precision
-        as DeviceFindingSpatialPrecision,
+      record.precision as DeviceFindingSpatialPrecision,
     )
     || typeof record.confidence !== 'string'
     || !CONFIDENCES.includes(
-      record.confidence
-        as DeviceFindingConfidence,
+      record.confidence as DeviceFindingConfidence,
     )
     || typeof record.historical !== 'boolean'
     || record.grantsAuthority !== false
@@ -277,8 +275,7 @@ export function chooseDeviceFindingGuidance(
   ) {
     return decision(
       'historical_recovery',
-      result.precision
-        as DeviceFindingSpatialPrecision,
+      result.precision as DeviceFindingSpatialPrecision,
       typeof result.roomRef === 'string'
         ? result.roomRef
         : null,
@@ -334,8 +331,7 @@ export function chooseDeviceFindingGuidance(
   ) {
     return decision(
       'distance',
-      result.precision
-        as DeviceFindingSpatialPrecision,
+      result.precision as DeviceFindingSpatialPrecision,
       typeof result.roomRef === 'string'
         ? result.roomRef
         : null,
