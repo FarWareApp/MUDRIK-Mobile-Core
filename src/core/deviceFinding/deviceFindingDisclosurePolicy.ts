@@ -7,9 +7,12 @@ import type {
 } from '../presence/surfaceContract';
 
 import type {
-  DeviceFindingConfidence,
   DeviceFindingFusionResult,
 } from './deviceFindingFusion';
+
+import {
+  parseDeviceFindingFusionResult,
+} from './deviceFindingFusionResult';
 
 import type {
   DeviceFindingSpatialPrecision,
@@ -42,40 +45,6 @@ const INPUT_KEYS = new Set([
   'result',
   'mode',
 ]);
-
-const RESULT_KEYS = new Set([
-  'status',
-  'confidence',
-  'precision',
-  'roomRef',
-  'zoneRef',
-  'furnitureRef',
-  'distanceMeters',
-  'directionDegrees',
-  'supportingSignalIds',
-  'historical',
-  'reason',
-  'grantsAuthority',
-]);
-
-const PRECISIONS:
-  readonly DeviceFindingSpatialPrecision[] = [
-    'unknown',
-    'proximity',
-    'room',
-    'zone',
-    'furniture',
-    'exact',
-  ];
-
-const CONFIDENCES:
-  readonly DeviceFindingConfidence[] = [
-    'confirmed',
-    'high',
-    'medium',
-    'low',
-    'unknown',
-  ];
 
 const PRECISION_RANK:
   Readonly<Record<DeviceFindingSpatialPrecision, number>> =
@@ -114,87 +83,6 @@ function empty(
     reason,
     grantsAuthority: false,
   });
-}
-
-function parseResult(
-  input: unknown,
-): DeviceFindingFusionResult | null {
-  if (
-    typeof input !== 'object'
-    || input === null
-    || Array.isArray(input)
-  ) {
-    return null;
-  }
-
-  const record =
-    input as Record<string, unknown>;
-
-  if (
-    Object.keys(record).length !== RESULT_KEYS.size
-    || Object.keys(record).some(
-      (key) => !RESULT_KEYS.has(key),
-    )
-    || (
-      record.status !== 'located'
-      && record.status !== 'historical'
-      && record.status !== 'unknown'
-      && record.status !== 'invalid_input'
-    )
-    || typeof record.confidence !== 'string'
-    || !CONFIDENCES.includes(
-      record.confidence as DeviceFindingConfidence,
-    )
-    || typeof record.precision !== 'string'
-    || !PRECISIONS.includes(
-      record.precision as DeviceFindingSpatialPrecision,
-    )
-    || typeof record.historical !== 'boolean'
-    || record.grantsAuthority !== false
-    || !Array.isArray(
-      record.supportingSignalIds,
-    )
-    || record.supportingSignalIds.length > 64
-    || record.supportingSignalIds.some(
-      (value) =>
-        typeof value !== 'string',
-    )
-  ) {
-    return null;
-  }
-
-  const nullableStrings = [
-    record.roomRef,
-    record.zoneRef,
-    record.furnitureRef,
-  ];
-
-  if (
-    nullableStrings.some(
-      (value) =>
-        value !== null
-        && typeof value !== 'string',
-    )
-  ) {
-    return null;
-  }
-
-  for (const value of [
-    record.distanceMeters,
-    record.directionDegrees,
-  ]) {
-    if (
-      value !== null
-      && (
-        typeof value !== 'number'
-        || !Number.isFinite(value)
-      )
-    ) {
-      return null;
-    }
-  }
-
-  return record as unknown as DeviceFindingFusionResult;
 }
 
 function project(
@@ -296,7 +184,7 @@ export function evaluateDeviceFindingDisclosure(
       record.surface,
     );
   const result =
-    parseResult(
+    parseDeviceFindingFusionResult(
       record.result,
     );
 
