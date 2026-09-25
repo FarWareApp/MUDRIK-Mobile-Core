@@ -551,8 +551,7 @@ export function fuseDeviceFindingEvidence(
         signal,
         freshness:
           authorization.freshness
-            as 'fresh'
-            | 'historical',
+            as AcceptedEvidence['freshness'],
       }),
     );
   }
