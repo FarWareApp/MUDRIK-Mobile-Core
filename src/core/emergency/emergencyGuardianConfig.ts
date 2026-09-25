@@ -19,6 +19,7 @@ export type EmergencyEvidenceSource =
   | 'respiratory'
   | 'microphone'
   | 'camera'
+  | 'responsiveness'
   | 'location';
 
 export type EmergencyGuardianConfig = Readonly<{
@@ -83,6 +84,7 @@ const EVIDENCE_SOURCES:
     'respiratory',
     'microphone',
     'camera',
+    'responsiveness',
     'location',
   ];
 
