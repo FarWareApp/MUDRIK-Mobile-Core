@@ -13,6 +13,7 @@ export const CAPABILITY_RISK: Readonly<Record<CapabilityId, CapabilityRisk>> = {
   'health.read.motion': 'high',
   'health.read.respiratory': 'high',
   'emergency.location.read': 'high',
+  'emergency.medical_profile.read': 'high',
   'emergency.contact.notify': 'high',
   'emergency.call.initiate': 'critical',
   'filesystem.read': 'medium',

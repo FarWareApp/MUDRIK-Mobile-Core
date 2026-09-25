@@ -51,6 +51,7 @@ test('privacy-sensitive sensors are classified high risk', () => {
     'microphone.listen',
     'location.read',
     'health.read.heart_rate',
+    'emergency.medical_profile.read',
   ]) {
     assert.equal(getCapabilityRisk(capability), 'high');
   }

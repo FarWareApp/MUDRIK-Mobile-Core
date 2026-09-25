@@ -9,6 +9,7 @@ export const MUDRIK_CAPABILITIES = [
   'health.read.motion',
   'health.read.respiratory',
   'emergency.location.read',
+  'emergency.medical_profile.read',
   'emergency.contact.notify',
   'emergency.call.initiate',
   'filesystem.read',
