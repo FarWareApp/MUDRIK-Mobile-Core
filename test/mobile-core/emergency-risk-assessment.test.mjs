@@ -471,3 +471,21 @@ test('disabled guardian cannot produce a risk recommendation', () => {
   assert.equal(result.reason, 'guardian_disabled');
   assert.equal(result.recommendedEvent, null);
 });
+
+test('risk assessment provenance rejects copied results', () => {
+  const result = riskModule.assessEmergencyRisk(
+    input([]),
+    NOW,
+  );
+
+  assert.equal(
+    riskModule.isEmergencyRiskAssessment(result),
+    true,
+  );
+  assert.equal(
+    riskModule.isEmergencyRiskAssessment({
+      ...result,
+    }),
+    false,
+  );
+});

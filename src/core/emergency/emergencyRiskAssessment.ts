@@ -67,6 +67,9 @@ export type EmergencyRiskAssessment =
     performsExternalAction: false;
   }>;
 
+const issuedRiskAssessments =
+  new WeakSet<object>();
+
 const INPUT_KEYS = new Set([
   'accountId',
   'emergencySessionId',
@@ -140,6 +143,16 @@ type Candidate = Readonly<{
   sensorAuthorization: unknown;
 }>;
 
+export function isEmergencyRiskAssessment(
+  value: unknown,
+): value is EmergencyRiskAssessment {
+  return (
+    typeof value === 'object'
+    && value !== null
+    && issuedRiskAssessments.has(value)
+  );
+}
+
 function result(
   risk: EmergencyRiskLevel,
   confidence: number,
@@ -153,7 +166,8 @@ function result(
     readonly string[] = [],
   rejectedEvidenceCount = 0,
 ): EmergencyRiskAssessment {
-  return Object.freeze({
+  const assessment =
+    Object.freeze({
     risk,
     confidence,
     recommendedEvent,
@@ -171,6 +185,9 @@ function result(
     grantsAuthority: false,
     performsExternalAction: false,
   });
+
+  issuedRiskAssessments.add(assessment);
+  return assessment;
 }
 
 function parseCandidate(
