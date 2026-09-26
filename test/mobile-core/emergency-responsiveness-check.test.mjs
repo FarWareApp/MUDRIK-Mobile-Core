@@ -628,23 +628,97 @@ test(
           NOW,
         ).check;
 
-    const shifted = {
-      ...check,
-      startedAtMs: NOW + 1,
-      deadlineAtMs:
-        NOW + 1 + check.timeoutMs,
-    };
-
     assert.equal(
       responsivenessModule
         .evaluateEmergencyResponsivenessCheck(
           {
-            check: shifted,
+            check,
             event: null,
           },
-          NOW,
+          NOW - 1,
         ).reason,
       'non_monotonic_time',
+    );
+  },
+);
+
+test(
+  'responsiveness provenance rejects copied checks and forged timeout results',
+  () => {
+    const check =
+      responsivenessModule
+        .startEmergencyResponsivenessCheck(
+          startInput(),
+          NOW,
+        ).check;
+    const copiedCheck = {
+      ...check,
+    };
+
+    assert.equal(
+      responsivenessModule
+        .isEmergencyResponsivenessCheck(
+          check,
+        ),
+      true,
+    );
+    assert.equal(
+      responsivenessModule
+        .isEmergencyResponsivenessCheck(
+          copiedCheck,
+        ),
+      false,
+    );
+    assert.equal(
+      responsivenessModule
+        .evaluateEmergencyResponsivenessCheck(
+          {
+            check: copiedCheck,
+            event: null,
+          },
+          NOW + 10_000,
+        ).reason,
+      'untrusted_check_provenance',
+    );
+
+    const timedOut =
+      responsivenessModule
+        .evaluateEmergencyResponsivenessCheck(
+          {
+            check,
+            event: null,
+          },
+          NOW + 10_000,
+        );
+
+    assert.equal(
+      responsivenessModule
+        .isEmergencyResponsivenessEvaluationFor(
+          timedOut,
+          check,
+        ),
+      true,
+    );
+    assert.equal(
+      responsivenessModule
+        .isEmergencyResponsivenessEvaluationFor(
+          {
+            ...timedOut,
+          },
+          check,
+        ),
+      false,
+    );
+    assert.equal(
+      responsivenessModule
+        .isEmergencyResponsivenessEvaluationFor(
+          {
+            ...timedOut,
+            status: 'timed_out',
+          },
+          check,
+        ),
+      false,
     );
   },
 );

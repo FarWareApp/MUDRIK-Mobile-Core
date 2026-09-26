@@ -70,6 +70,7 @@ export type EmergencyResponsivenessEvaluation =
       | 'timed_out'
       | 'late_response'
       | 'invalid_input'
+      | 'untrusted_check_provenance'
       | 'untrusted_event_provenance'
       | 'event_binding_mismatch'
       | 'event_before_check'
@@ -144,10 +145,18 @@ const ACCEPTED_EVENT_KEYS = new Set([
   'generation',
   'kind',
   'grantsAuthority',
-
   'performsExternalAction',
   'acceptedAtMs',
 ]);
+
+const issuedResponsivenessChecks =
+  new WeakSet<object>();
+
+const issuedResponsivenessEvaluations =
+  new WeakMap<
+    object,
+    EmergencyResponsivenessCheck
+  >();
 
 function startResult(
   accepted: boolean,
@@ -175,7 +184,6 @@ function evaluationResult(
   deadlineAtMs: number | null,
 ): EmergencyResponsivenessEvaluation {
   return Object.freeze({
-
     accepted,
     status,
     reason,
@@ -186,6 +194,57 @@ function evaluationResult(
     grantsAuthority: false,
     performsExternalAction: false,
   });
+}
+
+function boundEvaluationResult(
+  check: EmergencyResponsivenessCheck,
+  accepted: boolean,
+  status: EmergencyResponsivenessStatus,
+  reason:
+    EmergencyResponsivenessEvaluation['reason'],
+  userEventKind:
+    EmergencyResponsivenessEvaluation['userEventKind'],
+  evaluatedAtMs: number,
+): EmergencyResponsivenessEvaluation {
+  const evaluation =
+    evaluationResult(
+      accepted,
+      status,
+      reason,
+      userEventKind,
+      evaluatedAtMs,
+      check.deadlineAtMs,
+    );
+
+  issuedResponsivenessEvaluations.set(
+    evaluation,
+    check,
+  );
+
+  return evaluation;
+}
+
+export function isEmergencyResponsivenessCheck(
+  value: unknown,
+): value is EmergencyResponsivenessCheck {
+  return (
+    typeof value === 'object'
+    && value !== null
+    && issuedResponsivenessChecks.has(value)
+  );
+}
+
+export function isEmergencyResponsivenessEvaluationFor(
+  value: unknown,
+  check: EmergencyResponsivenessCheck,
+): value is EmergencyResponsivenessEvaluation {
+  return (
+    typeof value === 'object'
+    && value !== null
+    && isEmergencyResponsivenessCheck(check)
+    && issuedResponsivenessEvaluations.get(value)
+      === check
+  );
 }
 
 function parseGeneration(
@@ -510,7 +569,6 @@ export function startEmergencyResponsivenessCheck(
       checkId: record.checkId,
       emergencySessionId:
         session.emergencySessionId,
-
       accountId: session.accountId,
       generation: state.generation,
       configId: config.configId,
@@ -526,6 +584,8 @@ export function startEmergencyResponsivenessCheck(
       grantsAuthority: false,
       performsExternalAction: false,
     });
+
+  issuedResponsivenessChecks.add(check);
 
   return startResult(
     true,
@@ -580,53 +640,64 @@ export function evaluateEmergencyResponsivenessCheck(
     );
   }
 
-  const check =
-    parseCheck(
+  if (
+    !isEmergencyResponsivenessCheck(
       record.check,
-    );
-
-  if (!check) {
+    )
+  ) {
     return evaluationResult(
+      false,
+      'pending',
+      'untrusted_check_provenance',
+      null,
+      nowMs,
+      null,
+    );
+  }
+
+  const check = record.check;
+
+  if (!parseCheck(check)) {
+    return boundEvaluationResult(
+      check,
       false,
       'pending',
       'invalid_input',
       null,
       nowMs,
-      null,
     );
   }
 
   if (nowMs < check.startedAtMs) {
-    return evaluationResult(
+    return boundEvaluationResult(
+      check,
       false,
       'pending',
       'non_monotonic_time',
       null,
       nowMs,
-      check.deadlineAtMs,
     );
   }
 
   if (record.event === null) {
     if (nowMs < check.deadlineAtMs) {
-      return evaluationResult(
+      return boundEvaluationResult(
+        check,
         true,
         'pending',
         'pending',
         null,
         nowMs,
-
-        check.deadlineAtMs,
       );
     }
 
-    return evaluationResult(
+    return boundEvaluationResult(
+      check,
       true,
       'timed_out',
       'timed_out',
       null,
       nowMs,
-      check.deadlineAtMs,
     );
   }
 
@@ -635,13 +706,13 @@ export function evaluateEmergencyResponsivenessCheck(
       record.event,
     )
   ) {
-    return evaluationResult(
+    return boundEvaluationResult(
+      check,
       false,
       'pending',
       'untrusted_event_provenance',
       null,
       nowMs,
-      check.deadlineAtMs,
     );
   }
 
@@ -651,13 +722,13 @@ export function evaluateEmergencyResponsivenessCheck(
     );
 
   if (!event) {
-    return evaluationResult(
+    return boundEvaluationResult(
+      check,
       false,
       'pending',
       'invalid_input',
       null,
       nowMs,
-      check.deadlineAtMs,
     );
   }
 
@@ -666,58 +737,56 @@ export function evaluateEmergencyResponsivenessCheck(
       !== check.emergencySessionId
     || event.accountId !== check.accountId
     || event.generation !== check.generation
-
   ) {
-    return evaluationResult(
+    return boundEvaluationResult(
+      check,
       false,
       'pending',
       'event_binding_mismatch',
       null,
       nowMs,
-      check.deadlineAtMs,
     );
   }
 
   if (event.acceptedAtMs < check.startedAtMs) {
-    return evaluationResult(
+    return boundEvaluationResult(
+      check,
       false,
       'pending',
       'event_before_check',
       null,
       nowMs,
-      check.deadlineAtMs,
     );
   }
 
   if (event.acceptedAtMs > nowMs) {
-    return evaluationResult(
+    return boundEvaluationResult(
+      check,
       false,
       'pending',
       'future_event',
       null,
       nowMs,
-      check.deadlineAtMs,
     );
   }
 
   if (event.acceptedAtMs > check.deadlineAtMs) {
-    return evaluationResult(
-
+    return boundEvaluationResult(
+      check,
       true,
       'timed_out',
       'late_response',
       event.kind,
       nowMs,
-      check.deadlineAtMs,
     );
   }
 
-  return evaluationResult(
+  return boundEvaluationResult(
+    check,
     true,
     'responsive',
     'responsive',
     event.kind,
     nowMs,
-    check.deadlineAtMs,
   );
 }
