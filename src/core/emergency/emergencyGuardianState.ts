@@ -118,7 +118,7 @@ function isEvent(
   );
 }
 
-function parseState(
+export function parseEmergencyGuardianStateSnapshot(
   value: unknown,
 ): EmergencyGuardianState | null {
   if (
@@ -327,7 +327,9 @@ export function transitionEmergencyGuardian(
   }
 
   const state =
-    parseState(record.state);
+    parseEmergencyGuardianStateSnapshot(
+      record.state,
+    );
 
   if (!state) {
     return result(

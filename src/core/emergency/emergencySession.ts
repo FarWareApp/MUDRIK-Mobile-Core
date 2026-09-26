@@ -49,6 +49,21 @@ const INPUT_KEYS = new Set([
   'config',
 ]);
 
+const SESSION_KEYS = new Set([
+  'emergencySessionId',
+  'accountId',
+  'sourceDeviceId',
+  'configId',
+  'configRevision',
+  'mode',
+  'openedAtMs',
+  'simulationOnly',
+  'grantsAuthority',
+]);
+
+const CONFIG_ID =
+  /^egc_[a-z0-9][a-z0-9_-]{15,63}$/;
+
 function result(
   accepted: boolean,
   session: EmergencySession | null,
@@ -58,6 +73,86 @@ function result(
     accepted,
     session,
     reason,
+    grantsAuthority: false,
+  });
+}
+
+export function parseEmergencySessionSnapshot(
+  input: unknown,
+  trustedEvaluationTimeInput: unknown,
+): EmergencySession | null {
+  const nowMs =
+    parseTrustedEvaluationTime(
+      trustedEvaluationTimeInput,
+    );
+
+  if (
+    nowMs === null
+    || typeof input !== 'object'
+    || input === null
+    || Array.isArray(input)
+  ) {
+    return null;
+  }
+
+  const record =
+    input as Record<string, unknown>;
+
+  if (
+    Object.keys(record).length
+      !== SESSION_KEYS.size
+    || Object.keys(record).some(
+      (key) => !SESSION_KEYS.has(key),
+    )
+    || !isEmergencySessionId(
+      record.emergencySessionId,
+    )
+    || !isIdentityId(
+      'account',
+      record.accountId,
+    )
+    || !isIdentityId(
+      'device',
+      record.sourceDeviceId,
+    )
+    || typeof record.configId !== 'string'
+    || !CONFIG_ID.test(record.configId)
+    || typeof record.configRevision !== 'number'
+    || !Number.isSafeInteger(
+      record.configRevision,
+    )
+    || record.configRevision < 0
+    || (
+      record.mode !== 'simulation'
+      && record.mode !== 'live'
+    )
+    || typeof record.openedAtMs !== 'number'
+    || !Number.isSafeInteger(
+      record.openedAtMs,
+    )
+    || record.openedAtMs < 0
+    || record.openedAtMs > nowMs
+    || typeof record.simulationOnly !== 'boolean'
+    || record.simulationOnly
+      !== (record.mode === 'simulation')
+    || record.grantsAuthority !== false
+  ) {
+    return null;
+  }
+
+  return Object.freeze({
+    emergencySessionId:
+      record.emergencySessionId,
+    accountId: record.accountId,
+    sourceDeviceId:
+      record.sourceDeviceId,
+    configId: record.configId,
+    configRevision:
+      record.configRevision,
+    mode: record.mode,
+    openedAtMs: record.openedAtMs,
+    simulationOnly:
+      record.simulationOnly,
     grantsAuthority: false,
   });
 }

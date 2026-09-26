@@ -27,7 +27,8 @@ function config(overrides = {}) {
     automaticEscalation: false,
     responsivenessTimeoutMs: 10_000,
     escalationCountdownMs: 15_000,
-    evidenceSources: ['user_report', 'responsiveness'],    emergencyContactRefs: [],
+    evidenceSources: ['user_report', 'responsiveness'],
+    emergencyContactRefs: [],
     shareLocation: false,
     medicalProfileRef: null,
     shareMedicalProfile: false,
@@ -58,7 +59,8 @@ test(
 
     assert.equal(opened.accepted, true);
     assert.equal(opened.reason, 'accepted');
-    assert.equal(opened.grantsAuthority, false);    assert.deepEqual(
+    assert.equal(opened.grantsAuthority, false);
+    assert.deepEqual(
       opened.session,
       {
         emergencySessionId:
@@ -94,7 +96,8 @@ test(
     assert.equal(
       opened.session.simulationOnly,
       false,
-    );    assert.equal(
+    );
+    assert.equal(
       opened.session.grantsAuthority,
       false,
     );
@@ -130,7 +133,8 @@ test(
       sessionModule.openEmergencySession(
         input({
           accountId: OTHER_ACCOUNT,
-        }),        NOW,
+        }),
+        NOW,
       );
 
     assert.equal(opened.accepted, false);
@@ -168,7 +172,8 @@ test(
 
 test(
   'hidden authority and action fields fail closed',
-  () => {    for (const hostile of [
+  () => {
+    for (const hostile of [
       {
         ...input(),
         grantsAuthority: true,
@@ -209,7 +214,8 @@ test(
       }),
       input({
         sourceDeviceId: 'dev_bad',
-      }),      input({
+      }),
+      input({
         config: config({
           revision:
             Number.MAX_SAFE_INTEGER + 1,
@@ -264,7 +270,8 @@ test(
     assert.equal(
       duplicate.session.openedAtMs,
       NOW,
-    );    assert.equal(
+    );
+    assert.equal(
       duplicate.grantsAuthority,
       false,
     );
@@ -302,7 +309,8 @@ test(
           NOW,
         ).reason,
         'accepted',
-      );      assert.equal(
+      );
+      assert.equal(
         registry.open(
           conflicting,
           NOW + 1,
@@ -376,5 +384,34 @@ test(
       'session_replay',
     );
     assert.equal(replay.session, null);
+  },
+);
+test(
+  'bulk clear retires active ids instead of disabling replay protection',
+  () => {
+    const registry =
+      new registryModule
+        .EmergencySessionRegistry();
+
+    assert.equal(
+      registry.open(input(), NOW).reason,
+      'accepted',
+    );
+
+    registry.clear();
+
+    assert.equal(
+      registry.get(
+        'ems_0123456789abcdef',
+      ),
+      null,
+    );
+    assert.equal(
+      registry.open(
+        input(),
+        NOW + 20_000,
+      ).reason,
+      'session_replay',
+    );
   },
 );

@@ -29,6 +29,21 @@ type SessionState = {
   bindingFingerprint: string;
 };
 
+const registeredEmergencySessions =
+  new WeakSet<object>();
+
+export function isRegisteredEmergencySession(
+  value: unknown,
+): value is EmergencySession {
+  return (
+    typeof value === 'object'
+    && value !== null
+    && registeredEmergencySessions.has(
+      value,
+    )
+  );
+}
+
 function bindingFingerprint(
   session: EmergencySession,
 ): string {
@@ -120,6 +135,9 @@ export class EmergencySessionRegistry {
             fingerprint,
         },
       );
+      registeredEmergencySessions.add(
+        candidate,
+      );
 
       return result(
         true,
@@ -174,10 +192,19 @@ export class EmergencySessionRegistry {
       isEmergencySessionId(
         emergencySessionId,
       )
-      && this.sessions.has(
-        emergencySessionId,
-      )
     ) {
+      const current =
+        this.sessions.get(
+          emergencySessionId,
+        );
+
+      if (!current) {
+        return;
+      }
+
+      registeredEmergencySessions.delete(
+        current.session,
+      );
       this.sessions.delete(
         emergencySessionId,
       );
@@ -188,7 +215,20 @@ export class EmergencySessionRegistry {
   }
 
   clear(): void {
+    for (
+      const [
+        emergencySessionId,
+        state,
+      ] of this.sessions
+    ) {
+      registeredEmergencySessions.delete(
+        state.session,
+      );
+      this.retiredSessionIds.add(
+        emergencySessionId,
+      );
+    }
+
     this.sessions.clear();
-    this.retiredSessionIds.clear();
   }
 }
