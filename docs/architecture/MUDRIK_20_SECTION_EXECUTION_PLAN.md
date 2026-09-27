@@ -278,6 +278,17 @@ Scope:
 
 # Section 10 — Emergency Guardian
 
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED.**
+
+Accepted pre-device evidence:
+
+- implementation candidate `acc11fe839c12cae38e31ce25870290b1c09199f`;
+- `docs/validation/SECTION_10_EMERGENCY_GUARDIAN_GATE.md`;
+- `docs/validation/SECTION_10_AUTOMATED_EVIDENCE.md`;
+- `docs/validation/SECTION_10_DEFECTS.md`;
+- Mobile Core Validation `#724`: **SUCCESS**;
+- CodeQL Security Analysis `#619`: **SUCCESS**.
+
 Scope:
 
 - opt-in health/emergency monitoring architecture;
@@ -293,6 +304,8 @@ Scope:
 This is safety-critical and requires the strongest Layer 5 review before production use.
 
 # Section 11 — Durable Computer Agent Runtime
+
+**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
 
 Scope:
 

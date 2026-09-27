@@ -2,7 +2,7 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
 
 Section 10 defines a safety-critical, opt-in emergency-assistance boundary. It may consume explicitly authorized evidence, assess bounded risk, check responsiveness, prepare a minimal emergency packet and plan an escalation. It must not diagnose a medical condition, create sensor authority, or perform a real emergency side effect during pre-device work.
 
@@ -138,6 +138,23 @@ Before final production closure verify supported real devices and services for f
 No real emergency service or unsuspecting third party may be contacted as part of routine development validation. Physical tests must use safe test endpoints, platform-provided test mechanisms, controlled participants and legally appropriate procedures.
 
 ## Layer 5 — Evidence / Release Gate
+
+Pre-device completion evidence is recorded in:
+
+- `docs/validation/SECTION_10_AUTOMATED_EVIDENCE.md`;
+- `docs/validation/SECTION_10_DEFECTS.md`.
+
+Accepted pre-device implementation candidate:
+
+- `acc11fe839c12cae38e31ce25870290b1c09199f`;
+- Mobile Core Validation `#724` / ID `36346111692`: **SUCCESS**;
+- CodeQL Security Analysis `#619` / ID `36346111701`: **SUCCESS**;
+- Section 10 regressions: **143/143 PASS**;
+- whole Mobile Core regressions: **792/792 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency gate: **0 Critical / 0 High / 2 reviewed Moderate**;
+- secret gates: **PASS**;
+- no known unresolved Blocker/Critical/High defect in automated/pre-device scope.
 
 Pre-device completion requires:
 
