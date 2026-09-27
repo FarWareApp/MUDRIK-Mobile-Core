@@ -1,7 +1,11 @@
 import { evaluateTaskPolicy } from './policy.mjs';
-import { runTerminalCommand } from './tools/terminal.mjs';
 
-function contextForStep(step) {
+import {
+  DEFAULT_TIMEOUT_MS,
+  runTerminalCommand,
+} from './tools/terminal.mjs';
+
+export function policyContextForStep(step) {
   if (step.tool !== 'terminal') {
     return {};
   }
@@ -10,9 +14,15 @@ function contextForStep(step) {
     step.requiredCapabilities.map((capability) => [
       capability,
       {
-        cwd: step.input?.cwd,
+        cwd:
+          step.input?.cwd
+          ?? process.cwd(),
         executable: step.input?.executable,
-        requiresElevation: step.input?.requiresElevation === true,
+        timeoutMs:
+          step.input?.timeoutMs
+          ?? DEFAULT_TIMEOUT_MS,
+        requiresElevation:
+          step.input?.requiresElevation === true,
       },
     ]),
   );
@@ -31,9 +41,14 @@ function assertStepCapabilities(task, step) {
 }
 
 export class ComputerTaskRunner {
-  constructor({ grants = [], onEvent = () => {} } = {}) {
+  constructor({
+    grants = [],
+    onEvent = () => {},
+    clock = () => Date.now(),
+  } = {}) {
     this.grants = grants;
     this.onEvent = onEvent;
+    this.clock = clock;
     this.active = new Map();
   }
 
@@ -62,7 +77,12 @@ export class ComputerTaskRunner {
     return true;
   }
 
-  async run(task) {
+  async run(
+    task,
+    {
+      signal: externalSignal,
+    } = {},
+  ) {
     if (!task || typeof task !== 'object' || typeof task.taskId !== 'string') {
       throw new Error('Invalid task envelope.');
     }
@@ -82,6 +102,7 @@ export class ComputerTaskRunner {
     const taskPolicy = evaluateTaskPolicy({
       task,
       grants: this.grants,
+      trustedNowMs: this.clock(),
     });
 
     if (!taskPolicy.allowed) {
@@ -93,8 +114,25 @@ export class ComputerTaskRunner {
       };
     }
 
-    const controller = new AbortController();
-    this.active.set(task.taskId, controller);
+    const controller =
+      new AbortController();
+    const forwardAbort =
+      () => controller.abort();
+
+    if (externalSignal?.aborted) {
+      controller.abort();
+    } else {
+      externalSignal?.addEventListener(
+        'abort',
+        forwardAbort,
+        { once: true },
+      );
+    }
+
+    this.active.set(
+      task.taskId,
+      controller,
+    );
     this.emit(task.taskId, 'task.started', {
       intent: task.intent,
       risk: task.risk,
@@ -119,7 +157,8 @@ export class ComputerTaskRunner {
             requestedCapabilities: step.requiredCapabilities,
           },
           grants: this.grants,
-          contextByCapability: contextForStep(step),
+          contextByCapability: policyContextForStep(step),
+          trustedNowMs: this.clock(),
         });
 
         if (!stepPolicy.allowed) {
@@ -209,6 +248,10 @@ export class ComputerTaskRunner {
         steps: results,
       };
     } finally {
+      externalSignal?.removeEventListener(
+        'abort',
+        forwardAbort,
+      );
       this.active.delete(task.taskId);
     }
   }

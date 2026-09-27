@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mudrik.local/schemas/durable-task-event.schema.json",
+  "title": "MUDRIK Durable Computer Task Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "taskId",
+    "sequence",
+    "type",
+    "occurredAtMs",
+    "stepId",
+    "reason",
+    "outcome",
+    "grantsAuthority",
+    "performsExternalAction"
+  ],
+  "properties": {
+    "taskId": {
+      "type": "string",
+      "pattern": "^ctask_[a-z0-9][a-z0-9_-]{15,127}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "task.admitted",
+        "task.queued",
+        "task.started",
+        "task.paused",
+        "task.resumed",
+        "task.cancelled",
+        "task.blocked",
+        "task.succeeded",
+        "task.failed",
+        "recovery.paused",
+        "recovery.blocked",
+        "step.started",
+        "step.checkpointed",
+        "step.failed"
+      ]
+    },
+    "occurredAtMs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stepId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^cstep_[a-z0-9][a-z0-9_-]{7,127}$"
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "outcome": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "succeeded",
+        "failed",
+        "failed_continued",
+        null
+      ]
+    },
+    "grantsAuthority": {
+      "const": false
+    },
+    "performsExternalAction": {
+      "const": false
+    }
+  }
+}

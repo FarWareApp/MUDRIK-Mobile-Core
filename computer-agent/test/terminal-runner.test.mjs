@@ -43,6 +43,7 @@ test('task runner blocks ungranted terminal work', async () => {
 
   const result = await runner.run({
     taskId: 'blocked-task',
+    deviceId: 'device-test',
     intent: 'Run a local test command',
     risk: 'medium',
     requestedCapabilities: ['terminal.execute'],
@@ -77,6 +78,7 @@ test('task runner executes inside an approved scope and emits progress', async (
 
   const result = await runner.run({
     taskId: 'allowed-task',
+    deviceId: 'device-test',
     intent: 'Run a local test command',
     risk: 'medium',
     requestedCapabilities: ['terminal.execute'],
@@ -113,6 +115,7 @@ test('task runner re-checks scope for every step', async () => {
 
   const result = await runner.run({
     taskId: 'scope-escape-task',
+    deviceId: 'device-test',
     intent: 'Attempt to leave approved workspace',
     risk: 'medium',
     requestedCapabilities: ['terminal.execute'],
@@ -135,3 +138,127 @@ test('task runner re-checks scope for every step', async () => {
   assert.equal(result.status, 'blocked');
   assert.equal(result.policy.reason, 'approval-required');
 });
+
+test(
+  'runner policy evaluates the effective default cwd before execution',
+  async () => {
+    const deniedRoot =
+      path.join(
+        os.tmpdir(),
+        'mudrik-default-cwd-only',
+      );
+
+    const runner =
+      new ComputerTaskRunner({
+        grants: [{
+          ...executionGrant(
+            deniedRoot,
+          ),
+          deviceId: 'device-test',
+        }],
+      });
+
+    const result =
+      await runner.run({
+        taskId:
+          'default-cwd-task',
+        deviceId: 'device-test',
+        intent:
+          'Default cwd must be scoped',
+        risk: 'medium',
+        requestedCapabilities: [
+          'terminal.execute',
+        ],
+        expiresAt: futureIso(),
+        steps: [{
+          stepId: 'step-1',
+          tool: 'terminal',
+          summary:
+            'Use default cwd',
+          requiredCapabilities: [
+            'terminal.execute',
+          ],
+          input: {
+            executable:
+              process.execPath,
+            args: [
+              '-e',
+              'console.log("must-not-run")',
+            ],
+          },
+        }],
+      });
+
+    assert.equal(
+      result.status,
+      'blocked',
+    );
+    assert.equal(
+      result.policy.reason,
+      'approval-required',
+    );
+  },
+);
+
+test(
+  'runner policy evaluates the effective default terminal timeout',
+  async () => {
+    const root = process.cwd();
+
+    const runner =
+      new ComputerTaskRunner({
+        grants: [{
+          ...executionGrant(root),
+          scope: {
+            filesystemRoots: [root],
+            executables: [
+              process.execPath,
+            ],
+            maxTaskDurationSeconds:
+              119,
+          },
+        }],
+      });
+
+    const result =
+      await runner.run({
+        taskId:
+          'default-timeout-task',
+        deviceId: 'device-test',
+        intent:
+          'Default timeout must be bounded',
+        risk: 'medium',
+        requestedCapabilities: [
+          'terminal.execute',
+        ],
+        expiresAt: futureIso(),
+        steps: [{
+          stepId: 'step-1',
+          tool: 'terminal',
+          summary:
+            'Use default timeout',
+          requiredCapabilities: [
+            'terminal.execute',
+          ],
+          input: {
+            executable:
+              process.execPath,
+            args: [
+              '-e',
+              'console.log("must-not-run")',
+            ],
+            cwd: root,
+          },
+        }],
+      });
+
+    assert.equal(
+      result.status,
+      'blocked',
+    );
+    assert.equal(
+      result.policy.reason,
+      'approval-required',
+    );
+  },
+);

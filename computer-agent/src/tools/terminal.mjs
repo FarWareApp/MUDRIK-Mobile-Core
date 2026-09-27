@@ -1,7 +1,10 @@
 import { spawn } from 'node:child_process';
 
-const DEFAULT_TIMEOUT_MS = 120_000;
-const DEFAULT_MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
+export const DEFAULT_TIMEOUT_MS =
+  120_000;
+
+export const DEFAULT_MAX_OUTPUT_BYTES =
+  2 * 1024 * 1024;
 
 function minimalEnvironment(extra = {}) {
   const keys = [

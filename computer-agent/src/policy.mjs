@@ -2,6 +2,11 @@ import path from 'node:path';
 
 import { assertKnownCapabilities } from './capabilities.mjs';
 
+import {
+  isPermissionGrantActive,
+  parsePermissionGrant,
+} from './permission-grant.mjs';
+
 export const RISK_ORDER = Object.freeze({
   low: 0,
   medium: 1,
@@ -24,68 +29,172 @@ function pathWithin(candidate, allowedRoot) {
   );
 }
 
-function grantIsActive(grant) {
-  if (!grant || grant.revokedAt) {
+function capabilityCovered(
+  grantInput,
+  capability,
+  context,
+  deviceId,
+  trustedNowMs,
+) {
+  const grant =
+    parsePermissionGrant(
+      grantInput,
+    );
+
+  if (
+    !grant
+    || !isPermissionGrantActive(
+      grant,
+      trustedNowMs,
+    )
+    || grant.capability !== capability
+    || grant.deviceId !== deviceId
+  ) {
     return false;
   }
 
-  if (!grant.expiresAt) {
-    return true;
+  const scope = grant.scope;
+
+  if (context.cwd) {
+    if (
+      scope.filesystemRoots.length === 0
+      || !scope.filesystemRoots.some(
+        (root) =>
+          pathWithin(
+            context.cwd,
+            root,
+          ),
+      )
+    ) {
+      return false;
+    }
   }
 
-  const expiresAt = Date.parse(grant.expiresAt);
-  return Number.isFinite(expiresAt) && expiresAt > Date.now();
-}
+  if (context.executable) {
+    if (
+      scope.executables.length === 0
+      || !scope.executables.includes(
+        context.executable,
+      )
+    ) {
+      return false;
+    }
+  }
 
-function capabilityCovered(grant, capability, context) {
-  if (!grantIsActive(grant) || grant.capability !== capability) {
+  if (context.domain) {
+    if (
+      scope.domains.length === 0
+      || !scope.domains.includes(
+        context.domain,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  if (
+    context.requiresBackground
+    && scope.backgroundAllowed
+      !== true
+  ) {
     return false;
   }
 
-  const scope = grant.scope ?? {};
-
-  if (context.cwd && Array.isArray(scope.filesystemRoots) && scope.filesystemRoots.length > 0) {
-    if (!scope.filesystemRoots.some((root) => pathWithin(context.cwd, root))) {
-      return false;
-    }
+  if (
+    context.timeoutMs !== undefined
+    && scope.maxTaskDurationSeconds
+      !== null
+    && (
+      !Number.isFinite(
+        context.timeoutMs,
+      )
+      || context.timeoutMs < 0
+      || context.timeoutMs
+        > scope.maxTaskDurationSeconds
+          * 1000
+    )
+  ) {
+    return false;
   }
 
-  if (context.executable && Array.isArray(scope.executables) && scope.executables.length > 0) {
-    if (!scope.executables.includes(context.executable)) {
-      return false;
-    }
-  }
-
-  if (context.domain && Array.isArray(scope.domains) && scope.domains.length > 0) {
-    if (!scope.domains.includes(context.domain)) {
-      return false;
-    }
-  }
-
-  if (context.requiresElevation && scope.elevationAllowed !== true) {
+  if (
+    context.requiresElevation
+    && scope.elevationAllowed
+      !== true
+  ) {
     return false;
   }
 
   return true;
 }
 
-function findCoveringGrant(grants, capability, context) {
-  return grants.find((grant) => capabilityCovered(grant, capability, context));
+function findCoveringGrant(
+  grants,
+  capability,
+  context,
+  deviceId,
+  trustedNowMs,
+) {
+  return grants.find(
+    (grant) =>
+      capabilityCovered(
+        grant,
+        capability,
+        context,
+        deviceId,
+        trustedNowMs,
+      ),
+  );
 }
 
-export function evaluateTaskPolicy({ task, grants = [], contextByCapability = {} }) {
-  if (!task || typeof task !== 'object') {
-    return { allowed: false, reason: 'invalid-task' };
+export function evaluateTaskPolicy({
+  task,
+  grants = [],
+  contextByCapability = {},
+  trustedNowMs = Date.now(),
+}) {
+  if (
+    !task
+    || typeof task !== 'object'
+    || typeof task.deviceId !== 'string'
+    || task.deviceId.length < 8
+    || !Number.isSafeInteger(
+      trustedNowMs,
+    )
+    || trustedNowMs < 0
+  ) {
+    return {
+      allowed: false,
+      reason: 'invalid-task',
+    };
   }
 
-  if (!(task.risk in RISK_ORDER)) {
-    return { allowed: false, reason: 'invalid-risk' };
+  if (
+    !Object.hasOwn(
+      RISK_ORDER,
+      task.risk,
+    )
+  ) {
+    return {
+      allowed: false,
+      reason: 'invalid-risk',
+    };
+  }
+
+  if (!Array.isArray(grants)) {
+    return {
+      allowed: false,
+      reason: 'invalid-grants',
+    };
   }
 
   if (task.expiresAt) {
     const expiresAt = Date.parse(task.expiresAt);
 
-    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    if (
+      !Number.isFinite(expiresAt)
+      || expiresAt <= trustedNowMs
+    ) {
       return { allowed: false, reason: 'expired-task' };
     }
   }
@@ -105,7 +214,14 @@ export function evaluateTaskPolicy({ task, grants = [], contextByCapability = {}
 
   for (const capability of task.requestedCapabilities) {
     const context = contextByCapability[capability] ?? {};
-    const grant = findCoveringGrant(grants, capability, context);
+    const grant =
+      findCoveringGrant(
+        grants,
+        capability,
+        context,
+        task.deviceId,
+        trustedNowMs,
+      );
 
     if (!grant) {
       missingCapabilities.push(capability);
