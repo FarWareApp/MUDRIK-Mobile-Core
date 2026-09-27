@@ -285,6 +285,16 @@ export class DurableComputerAgentRuntime {
     step,
     trustedTimeMs,
   ) {
+    const contextByCapability =
+      policyContextForStep(step);
+
+    if (!contextByCapability) {
+      return Object.freeze({
+        allowed: false,
+        reason: 'invalid-tool-input',
+      });
+    }
+
     return evaluateTaskPolicy({
       task: {
         ...task,
@@ -293,8 +303,7 @@ export class DurableComputerAgentRuntime {
         steps: [step],
       },
       grants: this.grants,
-      contextByCapability:
-        policyContextForStep(step),
+      contextByCapability,
       trustedNowMs:
         trustedTimeMs,
     });

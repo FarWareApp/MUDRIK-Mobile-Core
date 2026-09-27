@@ -305,3 +305,108 @@ test('grant maximum task duration bounds terminal timeout', () => {
 
   assert.equal(allowed.allowed, true);
 });
+
+test(
+  'capability risk floors cannot be lowered by a signed task risk label',
+  () => {
+    const deleteResult =
+      evaluateTaskPolicy({
+        task: task({
+          risk: 'low',
+          requestedCapabilities: [
+            'filesystem.delete',
+          ],
+        }),
+        grants: [
+          grant({
+            capability:
+              'filesystem.delete',
+          }),
+        ],
+      });
+
+    assert.equal(
+      deleteResult.allowed,
+      false,
+    );
+    assert.equal(
+      deleteResult.reason,
+      'high-risk-approval-required',
+    );
+
+    const adminResult =
+      evaluateTaskPolicy({
+        task: task({
+          risk: 'low',
+          requestedCapabilities: [
+            'system.admin',
+          ],
+        }),
+        grants: [
+          grant({
+            capability:
+              'system.admin',
+            mode: 'persistent',
+          }),
+        ],
+      });
+
+    assert.equal(
+      adminResult.allowed,
+      false,
+    );
+    assert.equal(
+      adminResult.reason,
+      'fresh-critical-approval-required',
+    );
+  },
+);
+
+test(
+  'operation policy context may raise but never lower effective risk',
+  () => {
+    const raised =
+      evaluateTaskPolicy({
+        task: task({
+          risk: 'low',
+        }),
+        grants: [
+          grant(),
+        ],
+        contextByCapability: {
+          'terminal.execute': {
+            minimumRisk: 'high',
+          },
+        },
+      });
+
+    assert.equal(
+      raised.allowed,
+      false,
+    );
+    assert.equal(
+      raised.reason,
+      'high-risk-approval-required',
+    );
+
+    const ordinary =
+      evaluateTaskPolicy({
+        task: task({
+          risk: 'low',
+        }),
+        grants: [
+          grant(),
+        ],
+        contextByCapability: {
+          'terminal.execute': {
+            minimumRisk: 'low',
+          },
+        },
+      });
+
+    assert.equal(
+      ordinary.allowed,
+      true,
+    );
+  },
+);

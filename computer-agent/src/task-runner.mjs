@@ -1,31 +1,23 @@
-import { evaluateTaskPolicy } from './policy.mjs';
+import {
+  activeCapabilityGrants,
+  evaluateTaskPolicy,
+} from './policy.mjs';
 
 import {
-  DEFAULT_TIMEOUT_MS,
+  normalizeToolStep,
+  policyContextForToolStep,
+} from './tool-contracts.mjs';
+
+import {
+  runFilesystemOperation,
+} from './tools/filesystem.mjs';
+
+import {
   runTerminalCommand,
 } from './tools/terminal.mjs';
 
 export function policyContextForStep(step) {
-  if (step.tool !== 'terminal') {
-    return {};
-  }
-
-  return Object.fromEntries(
-    step.requiredCapabilities.map((capability) => [
-      capability,
-      {
-        cwd:
-          step.input?.cwd
-          ?? process.cwd(),
-        executable: step.input?.executable,
-        timeoutMs:
-          step.input?.timeoutMs
-          ?? DEFAULT_TIMEOUT_MS,
-        requiresElevation:
-          step.input?.requiresElevation === true,
-      },
-    ]),
-  );
+  return policyContextForToolStep(step);
 }
 
 function assertStepCapabilities(task, step) {
@@ -95,7 +87,35 @@ export class ComputerTaskRunner {
       throw new Error(`Task is already running: ${task.taskId}`);
     }
 
-    for (const step of task.steps) {
+    const normalizedSteps =
+      task.steps.map(
+        normalizeToolStep,
+      );
+
+    if (
+      normalizedSteps.some(
+        (step) => step === null,
+      )
+    ) {
+      const policy = {
+        allowed: false,
+        reason: 'invalid-tool-input',
+      };
+
+      this.emit(
+        task.taskId,
+        'task.blocked',
+        { policy },
+      );
+
+      return {
+        status: 'blocked',
+        policy,
+        steps: [],
+      };
+    }
+
+    for (const step of normalizedSteps) {
       assertStepCapabilities(task, step);
     }
 
@@ -141,7 +161,7 @@ export class ComputerTaskRunner {
     const results = [];
 
     try {
-      for (const step of task.steps) {
+      for (const step of normalizedSteps) {
         if (controller.signal.aborted) {
           this.emit(task.taskId, 'task.cancelled');
           return {
@@ -151,15 +171,21 @@ export class ComputerTaskRunner {
           };
         }
 
-        const stepPolicy = evaluateTaskPolicy({
-          task: {
-            ...task,
-            requestedCapabilities: step.requiredCapabilities,
-          },
-          grants: this.grants,
-          contextByCapability: policyContextForStep(step),
-          trustedNowMs: this.clock(),
-        });
+        const stepPolicyTime =
+          this.clock();
+        const stepPolicy =
+          evaluateTaskPolicy({
+            task: {
+              ...task,
+              requestedCapabilities:
+                step.requiredCapabilities,
+            },
+            grants: this.grants,
+            contextByCapability:
+              policyContextForStep(step),
+            trustedNowMs:
+              stepPolicyTime,
+          });
 
         if (!stepPolicy.allowed) {
           this.emit(task.taskId, 'step.blocked', {
@@ -186,7 +212,17 @@ export class ComputerTaskRunner {
         });
 
         try {
-          const result = await this.runStep(step, controller.signal);
+          const result =
+            await this.runStep(
+              step,
+              controller.signal,
+              {
+                deviceId:
+                  task.deviceId,
+                trustedNowMs:
+                  stepPolicyTime,
+              },
+            );
           results.push({
             stepId: step.stepId,
             status: result.exitCode === 0 ? 'succeeded' : 'failed',
@@ -256,21 +292,61 @@ export class ComputerTaskRunner {
     }
   }
 
-  async runStep(step, signal) {
-    if (step.tool !== 'terminal') {
-      throw new Error(`Tool is not implemented in Phase 0: ${step.tool}`);
+  async runStep(
+    step,
+    signal,
+    {
+      deviceId,
+      trustedNowMs,
+    } = {},
+  ) {
+    const input =
+      step.input ?? {};
+
+    if (step.tool === 'terminal') {
+      return runTerminalCommand({
+        executable:
+          input.executable,
+        args: input.args,
+        cwd: input.cwd,
+        env: input.env,
+        timeoutMs:
+          input.timeoutMs,
+        maxOutputBytes:
+          input.maxOutputBytes,
+        signal,
+      });
     }
 
-    const input = step.input ?? {};
+    if (step.tool === 'filesystem') {
+      const capability =
+        step.requiredCapabilities[0];
+      const activeGrants =
+        activeCapabilityGrants({
+          grants: this.grants,
+          capability,
+          deviceId,
+          trustedNowMs,
+        });
+      const allowedRoots =
+        [...new Set(
+          activeGrants.flatMap(
+            (grant) =>
+              grant.scope
+                .filesystemRoots,
+          ),
+        )];
 
-    return runTerminalCommand({
-      executable: input.executable,
-      args: input.args ?? [],
-      cwd: input.cwd,
-      env: input.env ?? {},
-      timeoutMs: input.timeoutMs,
-      maxOutputBytes: input.maxOutputBytes,
-      signal,
-    });
+      return runFilesystemOperation(
+        input,
+        {
+          allowedRoots,
+        },
+      );
+    }
+
+    throw new Error(
+      `Tool is not implemented: ${step.tool}`,
+    );
   }
 }

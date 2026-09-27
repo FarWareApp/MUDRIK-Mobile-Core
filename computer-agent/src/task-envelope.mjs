@@ -78,7 +78,7 @@ const APPROVAL_KEYS = new Set([
 ]);
 
 const FORBIDDEN_SECRET_KEY =
-  /^(password|passwd|secret|token|access[_-]?token|refresh[_-]?token|api[_-]?key|authorization|private[_-]?key|credential|credentials)$/i;
+  /(?:^|[_-])(?:password|passwd|secret|token|access[_-]?token|refresh[_-]?token|api[_-]?key|authorization|private[_-]?key|credential|credentials)(?:$|[_-])/i;
 
 const SECRET_VALUE =
   /(?:-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\bsk-[A-Za-z0-9_-]{20,}\b|\bghp_[A-Za-z0-9]{20,}\b|\bgithub_pat_[A-Za-z0-9_]{20,}\b|\bAIza[A-Za-z0-9_-]{20,}\b|\bBearer\s+[A-Za-z0-9._~+\/-]{16,}|\b(?:password|passwd|token|api[_-]?key)\s*[:=]\s*[^\s,;]{4,})/i;

@@ -650,3 +650,32 @@ test(
     );
   },
 );
+
+test(
+  'credential-like nested environment field names fail before durable admission',
+  () => {
+    const value =
+      signed({
+        steps: [{
+          ...envelope().steps[0],
+          input: {
+            executable:
+              process.execPath,
+            args: [],
+            cwd: '/tmp/mudrik',
+            env: {
+              OPENAI_API_KEY:
+                'synthetic-value',
+            },
+          },
+        }],
+      });
+
+    assert.equal(
+      parseComputerTaskEnvelope(
+        value,
+      ),
+      null,
+    );
+  },
+);

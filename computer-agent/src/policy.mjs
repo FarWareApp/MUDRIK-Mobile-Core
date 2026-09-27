@@ -1,6 +1,9 @@
 import path from 'node:path';
 
-import { assertKnownCapabilities } from './capabilities.mjs';
+import {
+  assertKnownCapabilities,
+  capabilityMinimumRisk,
+} from './capabilities.mjs';
 
 import {
   isPermissionGrantActive,
@@ -13,6 +16,32 @@ export const RISK_ORDER = Object.freeze({
   high: 2,
   critical: 3,
 });
+
+function maximumRisk(
+  ...levels
+) {
+  let selected = 'low';
+
+  for (const level of levels) {
+    if (
+      !Object.hasOwn(
+        RISK_ORDER,
+        level,
+      )
+    ) {
+      return null;
+    }
+
+    if (
+      RISK_ORDER[level]
+        > RISK_ORDER[selected]
+    ) {
+      selected = level;
+    }
+  }
+
+  return selected;
+}
 
 function normalizePath(value) {
   return path.resolve(value);
@@ -63,6 +92,27 @@ function capabilityCovered(
           pathWithin(
             context.cwd,
             root,
+          ),
+      )
+    ) {
+      return false;
+    }
+  }
+
+  if (context.paths !== undefined) {
+    if (
+      !Array.isArray(context.paths)
+      || context.paths.length === 0
+      || scope.filesystemRoots.length === 0
+      || context.paths.some(
+        (candidate) =>
+          typeof candidate !== 'string'
+          || !scope.filesystemRoots.some(
+            (root) =>
+              pathWithin(
+                candidate,
+                root,
+              ),
           ),
       )
     ) {
@@ -209,6 +259,34 @@ export function evaluateTaskPolicy({
     };
   }
 
+  const capabilityRiskLevels =
+    task.requestedCapabilities.map(
+      capabilityMinimumRisk,
+    );
+
+  const contextRiskLevels =
+    task.requestedCapabilities.map(
+      (capability) =>
+        contextByCapability[
+          capability
+        ]?.minimumRisk
+        ?? 'low',
+    );
+
+  const effectiveRisk =
+    maximumRisk(
+      task.risk,
+      ...capabilityRiskLevels,
+      ...contextRiskLevels,
+    );
+
+  if (!effectiveRisk) {
+    return {
+      allowed: false,
+      reason: 'invalid-risk',
+    };
+  }
+
   const coveringGrants = new Map();
   const missingCapabilities = [];
 
@@ -245,7 +323,7 @@ export function evaluateTaskPolicy({
     };
   }
 
-  if (task.risk === 'critical') {
+  if (effectiveRisk === 'critical') {
     const freshApproval =
       task.approval?.mode === 'one_shot' &&
       typeof task.approval?.approvalId === 'string' &&
@@ -259,7 +337,7 @@ export function evaluateTaskPolicy({
     }
   }
 
-  if (task.risk === 'high') {
+  if (effectiveRisk === 'high') {
     const explicitlyApproved =
       (task.approval?.mode === 'task' || task.approval?.mode === 'one_shot') &&
       typeof task.approval?.approvalId === 'string' &&
@@ -284,4 +362,47 @@ export function evaluateTaskPolicy({
 
 export function isPathWithinScope(candidate, roots = []) {
   return roots.some((root) => pathWithin(candidate, root));
+}
+
+
+export function activeCapabilityGrants({
+  grants = [],
+  capability,
+  deviceId,
+  trustedNowMs,
+}) {
+  if (
+    !Array.isArray(grants)
+    || typeof capability !== 'string'
+    || typeof deviceId !== 'string'
+    || !Number.isSafeInteger(
+      trustedNowMs,
+    )
+    || trustedNowMs < 0
+  ) {
+    return Object.freeze([]);
+  }
+
+  const active = [];
+
+  for (const grantInput of grants) {
+    const grant =
+      parsePermissionGrant(
+        grantInput,
+      );
+
+    if (
+      grant
+      && grant.capability === capability
+      && grant.deviceId === deviceId
+      && isPermissionGrantActive(
+        grant,
+        trustedNowMs,
+      )
+    ) {
+      active.push(grant);
+    }
+  }
+
+  return Object.freeze(active);
 }
