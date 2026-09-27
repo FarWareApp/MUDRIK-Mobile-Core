@@ -238,6 +238,58 @@ Detailed evidence:
 - `docs/validation/SECTION_09_AUTOMATED_EVIDENCE.md`
 - `docs/validation/SECTION_09_DEFECTS.md`
 
+### Section 10 — Emergency Guardian
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`acc11fe839c12cae38e31ce25870290b1c09199f`
+
+Evidence:
+
+- Mobile Core Validation #724 / `36346111692`: SUCCESS;
+- CodeQL #619 / `36346111701`: SUCCESS;
+- Emergency Guardian regressions: **143/143 PASS**;
+- whole Mobile Core regressions: **792/792 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- tracked/worktree/history secret gates: PASS;
+- no known unresolved Blocker/Critical/High Section 10 defect.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_10_EMERGENCY_GUARDIAN_GATE.md`
+- `docs/validation/SECTION_10_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_10_DEFECTS.md`
+
+### Section 11 — Durable Computer Agent Runtime
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`e3cc7e8d64b89f584d3cb2f64a052d7f553c495b`
+
+Evidence:
+
+- Mobile Core Validation #726 / `36358953372`: SUCCESS;
+- CodeQL #621 / `36358953373`: SUCCESS;
+- Computer Agent regressions: **71/71 PASS**;
+- whole Mobile Core regressions: **792/792 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- tracked/worktree/history secret gates: PASS;
+- no known unresolved Blocker/Critical/High Section 11 defect.
+
+Implemented boundaries include authenticated signed task admission, replay-safe restart reconstruction, HMAC-protected durable state, deterministic lifecycle/checkpoints, uncertain-side-effect blocking, per-task mutation serialization, durable Pause/Cancel, per-step current grant rechecks and strict effective terminal scope/default evaluation.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_11_DURABLE_COMPUTER_AGENT_GATE.md`
+- `docs/validation/SECTION_11_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_11_DEFECTS.md`
+
 ## UI/UX Detail Preservation Rule
 
 Authoritative detail ledger:
@@ -294,10 +346,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Execute Section 10 Emergency Guardian from contracts/policy first; do not perform live emergency actions during pre-device work.
-2. Preserve Sections 01–09 as open for their deferred Layer 4 obligations where applicable.
+1. Execute Section 12 Computer Agent Tooling and Capability Sandbox from explicit capability contracts and fail-closed adapters first.
+2. Preserve Sections 01–11 as open for their deferred Layer 4 obligations where applicable.
 3. Keep UI/UX detail changes registered and do not silently drop future intended work.
-4. Do not couple production AI/server/sensor authority merely to satisfy pre-device tests.
+4. Do not broaden filesystem, process, network, browser, secret or privileged authority merely to satisfy pre-device tests.
 
 ## Development Rule
 

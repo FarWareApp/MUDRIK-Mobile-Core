@@ -2,7 +2,23 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted automated/pre-device implementation candidate:
+
+- commit `e3cc7e8d64b89f584d3cb2f64a052d7f553c495b`;
+- Mobile Core Validation `#726` / ID `36358953372`: **SUCCESS**;
+- CodeQL Security Analysis `#621` / ID `36358953373`: **SUCCESS**;
+- Computer Agent regressions: **71/71 PASS**;
+- whole Mobile Core regressions: **792/792 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency gate: **0 Critical / 0 High / 2 reviewed Moderate**;
+- tracked/worktree/history secret gates: **PASS**.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_11_AUTOMATED_EVIDENCE.md`;
+- `docs/validation/SECTION_11_DEFECTS.md`.
 
 Section 11 turns the existing Computer Agent Phase 0 policy/terminal prototype into a durable local execution runtime. It owns task admission, local task state, checkpoint/recovery, pause/resume/cancel and restart-safe lifecycle semantics. It does not broaden filesystem, git, browser, process or network capabilities; those adapter/sandbox responsibilities remain Section 12.
 

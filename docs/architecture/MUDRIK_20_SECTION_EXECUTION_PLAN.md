@@ -305,7 +305,16 @@ This is safety-critical and requires the strongest Layer 5 review before product
 
 # Section 11 — Durable Computer Agent Runtime
 
-**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED.**
+
+Accepted pre-device evidence:
+
+- implementation candidate `e3cc7e8d64b89f584d3cb2f64a052d7f553c495b`;
+- `docs/validation/SECTION_11_DURABLE_COMPUTER_AGENT_GATE.md`;
+- `docs/validation/SECTION_11_AUTOMATED_EVIDENCE.md`;
+- `docs/validation/SECTION_11_DEFECTS.md`;
+- Mobile Core Validation `#726`: **SUCCESS**;
+- CodeQL Security Analysis `#621`: **SUCCESS**.
 
 Scope:
 
@@ -320,6 +329,8 @@ Scope:
 - Linux-first implementation while preserving cross-platform protocol compatibility.
 
 # Section 12 — Computer Agent Tooling and Capability Sandbox
+
+**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
 
 Scope:
 
@@ -493,7 +504,7 @@ This exception permits continued engineering progress without redefining incompl
 
 ## Current Pre-Device Workstream
 
-**Section 10 — Emergency Guardian — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
+**Section 12 — Computer Agent Tooling and Capability Sandbox — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
 
 Pre-device completed/open sections:
 
@@ -504,7 +515,9 @@ Pre-device completed/open sections:
 - Section 6 — Smart Companion;
 - Section 7 — Cross-Device Presence and Handoff;
 - Section 8 — Ambient Device and Media Orchestration;
-- Section 9 — Smart Device Finder and Spatial Locating.
+- Section 9 — Smart Device Finder and Spatial Locating;
+- Section 10 — Emergency Guardian;
+- Section 11 — Durable Computer Agent Runtime.
 
 ## Completion Definition
 
