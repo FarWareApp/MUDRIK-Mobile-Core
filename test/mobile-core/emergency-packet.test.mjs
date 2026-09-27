@@ -8,6 +8,9 @@ import {
 const packetModule = loadTypeScriptModule(
   'src/core/emergency/emergencyPacket.ts',
 );
+const disclosureModule = loadTypeScriptModule(
+  'src/core/emergency/emergencyDisclosurePolicy.ts',
+);
 const planModule = loadTypeScriptModule(
   'src/core/emergency/emergencyEscalationPlan.ts',
 );
@@ -286,6 +289,7 @@ function packetInput(
     config: cfg,
     riskAssessment: built.risk,
     locationRef: null,
+    capabilityGrants: [],
     ...overrides,
   };
 }
@@ -370,7 +374,7 @@ test(
 );
 
 test(
-  'explicit sharing includes only opaque location and medical references',
+  'explicit sharing includes only authorized opaque references',
   () => {
     const cfg = config({
       shareLocation: true,
@@ -386,6 +390,30 @@ test(
           {
             locationRef:
               'emloc_0123456789abcdef',
+            capabilityGrants: [
+              {
+                grantId:
+                  'grant-location-packet',
+                subjectId: DEVICE,
+                capability:
+                  'emergency.location.read',
+                scope: {
+                  resourceId:
+                    'emloc_0123456789abcdef',
+                },
+              },
+              {
+                grantId:
+                  'grant-medical-packet',
+                subjectId: DEVICE,
+                capability:
+                  'emergency.medical_profile.read',
+                scope: {
+                  resourceId:
+                    'emp_0123456789abcdef',
+                },
+              },
+            ],
           },
         ),
         NOW + 10_002,
@@ -494,6 +522,351 @@ test(
         ...result.packet,
       }),
       false,
+    );
+  },
+);
+
+test(
+  'shared location requires an exact current location capability',
+  () => {
+    const cfg = config({
+      shareLocation: true,
+    });
+    const base = packetInput(
+      cfg,
+      {
+        locationRef:
+          'emloc_0123456789abcdef',
+      },
+    );
+
+    for (const capabilityGrants of [
+      [],
+      [{
+        grantId: 'grant-wrong-location',
+        subjectId: DEVICE,
+        capability:
+          'emergency.location.read',
+        scope: {
+          resourceId:
+            'emloc_1111111111111111',
+        },
+      }],
+      [{
+        grantId: 'grant-generic-device',
+        subjectId: DEVICE,
+        capability: 'device.control',
+        scope: {
+          resourceId:
+            'emloc_0123456789abcdef',
+        },
+      }],
+    ]) {
+      const result =
+        packetModule.buildEmergencyPacket(
+          {
+            ...base,
+            capabilityGrants,
+          },
+          NOW + 10_002,
+        );
+
+      assert.equal(result.accepted, false);
+      assert.equal(
+        result.reason,
+        'location_capability_denied',
+      );
+    }
+  },
+);
+
+test(
+  'shared medical profile requires its own exact capability',
+  () => {
+    const cfg = config({
+      medicalProfileRef:
+        'emp_0123456789abcdef',
+      shareMedicalProfile: true,
+    });
+
+    const result =
+      packetModule.buildEmergencyPacket(
+        packetInput(cfg),
+        NOW + 10_002,
+      );
+    assert.equal(result.accepted, false);
+    assert.equal(
+      result.reason,
+      'medical_profile_capability_denied',
+    );
+  },
+);
+
+test(
+  'expired or revoked packet disclosure grants fail closed at packet time',
+  () => {
+    const cfg = config({
+      shareLocation: true,
+    });
+    const locationRef =
+      'emloc_0123456789abcdef';
+    const nowMs = NOW + 10_002;
+
+    for (const temporal of [
+      { expiresAtMs: nowMs },
+      { revokedAtMs: nowMs },
+    ]) {
+      const result =
+        packetModule.buildEmergencyPacket(
+          packetInput(
+            cfg,
+            {
+              locationRef,
+              capabilityGrants: [{
+                grantId:
+                  'grant-location-temporal',
+                subjectId: DEVICE,
+                capability:
+                  'emergency.location.read',
+                scope: {
+                  resourceId: locationRef,
+                },
+                ...temporal,
+              }],
+            },
+          ),
+          nowMs,
+        );
+      assert.equal(result.accepted, false);
+      assert.equal(
+        result.reason,
+        'location_capability_denied',
+      );
+    }
+  },
+);
+
+function surface(
+  privacyClass,
+  overrides = {},
+) {
+  return {
+    surfaceId:
+      'surf_0123456789abcdef',
+    deviceId: DEVICE,
+    kind: 'phone',
+    privacyClass,
+    capabilities: ['text', 'audio_output'],
+    sharedSpace:
+      privacyClass !== 'personal_private',
+    ...overrides,
+  };
+}
+
+function buildAuthorizedSharedPacket() {
+  const locationRef =
+    'emloc_0123456789abcdef';
+  const medicalRef =
+    'emp_0123456789abcdef';
+  const cfg = config({
+    shareLocation: true,
+    medicalProfileRef: medicalRef,
+    shareMedicalProfile: true,
+  });
+  const result =
+    packetModule.buildEmergencyPacket(
+      packetInput(
+        cfg,
+        {
+          locationRef,
+          capabilityGrants: [
+            {
+              grantId:
+                'grant-disclosure-location',
+              subjectId: DEVICE,
+              capability:
+                'emergency.location.read',
+              scope: {
+                resourceId: locationRef,
+              },
+            },
+            {
+              grantId:
+                'grant-disclosure-medical',
+              subjectId: DEVICE,
+              capability:
+                'emergency.medical_profile.read',
+              scope: {
+                resourceId: medicalRef,
+              },
+            },
+          ],
+        },
+      ),
+      NOW + 10_002,
+    );
+  assert.equal(result.accepted, true);
+  return result.packet;
+}
+
+test(
+  'personal private surface may receive bounded emergency detail without internal refs',
+  () => {
+    const packet =
+      buildAuthorizedSharedPacket();
+    const decision =
+      disclosureModule
+        .evaluateEmergencyDisclosure({
+          surface:
+            surface('personal_private'),
+          packet,
+          mode: 'text',
+        });
+
+    assert.equal(decision.allowed, true);
+    assert.equal(
+      decision.level,
+      'private_detail',
+    );
+    assert.equal(
+      decision.locationIncluded,
+      true,
+    );
+    assert.equal(
+      decision.medicalProfileIncluded,
+      true,
+    );
+    assert.equal(
+      'locationRef' in decision,
+      false,
+    );
+    assert.equal(
+      'medicalProfileRef' in decision,
+      false,
+    );
+    assert.equal(
+      'supportingEvidenceIds' in decision,
+      false,
+    );
+  },
+);
+
+test(
+  'shared and public surfaces receive downgraded emergency status only',
+  () => {
+    const packet =
+      buildAuthorizedSharedPacket();
+
+    const cases = [
+      ['personal_shared_space', 'shared_status'],
+      ['household_shared', 'status_only'],
+      ['public_or_untrusted', 'status_only'],
+    ];
+
+    for (const [privacyClass, level] of cases) {
+      const decision =
+        disclosureModule
+          .evaluateEmergencyDisclosure({
+            surface:
+              surface(privacyClass),
+            packet,
+            mode: 'text',
+          });
+
+      assert.equal(decision.allowed, true);
+      assert.equal(decision.level, level);
+      assert.equal(
+        decision.riskConfidence,
+        null,
+      );
+      assert.equal(
+        decision.responsiveness,
+        null,
+      );
+      assert.equal(
+        decision.locationIncluded,
+        false,
+      );
+      assert.equal(
+        decision.medicalProfileIncluded,
+        false,
+      );
+    }
+  },
+);
+
+test(
+  'private emergency audio requires a private audio surface capability',
+  () => {
+    const packet =
+      buildAuthorizedSharedPacket();
+    const denied =
+      disclosureModule
+        .evaluateEmergencyDisclosure({
+          surface:
+            surface('personal_private'),
+          packet,
+          mode: 'audio_output',
+        });
+
+    assert.equal(denied.allowed, false);
+    assert.equal(
+      denied.reason,
+      'private_audio_required',
+    );
+
+    const allowed =
+      disclosureModule
+        .evaluateEmergencyDisclosure({
+          surface:
+            surface(
+              'personal_private',
+              {
+                capabilities: [
+                  'text',
+                  'audio_output',
+                  'private_audio',
+                ],
+              },
+            ),
+          packet,
+          mode: 'audio_output',
+        });
+    assert.equal(allowed.allowed, true);
+    assert.equal(
+      allowed.level,
+      'private_detail',
+    );
+  },
+);
+
+test(
+  'copied packet or hidden disclosure fields fail closed',
+  () => {
+    const packet =
+      buildAuthorizedSharedPacket();
+
+    assert.equal(
+      disclosureModule
+        .evaluateEmergencyDisclosure({
+          surface:
+            surface('personal_private'),
+          packet: { ...packet },
+          mode: 'text',
+        }).reason,
+      'invalid_input',
+    );
+
+    assert.equal(
+      disclosureModule
+        .evaluateEmergencyDisclosure({
+          surface:
+            surface('personal_private'),
+          packet,
+          mode: 'text',
+          revealRawHealth: true,
+        }).reason,
+      'invalid_input',
     );
   },
 );

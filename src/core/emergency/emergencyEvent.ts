@@ -8,7 +8,9 @@ import {
 
 export type EmergencyUserEventKind =
   | 'user_ok'
-  | 'user_cancel';
+  | 'user_cancel'
+  | 'confirm_escalation'
+  | 'confirm_emergency_call';
 
 export type EmergencyUserEvent = Readonly<{
   emergencySessionId: string;
@@ -39,6 +41,8 @@ const KINDS:
   readonly EmergencyUserEventKind[] = [
     'user_ok',
     'user_cancel',
+    'confirm_escalation',
+    'confirm_emergency_call',
   ];
 
 export function isEmergencyEventId(

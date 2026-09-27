@@ -19,7 +19,7 @@ import {
 } from './emergencyEvent';
 
 import {
-  isEmergencyGuardianSessionState,
+  isCurrentEmergencyGuardianSessionState,
 } from './emergencyGuardianSessionState';
 
 import {
@@ -72,6 +72,7 @@ export type EmergencyResponsivenessEvaluation =
       | 'invalid_input'
       | 'untrusted_check_provenance'
       | 'untrusted_event_provenance'
+      | 'event_not_responsiveness'
       | 'event_binding_mismatch'
       | 'event_before_check'
       | 'future_event'
@@ -464,7 +465,7 @@ export function startEmergencyResponsivenessCheck(
   }
 
   if (
-    !isEmergencyGuardianSessionState(
+    !isCurrentEmergencyGuardianSessionState(
       record.sessionState,
     )
   ) {
@@ -727,6 +728,20 @@ export function evaluateEmergencyResponsivenessCheck(
       false,
       'pending',
       'invalid_input',
+      null,
+      nowMs,
+    );
+  }
+
+  if (
+    event.kind !== 'user_ok'
+    && event.kind !== 'user_cancel'
+  ) {
+    return boundEvaluationResult(
+      check,
+      false,
+      'pending',
+      'event_not_responsiveness',
       null,
       nowMs,
     );

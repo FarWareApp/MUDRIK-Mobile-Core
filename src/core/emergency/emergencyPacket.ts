@@ -3,6 +3,10 @@ import {
 } from '../security/trustedEvaluationTime';
 
 import {
+  authorizeEmergencyResourceCapability,
+} from './emergencyCapabilityAuthorization';
+
+import {
   isEmergencyEscalationPlan,
 } from './emergencyEscalationPlan';
 
@@ -44,7 +48,9 @@ export type EmergencyPacketResult =
       | 'invalid_input'
       | 'session_config_mismatch'
       | 'risk_not_critical'
-      | 'plan_not_eligible';
+      | 'plan_not_eligible'
+      | 'location_capability_denied'
+      | 'medical_profile_capability_denied';
     grantsAuthority: false;
     performsExternalAction: false;
   }>;
@@ -61,6 +67,7 @@ const INPUT_KEYS = new Set([
   'config',
   'riskAssessment',
   'locationRef',
+  'capabilityGrants',
 ]);
 
 const issuedEmergencyPackets =
@@ -143,6 +150,9 @@ export function buildEmergencyPacket(
     || !isEmergencyRiskAssessment(
       record.riskAssessment,
     )
+    || !Array.isArray(
+      record.capabilityGrants,
+    )
   ) {
     return result(
       false,
@@ -214,6 +224,50 @@ export function buildEmergencyPacket(
       null,
       'plan_not_eligible',
     );
+  }
+
+  if (
+    config.shareLocation
+    && locationRef !== null
+  ) {
+    const locationAuthorization =
+      authorizeEmergencyResourceCapability(
+        plan.sourceDeviceId,
+        'emergency.location.read',
+        locationRef,
+        record.capabilityGrants,
+        nowMs,
+      );
+
+    if (!locationAuthorization.allowed) {
+      return result(
+        false,
+        null,
+        'location_capability_denied',
+      );
+    }
+  }
+
+  if (
+    config.shareMedicalProfile
+    && config.medicalProfileRef !== null
+  ) {
+    const medicalAuthorization =
+      authorizeEmergencyResourceCapability(
+        plan.sourceDeviceId,
+        'emergency.medical_profile.read',
+        config.medicalProfileRef,
+        record.capabilityGrants,
+        nowMs,
+      );
+
+    if (!medicalAuthorization.allowed) {
+      return result(
+        false,
+        null,
+        'medical_profile_capability_denied',
+      );
+    }
   }
 
   const packet: EmergencyPacket =

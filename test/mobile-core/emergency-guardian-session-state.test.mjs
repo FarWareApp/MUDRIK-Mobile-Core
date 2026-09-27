@@ -260,3 +260,81 @@ test(
     );
   },
 );
+
+test(
+  'creating state twice is idempotent and cannot reset an active session',
+  () => {
+    const { session } = registeredSession();
+
+    const first =
+      stateModule
+        .createEmergencyGuardianSessionState(
+          session,
+          NOW,
+        );
+    const second =
+      stateModule
+        .createEmergencyGuardianSessionState(
+          session,
+          NOW + 1,
+        );
+
+    assert.equal(first.accepted, true);
+    assert.equal(second.accepted, true);
+    assert.equal(second.reason, 'duplicate');
+    assert.equal(second.state, first.state);
+  },
+);
+
+test(
+  'an issued predecessor becomes stale after the next state is issued',
+  () => {
+    const { session } = registeredSession();
+    const created =
+      stateModule
+        .createEmergencyGuardianSessionState(
+          session,
+          NOW,
+        );
+
+    const checking =
+      stateModule
+        .transitionEmergencyGuardianSessionState(
+          {
+            sessionState: created.state,
+            event: 'request_check',
+          },
+          NOW + 1,
+        );
+
+    assert.equal(checking.accepted, true);
+    assert.equal(
+      stateModule
+        .isCurrentEmergencyGuardianSessionState(
+          created.state,
+        ),
+      false,
+    );
+
+    assert.equal(
+      stateModule
+        .isCurrentEmergencyGuardianSessionState(
+          checking.next,
+        ),
+      true,
+    );
+
+    const replay =
+      stateModule
+        .transitionEmergencyGuardianSessionState(
+          {
+            sessionState: created.state,
+            event: 'risk_urgent',
+          },
+          NOW + 2,
+        );
+
+    assert.equal(replay.accepted, false);
+    assert.equal(replay.reason, 'stale_state');
+  },
+);

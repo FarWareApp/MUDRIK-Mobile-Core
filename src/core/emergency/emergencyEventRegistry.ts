@@ -7,7 +7,7 @@ import {
 } from '../security/trustedEvaluationTime';
 
 import {
-  isEmergencyGuardianSessionState,
+  isCurrentEmergencyGuardianSessionState,
 } from './emergencyGuardianSessionState';
 
 import {
@@ -207,7 +207,7 @@ export class EmergencyEventRegistry {
       || Object.keys(record).some(
         (key) => !INPUT_KEYS.has(key),
       )
-      || !isEmergencyGuardianSessionState(
+      || !isCurrentEmergencyGuardianSessionState(
         record.sessionState,
       )
     ) {

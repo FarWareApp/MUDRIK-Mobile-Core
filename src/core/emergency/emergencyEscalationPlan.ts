@@ -7,13 +7,17 @@ import {
 } from './emergencyGuardianConfig';
 
 import {
-  isEmergencyGuardianSessionState,
+  isCurrentEmergencyGuardianSessionState,
 } from './emergencyGuardianSessionState';
 
 import {
   isEmergencyResponsivenessCheck,
   isEmergencyResponsivenessEvaluationFor,
 } from './emergencyResponsivenessCheck';
+
+import {
+  isRegistryAcceptedEmergencyUserEvent,
+} from './emergencyEventRegistry';
 
 import {
   isEmergencyRiskAssessment,
@@ -43,10 +47,12 @@ export type EmergencyEscalationPlan =
   Readonly<{
     emergencySessionId: string;
     accountId: string;
+    sourceDeviceId: string;
     generation: number;
     configId: string;
     configRevision: number;
     createdAtMs: number;
+    actionNotBeforeMs: number;
     simulationOnly: boolean;
     automaticEscalation: boolean;
     requiresUserConfirmation: boolean;
@@ -63,13 +69,20 @@ export type EmergencyEscalationPlanResult =
     reason:
       | 'planned'
       | 'confirmation_required'
+      | 'confirmed'
+      | 'duplicate'
+      | 'confirmation_replay'
+      | 'wrong_confirmation'
+      | 'event_before_plan'
+      | 'future_event'
       | 'invalid_input'
       | 'guardian_disabled'
       | 'session_config_mismatch'
       | 'state_not_escalating'
       | 'risk_not_critical'
       | 'responsiveness_not_timed_out'
-      | 'binding_mismatch';
+      | 'binding_mismatch'
+      | 'time_overflow';
     grantsAuthority: false;
     performsExternalAction: false;
   }>;
@@ -82,8 +95,24 @@ const INPUT_KEYS = new Set([
   'responsivenessEvaluation',
 ]);
 
+const CONFIRM_KEYS = new Set([
+  'plan',
+  'sessionState',
+  'config',
+  'event',
+]);
+
 const issuedEscalationPlans =
   new WeakSet<object>();
+
+const confirmedPlanByEvent =
+  new WeakMap<
+    object,
+    Readonly<{
+      sourcePlan: EmergencyEscalationPlan;
+      confirmedPlan: EmergencyEscalationPlan;
+    }>
+  >();
 
 function result(
   accepted: boolean,
@@ -145,20 +174,9 @@ function step(
   });
 }
 
-function buildSteps(
+function buildExecutionSteps(
   config: EmergencyGuardianConfig,
 ): readonly EmergencyEscalationStep[] {
-  if (!config.automaticEscalation) {
-    return Object.freeze([
-      step(
-        'request_user_confirmation',
-        null,
-        null,
-        false,
-      ),
-    ]);
-  }
-
   if (config.simulationOnly) {
     const simulatedContacts =
       config.emergencyContactRefs.map(
@@ -203,6 +221,23 @@ function buildSteps(
   ]);
 }
 
+function buildSteps(
+  config: EmergencyGuardianConfig,
+): readonly EmergencyEscalationStep[] {
+  if (!config.automaticEscalation) {
+    return Object.freeze([
+      step(
+        'request_user_confirmation',
+        null,
+        null,
+        false,
+      ),
+    ]);
+  }
+
+  return buildExecutionSteps(config);
+}
+
 export function planEmergencyEscalation(
   input: unknown,
   trustedEvaluationTimeInput: unknown,
@@ -234,7 +269,7 @@ export function planEmergencyEscalation(
     || Object.keys(record).some(
       (key) => !INPUT_KEYS.has(key),
     )
-    || !isEmergencyGuardianSessionState(
+    || !isCurrentEmergencyGuardianSessionState(
       record.sessionState,
     )
     || !isEmergencyRiskAssessment(
@@ -354,15 +389,37 @@ export function planEmergencyEscalation(
     );
   }
 
+  if (
+    config.automaticEscalation
+    && nowMs
+      > Number.MAX_SAFE_INTEGER
+        - config.escalationCountdownMs
+  ) {
+    return result(
+      false,
+      null,
+      'time_overflow',
+    );
+  }
+
+  const actionNotBeforeMs =
+    config.automaticEscalation
+      ? nowMs
+        + config.escalationCountdownMs
+      : nowMs;
+
   const plan: EmergencyEscalationPlan =
     Object.freeze({
       emergencySessionId:
         session.emergencySessionId,
       accountId: session.accountId,
+      sourceDeviceId:
+        session.sourceDeviceId,
       generation: state.generation,
       configId: config.configId,
       configRevision: config.revision,
       createdAtMs: nowMs,
+      actionNotBeforeMs,
       simulationOnly:
         session.simulationOnly,
       automaticEscalation:
@@ -382,5 +439,219 @@ export function planEmergencyEscalation(
     config.automaticEscalation
       ? 'planned'
       : 'confirmation_required',
+  );
+}
+
+export function confirmEmergencyEscalationPlan(
+  input: unknown,
+  trustedEvaluationTimeInput: unknown,
+): EmergencyEscalationPlanResult {
+  const nowMs =
+    parseTrustedEvaluationTime(
+      trustedEvaluationTimeInput,
+    );
+
+  if (
+    nowMs === null
+    || typeof input !== 'object'
+    || input === null
+    || Array.isArray(input)
+  ) {
+    return result(
+      false,
+      null,
+      'invalid_input',
+    );
+  }
+
+  const record =
+    input as Record<string, unknown>;
+  if (
+    Object.keys(record).length
+      !== CONFIRM_KEYS.size
+    || Object.keys(record).some(
+      (key) => !CONFIRM_KEYS.has(key),
+    )
+    || !isEmergencyEscalationPlan(
+      record.plan,
+    )
+    || !isCurrentEmergencyGuardianSessionState(
+      record.sessionState,
+    )
+    || !isRegistryAcceptedEmergencyUserEvent(
+      record.event,
+    )
+  ) {
+    return result(
+      false,
+      null,
+      'invalid_input',
+    );
+  }
+
+  const plan = record.plan;
+  const sessionState =
+    record.sessionState;
+  const session = sessionState.session;
+  const state = sessionState.state;
+  const event = record.event;
+  const config =
+    parseEmergencyGuardianConfig(
+      record.config,
+      nowMs,
+    );
+
+  if (!config) {
+    return result(
+      false,
+      null,
+      'invalid_input',
+    );
+  }
+
+  if (
+    plan.automaticEscalation
+    || !plan.requiresUserConfirmation
+    || config.automaticEscalation
+  ) {
+    return result(
+      false,
+      null,
+      'wrong_confirmation',
+    );
+  }
+
+  if (
+    state.phase !== 'escalating'
+  ) {
+    return result(
+      false,
+      null,
+      'state_not_escalating',
+    );
+  }
+  if (
+    !configMatchesSession(
+      config,
+      session,
+    )
+    || plan.configId !== config.configId
+    || plan.configRevision
+      !== config.revision
+    || plan.emergencySessionId
+      !== session.emergencySessionId
+    || plan.accountId !== session.accountId
+    || plan.sourceDeviceId
+      !== session.sourceDeviceId
+    || plan.generation
+      !== state.generation
+  ) {
+    return result(
+      false,
+      null,
+      'binding_mismatch',
+    );
+  }
+
+  if (
+    event.kind !== 'confirm_escalation'
+  ) {
+    return result(
+      false,
+      null,
+      'wrong_confirmation',
+    );
+  }
+  if (
+    event.emergencySessionId
+      !== plan.emergencySessionId
+    || event.accountId !== plan.accountId
+    || event.sourceDeviceId
+      !== plan.sourceDeviceId
+    || event.generation !== plan.generation
+  ) {
+    return result(
+      false,
+      null,
+      'binding_mismatch',
+    );
+  }
+
+  if (
+    event.acceptedAtMs < plan.createdAtMs
+  ) {
+    return result(
+      false,
+      null,
+      'event_before_plan',
+    );
+  }
+
+  if (event.acceptedAtMs > nowMs) {
+    return result(
+      false,
+      null,
+      'future_event',
+    );
+  }
+
+  const existing =
+    confirmedPlanByEvent.get(event);
+  if (existing) {
+    if (existing.sourcePlan === plan) {
+      return result(
+        true,
+        existing.confirmedPlan,
+        'duplicate',
+      );
+    }
+
+    return result(
+      false,
+      null,
+      'confirmation_replay',
+    );
+  }
+
+  const confirmedPlan:
+    EmergencyEscalationPlan =
+    Object.freeze({
+      emergencySessionId:
+        plan.emergencySessionId,
+      accountId: plan.accountId,
+      sourceDeviceId:
+        plan.sourceDeviceId,
+      generation: plan.generation,
+      configId: plan.configId,
+      configRevision:
+        plan.configRevision,
+      createdAtMs: nowMs,
+      actionNotBeforeMs: nowMs,
+      simulationOnly:
+        plan.simulationOnly,
+      automaticEscalation: false,
+      requiresUserConfirmation: false,
+      steps:
+        buildExecutionSteps(config),
+      diagnosticClaim: false,
+      grantsAuthority: false,
+      performsExternalAction: false,
+    });
+
+  issuedEscalationPlans.add(
+    confirmedPlan,
+  );
+  confirmedPlanByEvent.set(
+    event,
+    Object.freeze({
+      sourcePlan: plan,
+      confirmedPlan,
+    }),
+  );
+
+  return result(
+    true,
+    confirmedPlan,
+    'confirmed',
   );
 }

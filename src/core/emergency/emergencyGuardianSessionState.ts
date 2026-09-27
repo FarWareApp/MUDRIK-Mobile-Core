@@ -35,6 +35,7 @@ export type EmergencyGuardianSessionStateResult =
     state: EmergencyGuardianSessionState | null;
     reason:
       | 'accepted'
+      | 'duplicate'
       | 'invalid_input';
     grantsAuthority: false;
     performsExternalAction: false;
@@ -47,7 +48,8 @@ export type EmergencyGuardianSessionTransition =
     next: EmergencyGuardianSessionState | null;
     reason:
       | EmergencyGuardianTransition['reason']
-      | 'untrusted_state';
+      | 'untrusted_state'
+      | 'stale_state';
     plannedActions:
       readonly EmergencyGuardianPlannedAction[];
     grantsAuthority: false;
@@ -62,6 +64,12 @@ const TRANSITION_KEYS = new Set([
 const issuedSessionStates =
   new WeakSet<object>();
 
+const currentStateBySession =
+  new WeakMap<
+    object,
+    EmergencyGuardianSessionState
+  >();
+
 
 function issueState(
   session: EmergencySession,
@@ -75,6 +83,10 @@ function issueState(
     });
 
   issuedSessionStates.add(issued);
+  currentStateBySession.set(
+    session,
+    issued,
+  );
   return issued;
 }
 
@@ -127,6 +139,20 @@ export function isEmergencyGuardianSessionState(
   );
 }
 
+export function isCurrentEmergencyGuardianSessionState(
+  value: unknown,
+): value is EmergencyGuardianSessionState {
+  return (
+    isEmergencyGuardianSessionState(value)
+    && isRegisteredEmergencySession(
+      value.session,
+    )
+    && currentStateBySession.get(
+      value.session,
+    ) === value
+  );
+}
+
 export function createEmergencyGuardianSessionState(
   sessionInput: unknown,
   trustedEvaluationTimeInput: unknown,
@@ -152,6 +178,17 @@ export function createEmergencyGuardianSessionState(
   }
 
   const session = sessionInput;
+  const existing =
+    currentStateBySession.get(session);
+
+  if (existing) {
+    return createResult(
+      true,
+      existing,
+      'duplicate',
+    );
+  }
+
   const state: EmergencyGuardianState =
     Object.freeze({
       phase: 'normal',
@@ -224,6 +261,20 @@ export function transitionEmergencyGuardianSessionState(
       null,
       null,
       'untrusted_state',
+      ['none'],
+    );
+  }
+
+  if (
+    !isCurrentEmergencyGuardianSessionState(
+      record.sessionState,
+    )
+  ) {
+    return transitionResult(
+      false,
+      record.sessionState,
+      null,
+      'stale_state',
       ['none'],
     );
   }
