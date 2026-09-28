@@ -6,6 +6,11 @@ import {
 } from './filesystem-contract.mjs';
 
 import {
+  gitPolicyContext,
+  normalizeGitStep,
+} from './git-contract.mjs';
+
+import {
   DEFAULT_MAX_OUTPUT_BYTES,
   DEFAULT_TIMEOUT_MS,
 } from './tools/terminal.mjs';
@@ -291,6 +296,10 @@ export function normalizeToolStep(
     );
   }
 
+  if (step.tool === 'git') {
+    return normalizeGitStep(step);
+  }
+
   return null;
 }
 
@@ -329,6 +338,10 @@ export function policyContextForToolStep(
     return filesystemPolicyContext(
       normalized,
     );
+  }
+
+  if (normalized.tool === 'git') {
+    return gitPolicyContext(normalized);
   }
 
   return null;

@@ -16,6 +16,10 @@ import {
   runFilesystemOperation,
 } from './tools/filesystem.mjs';
 
+import {
+  runGitOperation,
+} from './tools/git.mjs';
+
 export function policyContextForStep(step) {
   return policyContextForToolStep(step);
 }
@@ -398,6 +402,55 @@ export class ComputerTaskRunner {
         input,
         {
           allowedRoots,
+        },
+      );
+    }
+
+    if (step.tool === 'git') {
+      const gitCapability =
+        step.requiredCapabilities.find(
+          (capability) =>
+            capability === 'git.read'
+            || capability === 'git.write',
+        );
+      const coveringGrantId =
+        gitCapability
+          ? coveringGrantIds[
+              gitCapability
+            ]
+          : null;
+      const activeGrants =
+        gitCapability
+          ? activeCapabilityGrants({
+              grants: this.grants,
+              capability:
+                gitCapability,
+              deviceId,
+              trustedNowMs,
+            })
+          : [];
+      const coveringGrant =
+        activeGrants.find(
+          (grant) =>
+            grant.grantId
+              === coveringGrantId,
+        );
+      const allowedRepositories =
+        coveringGrant
+          ? [
+              ...coveringGrant
+                .scope
+                .repositories,
+            ]
+          : [];
+
+      return runGitOperation(
+        input,
+        {
+          allowedRepositories,
+          sandbox:
+            this.terminalSandbox,
+          signal,
         },
       );
     }

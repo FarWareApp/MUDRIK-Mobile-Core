@@ -131,6 +131,28 @@ function capabilityCovered(
     }
   }
 
+  if (context.repository) {
+    if (
+      typeof context.repository
+        !== 'string'
+      || !path.isAbsolute(
+        context.repository,
+      )
+      || scope.repositories.length === 0
+      || !scope.repositories.some(
+        (repository) =>
+          typeof repository === 'string'
+          && path.isAbsolute(repository)
+          && path.resolve(repository)
+            === path.resolve(
+              context.repository,
+            ),
+      )
+    ) {
+      return false;
+    }
+  }
+
   if (context.domain) {
     if (
       scope.domains.length === 0
