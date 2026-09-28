@@ -11,6 +11,10 @@ import {
 } from './process-contract.mjs';
 
 import {
+  isExecutionProfile,
+} from './execution-profile.mjs';
+
+import {
   isAdminActionId,
   isSettingId,
   isSurfaceReference,
@@ -37,6 +41,7 @@ const SCOPE_KEYS = new Set([
   'surfaceRefs',
   'settingIds',
   'adminActionIds',
+  'executionProfiles',
   'backgroundAllowed',
   'elevationAllowed',
   'maxTaskDurationSeconds',
@@ -195,6 +200,22 @@ function parseScope(value) {
       )
     )
     || (
+      value.executionProfiles !== undefined
+      && (
+        !Array.isArray(
+          value.executionProfiles,
+        )
+        || value.executionProfiles.length > 32
+        || value.executionProfiles.some(
+          (profile) =>
+            !isExecutionProfile(profile),
+        )
+        || new Set(
+          value.executionProfiles,
+        ).size !== value.executionProfiles.length
+      )
+    )
+    || (
       value.backgroundAllowed
         !== undefined
       && typeof value.backgroundAllowed
@@ -259,6 +280,10 @@ function parseScope(value) {
     adminActionIds:
       Object.freeze([
         ...(value.adminActionIds ?? []),
+      ]),
+    executionProfiles:
+      Object.freeze([
+        ...(value.executionProfiles ?? []),
       ]),
     backgroundAllowed:
       value.backgroundAllowed === true,

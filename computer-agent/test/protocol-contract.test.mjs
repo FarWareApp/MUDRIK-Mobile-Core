@@ -275,3 +275,33 @@ test(
     }
   },
 );
+
+test(
+  'permission schema scopes trusted execution profiles',
+  () => {
+    const grant =
+      schema(
+        'computer-permission-grant.schema.json',
+      );
+    const profiles =
+      grant.properties
+        .scope.properties
+        .executionProfiles;
+
+    assert.equal(
+      profiles.type,
+      'array',
+    );
+    assert.equal(
+      profiles.uniqueItems,
+      true,
+    );
+    assert.deepEqual(
+      profiles.items.enum,
+      [
+        'node.test',
+        'npm.script',
+      ],
+    );
+  },
+);

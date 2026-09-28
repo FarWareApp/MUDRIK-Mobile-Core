@@ -21,6 +21,10 @@ import {
 } from './process-contract.mjs';
 
 import {
+  parseExecutionProfileInput,
+} from './execution-profile.mjs';
+
+import {
   normalizeRestrictedStep,
   restrictedPolicyContext,
 } from './restricted-tool-contracts.mjs';
@@ -290,6 +294,36 @@ export function normalizeToolStep(
   }
 
   if (step.tool === 'terminal') {
+    if (
+      step.input
+      && typeof step.input === 'object'
+      && !Array.isArray(step.input)
+      && Object.hasOwn(
+        step.input,
+        'executionProfile',
+      )
+    ) {
+      const input =
+        parseExecutionProfileInput(
+          step.input,
+        );
+
+      if (
+        !input
+        || step.requiredCapabilities.length
+          !== 1
+        || step.requiredCapabilities[0]
+          !== 'terminal.execute'
+      ) {
+        return null;
+      }
+
+      return Object.freeze({
+        ...step,
+        input,
+      });
+    }
+
     const input =
       parseTerminalToolInput(
         step.input ?? {},
@@ -370,6 +404,25 @@ export function policyContextForToolStep(
   }
 
   if (normalized.tool === 'terminal') {
+    if (
+      normalized.input.executionProfile
+    ) {
+      return {
+        'terminal.execute': {
+          cwd:
+            normalized.input.cwd,
+          executionProfile:
+            normalized.input
+              .executionProfile,
+          timeoutMs:
+            normalized.input
+              .timeoutMs,
+          requiresElevation: false,
+          minimumRisk: 'medium',
+        },
+      };
+    }
+
     const context = {
       'terminal.execute': {
         cwd:

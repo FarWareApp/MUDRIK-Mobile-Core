@@ -120,6 +120,19 @@ function capabilityCovered(
     }
   }
 
+  if (context.executionProfile) {
+    if (
+      typeof context.executionProfile
+        !== 'string'
+      || scope.executionProfiles.length === 0
+      || !scope.executionProfiles.includes(
+        context.executionProfile,
+      )
+    ) {
+      return false;
+    }
+  }
+
   if (context.executable) {
     if (
       scope.executables.length === 0

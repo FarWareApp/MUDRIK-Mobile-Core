@@ -4,9 +4,18 @@ import {
 } from './policy.mjs';
 
 import {
+  sanitizeAdapterResult,
+  sanitizeToolError,
+} from './adapter-result.mjs';
+
+import {
   normalizeToolStep,
   policyContextForToolStep,
 } from './tool-contracts.mjs';
+
+import {
+  resolveExecutionProfile,
+} from './execution-profile.mjs';
 
 import {
   createDefaultTerminalSandbox,
@@ -276,7 +285,7 @@ export class ComputerTaskRunner {
         });
 
         try {
-          const result =
+          const rawResult =
             await this.runStep(
               step,
               controller.signal,
@@ -291,6 +300,17 @@ export class ComputerTaskRunner {
                   ?? {},
               },
             );
+          const result =
+            sanitizeAdapterResult(
+              rawResult,
+            );
+
+          if (!result) {
+            throw new Error(
+              'adapter_result_invalid',
+            );
+          }
+
           results.push({
             stepId: step.stepId,
             status: result.exitCode === 0 ? 'succeeded' : 'failed',
@@ -317,7 +337,8 @@ export class ComputerTaskRunner {
             };
           }
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message =
+            sanitizeToolError(error);
           results.push({
             stepId: step.stepId,
             status: 'failed',
@@ -403,6 +424,23 @@ export class ComputerTaskRunner {
       if (allowedRoots.length === 0) {
         throw new Error(
           'sandbox_scope_missing',
+        );
+      }
+
+      if (input.executionProfile) {
+        const invocation =
+          await resolveExecutionProfile(
+            input,
+          );
+
+        return this.terminalSandbox.run(
+          invocation,
+          {
+            allowedRoots,
+            readOnlyRoots:
+              invocation.readOnlyRoots,
+            signal,
+          },
         );
       }
 
