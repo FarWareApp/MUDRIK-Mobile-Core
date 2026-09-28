@@ -2,9 +2,9 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
 
-Section 12 may proceed only through explicit tool contracts and fail-closed capability boundaries. Adding a tool implementation is not acceptance by itself.
+Section 12 is accepted at the pre-device level only through explicit tool contracts, fail-closed capability boundaries and the evidence recorded for the accepted candidate. Adding a tool implementation is never acceptance by itself.
 
 ## Authoritative Architecture
 

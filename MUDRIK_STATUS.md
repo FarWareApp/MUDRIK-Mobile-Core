@@ -290,6 +290,37 @@ Detailed evidence:
 - `docs/validation/SECTION_11_AUTOMATED_EVIDENCE.md`
 - `docs/validation/SECTION_11_DEFECTS.md`
 
+### Section 12 — Computer Agent Tooling and Capability Sandbox
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+- `ba8204ed2646167b0fef043874d8fbdd8de5e374` — `Decouple filesystem policy test from Bubblewrap`
+- primary sandbox hardening candidate beneath it: `3e48c5668ea195c442715e0288424fd67d8d53c3`
+
+Evidence:
+
+- Mobile Core Validation `#738` / ID `36370982106`: **SUCCESS**
+- CodeQL Security Analysis `#633` / ID `36370982364`: **SUCCESS**
+- real Pop!_OS/Bubblewrap Computer Agent regressions: **152/152 PASS**
+- GitHub Computer Agent run: **0 FAIL**, with 24 explicit backend-dependent skips because the hosted runner does not provide Bubblewrap
+- whole Mobile Core regressions: **792/792 PASS**
+- Expo Doctor: **21/21 PASS**
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**
+- tracked/history secret gates: **PASS**
+- no known unresolved Blocker/Critical/High Section 12 defect
+
+Implemented boundaries include exact tool contracts and risk floors, covering-grant scope binding, Bubblewrap terminal/process/build isolation, namespace-confined filesystem mutation with race testing, scoped Git operations, opaque secret injection, owned-process references, bounded execution profiles, fail-closed sensitive tool contracts, scoped DNS-pinned HTTPS, result sanitization and prompt/tool-injection resistance.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_12_COMPUTER_AGENT_TOOLING_SANDBOX_GATE.md`
+- `docs/validation/SECTION_12_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_12_DEFECTS.md`
+
+Browser/screen/clipboard/system privileged backends, Git push/destructive Git execution and unsupported platform guarantees remain fail-closed unavailable rather than being treated as implemented.
+
 ## UI/UX Detail Preservation Rule
 
 Authoritative detail ledger:
@@ -346,10 +377,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Execute Section 12 Computer Agent Tooling and Capability Sandbox from explicit capability contracts and fail-closed adapters first.
-2. Preserve Sections 01–11 as open for their deferred Layer 4 obligations where applicable.
-3. Keep UI/UX detail changes registered and do not silently drop future intended work.
-4. Do not broaden filesystem, process, network, browser, secret or privileged authority merely to satisfy pre-device tests.
+1. Execute Section 13 Coding Engine and Autonomous Work Runner from provider-neutral deterministic workflow contracts first.
+2. Preserve Sections 01–12 as open for their deferred Layer 4 obligations where applicable.
+3. Require verification evidence before an autonomous coding task can claim completion.
+4. Keep model/provider reasoning non-authoritative: coding plans may request tools, but Section 11/12 capability and sandbox boundaries remain final local authority.
 
 ## Development Rule
 
