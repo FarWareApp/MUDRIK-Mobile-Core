@@ -558,6 +558,22 @@ test(
       'runner',
     );
 
+    const directFilesystemAdapter = {
+      async run(
+        input,
+        {
+          allowedRoots = [],
+        } = {},
+      ) {
+        return runFilesystemOperation(
+          input,
+          {
+            allowedRoots,
+          },
+        );
+      },
+    };
+
     const readRunner =
       new ComputerTaskRunner({
         grants: [
@@ -566,6 +582,8 @@ test(
             'filesystem.read',
           ),
         ],
+        filesystemAdapter:
+          directFilesystemAdapter,
       });
 
     const read =
@@ -597,6 +615,8 @@ test(
             'filesystem.read',
           ),
         ],
+        filesystemAdapter:
+          directFilesystemAdapter,
       });
 
     const write =
