@@ -227,3 +227,51 @@ test(
     );
   },
 );
+
+test(
+  'permission schema scopes sensitive surfaces settings and admin actions',
+  () => {
+    const grant =
+      schema(
+        'computer-permission-grant.schema.json',
+      );
+    const scope =
+      grant.properties
+        .scope.properties;
+
+    for (const [
+      key,
+      sample,
+    ] of [
+      [
+        'surfaceRefs',
+        'surface_0123456789abcdef',
+      ],
+      [
+        'settingIds',
+        'setting_audio.volume',
+      ],
+      [
+        'adminActionIds',
+        'admin_service.restart',
+      ],
+    ]) {
+      const descriptor = scope[key];
+
+      assert.equal(
+        descriptor.type,
+        'array',
+      );
+      assert.equal(
+        descriptor.uniqueItems,
+        true,
+      );
+      assert.equal(
+        new RegExp(
+          descriptor.items.pattern,
+        ).test(sample),
+        true,
+      );
+    }
+  },
+);

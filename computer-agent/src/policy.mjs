@@ -197,6 +197,45 @@ function capabilityCovered(
     }
   }
 
+  if (context.surfaceRef) {
+    if (
+      typeof context.surfaceRef
+        !== 'string'
+      || scope.surfaceRefs.length === 0
+      || !scope.surfaceRefs.includes(
+        context.surfaceRef,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  if (context.settingId) {
+    if (
+      typeof context.settingId
+        !== 'string'
+      || scope.settingIds.length === 0
+      || !scope.settingIds.includes(
+        context.settingId,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  if (context.adminActionId) {
+    if (
+      typeof context.adminActionId
+        !== 'string'
+      || scope.adminActionIds.length === 0
+      || !scope.adminActionIds.includes(
+        context.adminActionId,
+      )
+    ) {
+      return false;
+    }
+  }
+
   if (
     context.requiresBackground
     && scope.backgroundAllowed

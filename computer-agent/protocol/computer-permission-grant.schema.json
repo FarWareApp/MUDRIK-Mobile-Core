@@ -124,6 +124,36 @@
             "pattern": "^proc_[A-Za-z0-9_-]{16,240}$",
             "maxLength": 245
           }
+        },
+        "surfaceRefs": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^surface_[A-Za-z0-9_-]{16,240}$",
+            "maxLength": 248
+          }
+        },
+        "settingIds": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^setting_[a-z0-9][a-z0-9_.-]{2,127}$",
+            "maxLength": 136
+          }
+        },
+        "adminActionIds": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^admin_[a-z0-9][a-z0-9_.-]{2,127}$",
+            "maxLength": 134
+          }
         }
       }
     },

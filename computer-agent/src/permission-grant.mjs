@@ -10,6 +10,12 @@ import {
   isProcessReference,
 } from './process-contract.mjs';
 
+import {
+  isAdminActionId,
+  isSettingId,
+  isSurfaceReference,
+} from './restricted-tool-contracts.mjs';
+
 const KEYS = new Set([
   'grantId',
   'deviceId',
@@ -28,6 +34,9 @@ const SCOPE_KEYS = new Set([
   'domains',
   'secretRefs',
   'processRefs',
+  'surfaceRefs',
+  'settingIds',
+  'adminActionIds',
   'backgroundAllowed',
   'elevationAllowed',
   'maxTaskDurationSeconds',
@@ -144,6 +153,48 @@ function parseScope(value) {
       )
     )
     || (
+      value.surfaceRefs !== undefined
+      && (
+        !Array.isArray(value.surfaceRefs)
+        || value.surfaceRefs.length > 64
+        || value.surfaceRefs.some(
+          (reference) =>
+            !isSurfaceReference(reference),
+        )
+        || new Set(value.surfaceRefs).size
+          !== value.surfaceRefs.length
+      )
+    )
+    || (
+      value.settingIds !== undefined
+      && (
+        !Array.isArray(value.settingIds)
+        || value.settingIds.length > 128
+        || value.settingIds.some(
+          (settingId) =>
+            !isSettingId(settingId),
+        )
+        || new Set(value.settingIds).size
+          !== value.settingIds.length
+      )
+    )
+    || (
+      value.adminActionIds !== undefined
+      && (
+        !Array.isArray(
+          value.adminActionIds,
+        )
+        || value.adminActionIds.length > 64
+        || value.adminActionIds.some(
+          (actionId) =>
+            !isAdminActionId(actionId),
+        )
+        || new Set(
+          value.adminActionIds,
+        ).size !== value.adminActionIds.length
+      )
+    )
+    || (
       value.backgroundAllowed
         !== undefined
       && typeof value.backgroundAllowed
@@ -196,6 +247,18 @@ function parseScope(value) {
     processRefs:
       Object.freeze([
         ...(value.processRefs ?? []),
+      ]),
+    surfaceRefs:
+      Object.freeze([
+        ...(value.surfaceRefs ?? []),
+      ]),
+    settingIds:
+      Object.freeze([
+        ...(value.settingIds ?? []),
+      ]),
+    adminActionIds:
+      Object.freeze([
+        ...(value.adminActionIds ?? []),
       ]),
     backgroundAllowed:
       value.backgroundAllowed === true,

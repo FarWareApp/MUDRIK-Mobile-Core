@@ -21,6 +21,11 @@ import {
 } from './process-contract.mjs';
 
 import {
+  normalizeRestrictedStep,
+  restrictedPolicyContext,
+} from './restricted-tool-contracts.mjs';
+
+import {
   DEFAULT_MAX_OUTPUT_BYTES,
   DEFAULT_TIMEOUT_MS,
 } from './tools/terminal.mjs';
@@ -340,6 +345,17 @@ export function normalizeToolStep(
     return normalizeProcessStep(step);
   }
 
+  if (
+    step.tool === 'browser'
+    || step.tool === 'screen'
+    || step.tool === 'clipboard'
+    || step.tool === 'system'
+  ) {
+    return normalizeRestrictedStep(
+      step,
+    );
+  }
+
   return null;
 }
 
@@ -396,6 +412,17 @@ export function policyContextForToolStep(
 
   if (normalized.tool === 'process') {
     return processPolicyContext(
+      normalized,
+    );
+  }
+
+  if (
+    normalized.tool === 'browser'
+    || normalized.tool === 'screen'
+    || normalized.tool === 'clipboard'
+    || normalized.tool === 'system'
+  ) {
+    return restrictedPolicyContext(
       normalized,
     );
   }

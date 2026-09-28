@@ -28,6 +28,10 @@ import {
   OwnedProcessRuntime,
 } from './tools/process.mjs';
 
+import {
+  runRestrictedUnavailable,
+} from './tools/restricted-unavailable.mjs';
+
 export function policyContextForStep(step) {
   return policyContextForToolStep(step);
 }
@@ -603,6 +607,17 @@ export class ComputerTaskRunner {
             this.terminalSandbox,
           signal,
         },
+      );
+    }
+
+    if (
+      step.tool === 'browser'
+      || step.tool === 'screen'
+      || step.tool === 'clipboard'
+      || step.tool === 'system'
+    ) {
+      return runRestrictedUnavailable(
+        step.tool,
       );
     }
 
