@@ -47,6 +47,7 @@ export class DurableComputerAgentRuntime {
     clock = () => Date.now(),
     onEvent = () => {},
     terminalSandbox,
+    secretResolver,
   } = {}) {
     if (
       !store
@@ -80,6 +81,9 @@ export class DurableComputerAgentRuntime {
         onEvent: () => {},
         ...(terminalSandbox
           ? { terminalSandbox }
+          : {}),
+        ...(secretResolver
+          ? { secretResolver }
           : {}),
       });
     this.active = new Set();

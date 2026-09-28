@@ -155,3 +155,42 @@ test(
     }
   },
 );
+
+test(
+  'permission schema exposes bounded opaque secret reference scope',
+  () => {
+    const grant =
+      schema(
+        'computer-permission-grant.schema.json',
+      );
+    const secretRefs =
+      grant.properties
+        .scope.properties
+        .secretRefs;
+
+    assert.equal(
+      secretRefs.type,
+      'array',
+    );
+    assert.equal(
+      secretRefs.maxItems,
+      64,
+    );
+    assert.equal(
+      secretRefs.uniqueItems,
+      true,
+    );
+    assert.match(
+      'secret_ref_0123456789abcdef',
+      new RegExp(
+        secretRefs.items.pattern,
+      ),
+    );
+    assert.equal(
+      new RegExp(
+        secretRefs.items.pattern,
+      ).test('plaintext-secret'),
+      false,
+    );
+  },
+);

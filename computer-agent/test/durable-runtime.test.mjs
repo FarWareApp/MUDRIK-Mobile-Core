@@ -191,6 +191,7 @@ async function fixture({
   clock,
   terminalSandbox =
     createDirectTestTerminalSandbox(),
+  secretResolver,
 } = {}) {
   const root =
     await fs.mkdtemp(
@@ -230,6 +231,9 @@ async function fixture({
         clock ?? tickingClock(),
       onEvent,
       terminalSandbox,
+      ...(secretResolver
+        ? { secretResolver }
+        : {}),
     });
 
   return {
@@ -1132,6 +1136,159 @@ test(
     );
     assert.ok(
       record.events.length >= 7,
+    );
+  },
+);
+
+test(
+  'durable runtime persists secret references but never resolved plaintext',
+  async (t) => {
+    const reference =
+      'secret_ref_4444444444444444';
+    const plaintext =
+      'durable-runtime-secret-value';
+
+    const f =
+      await fixture({
+        secretResolver: {
+          async resolve(value) {
+            assert.equal(
+              value,
+              reference,
+            );
+            return plaintext;
+          },
+        },
+      });
+
+    t.after(
+      () => fs.rm(
+        f.root,
+        {
+          recursive: true,
+          force: true,
+        },
+      ),
+    );
+
+    f.runtime.setGrants([
+      grant(f.root),
+      {
+        grantId:
+          'grant-secrets-runtime',
+        deviceId: DEVICE,
+        capability: 'secrets.use',
+        mode: 'session',
+        scope: {
+          secretRefs: [reference],
+        },
+        createdAt:
+          '2026-09-27T19:00:00.000Z',
+        expiresAt:
+          '2026-09-27T23:00:00.000Z',
+      },
+    ]);
+
+    const task =
+      signedTask(
+        f.root,
+        f.sideEffectFile,
+        {
+          taskId:
+            'ctask_4444444444444444',
+          nonce:
+            'nonce_4444444444444444',
+          requestedCapabilities: [
+            'terminal.execute',
+            'secrets.use',
+          ],
+          approval: {
+            mode: 'task',
+            approvalId:
+              'approval-secret-runtime',
+          },
+          steps: [{
+            stepId:
+              'cstep_4444444444444444',
+            tool: 'terminal',
+            summary:
+              'Use secret by reference',
+            requiredCapabilities: [
+              'terminal.execute',
+              'secrets.use',
+            ],
+            input: {
+              executable:
+                process.execPath,
+              args: [
+                '-e',
+                'process.stdout.write(process.env.API_TOKEN)',
+              ],
+              cwd: f.root,
+              secretBindings: [{
+                envName: 'API_TOKEN',
+                secretRef: reference,
+              }],
+            },
+            continueOnError: false,
+          }],
+        },
+      );
+
+    const admitted =
+      await f.runtime.admit(task);
+
+    assert.equal(
+      admitted.accepted,
+      true,
+    );
+
+    const file =
+      f.store.filePath(
+        task.taskId,
+      );
+    const before =
+      await fs.readFile(
+        file,
+        'utf8',
+      );
+
+    assert.equal(
+      before.includes(reference),
+      true,
+    );
+    assert.equal(
+      before.includes(plaintext),
+      false,
+    );
+
+    const executed =
+      await f.runtime.run(
+        task.taskId,
+      );
+
+    assert.equal(
+      executed.accepted,
+      true,
+    );
+    assert.equal(
+      executed.status,
+      'succeeded',
+    );
+
+    const after =
+      await fs.readFile(
+        file,
+        'utf8',
+      );
+
+    assert.equal(
+      after.includes(reference),
+      true,
+    );
+    assert.equal(
+      after.includes(plaintext),
+      false,
     );
   },
 );

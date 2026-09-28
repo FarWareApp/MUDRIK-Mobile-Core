@@ -11,6 +11,11 @@ import {
 } from './git-contract.mjs';
 
 import {
+  parseSecretBindings,
+  secretReferences,
+} from './secret-reference.mjs';
+
+import {
   DEFAULT_MAX_OUTPUT_BYTES,
   DEFAULT_TIMEOUT_MS,
 } from './tools/terminal.mjs';
@@ -21,6 +26,7 @@ const TERMINAL_INPUT_KEYS =
     'args',
     'cwd',
     'env',
+    'secretBindings',
     'timeoutMs',
     'maxOutputBytes',
     'requiresElevation',
@@ -217,8 +223,15 @@ export function parseTerminalToolInput(
 
   const env =
     parseEnvironment(input.env);
+  const secretBindings =
+    parseSecretBindings(
+      input.secretBindings,
+    );
 
-  if (!env) {
+  if (
+    !env
+    || !secretBindings
+  ) {
     return null;
   }
 
@@ -241,6 +254,7 @@ export function parseTerminalToolInput(
       ]),
     cwd,
     env,
+    secretBindings,
     timeoutMs:
       input.timeoutMs
       ?? DEFAULT_TIMEOUT_MS,
@@ -266,21 +280,38 @@ export function normalizeToolStep(
   }
 
   if (step.tool === 'terminal') {
-    if (
-      step.requiredCapabilities.length
-        !== 1
-      || step.requiredCapabilities[0]
-        !== 'terminal.execute'
-    ) {
-      return null;
-    }
-
     const input =
       parseTerminalToolInput(
         step.input ?? {},
       );
 
     if (!input) {
+      return null;
+    }
+
+    const references =
+      secretReferences(
+        input.secretBindings,
+      );
+    const required =
+      references.length > 0
+        ? [
+            'terminal.execute',
+            'secrets.use',
+          ]
+        : [
+            'terminal.execute',
+          ];
+
+    if (
+      step.requiredCapabilities.length
+        !== required.length
+      || required.some(
+        (capability, index) =>
+          step.requiredCapabilities[index]
+            !== capability,
+      )
+    ) {
       return null;
     }
 
@@ -314,24 +345,34 @@ export function policyContextForToolStep(
   }
 
   if (normalized.tool === 'terminal') {
-    return Object.fromEntries(
-      normalized.requiredCapabilities
-        .map((capability) => [
-          capability,
-          {
-            cwd:
-              normalized.input.cwd,
-            executable:
-              normalized.input
-                .executable,
-            timeoutMs:
-              normalized.input
-                .timeoutMs,
-            requiresElevation: false,
-            minimumRisk: 'medium',
-          },
-        ]),
-    );
+    const context = {
+      'terminal.execute': {
+        cwd:
+          normalized.input.cwd,
+        executable:
+          normalized.input
+            .executable,
+        timeoutMs:
+          normalized.input
+            .timeoutMs,
+        requiresElevation: false,
+        minimumRisk: 'medium',
+      },
+    };
+    const references =
+      secretReferences(
+        normalized.input
+          .secretBindings,
+      );
+
+    if (references.length > 0) {
+      context['secrets.use'] = {
+        secretRefs: references,
+        minimumRisk: 'high',
+      };
+    }
+
+    return context;
   }
 
   if (normalized.tool === 'filesystem') {

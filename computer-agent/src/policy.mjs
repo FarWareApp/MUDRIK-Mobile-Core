@@ -165,6 +165,26 @@ function capabilityCovered(
   }
 
   if (
+    context.secretRefs !== undefined
+  ) {
+    if (
+      !Array.isArray(
+        context.secretRefs,
+      )
+      || context.secretRefs.length === 0
+      || scope.secretRefs.length === 0
+      || context.secretRefs.some(
+        (reference) =>
+          !scope.secretRefs.includes(
+            reference,
+          ),
+      )
+    ) {
+      return false;
+    }
+  }
+
+  if (
     context.requiresBackground
     && scope.backgroundAllowed
       !== true

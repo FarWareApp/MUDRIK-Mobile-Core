@@ -13,6 +13,10 @@ import {
 } from './linux-bubblewrap-sandbox.mjs';
 
 import {
+  redactSecretValues,
+} from './secret-reference.mjs';
+
+import {
   runFilesystemOperation,
 } from './tools/filesystem.mjs';
 
@@ -43,6 +47,7 @@ export class ComputerTaskRunner {
     clock = () => Date.now(),
     terminalSandbox =
       createDefaultTerminalSandbox(),
+    secretResolver = null,
   } = {}) {
     if (
       !terminalSandbox
@@ -57,8 +62,24 @@ export class ComputerTaskRunner {
     this.grants = grants;
     this.onEvent = onEvent;
     this.clock = clock;
+    if (
+      secretResolver !== null
+      && (
+        typeof secretResolver
+          !== 'object'
+        || typeof secretResolver.resolve
+          !== 'function'
+      )
+    ) {
+      throw new TypeError(
+        'Invalid secret resolver.',
+      );
+    }
+
     this.terminalSandbox =
       terminalSandbox;
+    this.secretResolver =
+      secretResolver;
     this.active = new Map();
   }
 
@@ -360,13 +381,122 @@ export class ComputerTaskRunner {
         );
       }
 
-      return this.terminalSandbox.run(
-        input,
-        {
-          allowedRoots,
-          signal,
-        },
-      );
+      const secretEntries =
+        input.secretBindings ?? [];
+      const secretValues = [];
+      const executionEnv = {
+        ...(input.env ?? {}),
+      };
+
+      if (secretEntries.length > 0) {
+        const secretGrantId =
+          coveringGrantIds[
+            'secrets.use'
+          ];
+        const secretGrants =
+          activeCapabilityGrants({
+            grants: this.grants,
+            capability:
+              'secrets.use',
+            deviceId,
+            trustedNowMs,
+          });
+        const secretGrant =
+          secretGrants.find(
+            (grant) =>
+              grant.grantId
+                === secretGrantId,
+          );
+
+        if (
+          !secretGrant
+          || !this.secretResolver
+        ) {
+          throw new Error(
+            'secret_resolution_unavailable',
+          );
+        }
+
+        for (
+          const {
+            envName,
+            secretRef: reference,
+          } of secretEntries
+        ) {
+          if (
+            !secretGrant.scope
+              .secretRefs.includes(
+                reference,
+              )
+          ) {
+            throw new Error(
+              'secret_scope_missing',
+            );
+          }
+
+          let value;
+
+          try {
+            value =
+              await this.secretResolver
+                .resolve(reference);
+          } catch {
+            throw new Error(
+              'secret_resolution_failed',
+            );
+          }
+
+          if (
+            typeof value !== 'string'
+            || value.length < 1
+            || value.length > 65_536
+            || value.includes('\0')
+          ) {
+            throw new Error(
+              'secret_resolution_failed',
+            );
+          }
+
+          executionEnv[envName] =
+            value;
+          secretValues.push(value);
+        }
+      }
+
+      const {
+        secretBindings:
+          _secretBindings,
+        ...sandboxInput
+      } = input;
+      const raw =
+        await this.terminalSandbox.run(
+          {
+            ...sandboxInput,
+            env: executionEnv,
+          },
+          {
+            allowedRoots,
+            signal,
+          },
+        );
+
+      if (secretValues.length === 0) {
+        return raw;
+      }
+
+      return Object.freeze({
+        ...raw,
+        stdout:
+          redactSecretValues(
+            raw.stdout,
+            secretValues,
+          ),
+        stderr:
+          redactSecretValues(
+            raw.stderr,
+            secretValues,
+          ),
+      });
     }
 
     if (step.tool === 'filesystem') {

@@ -2,6 +2,10 @@ import {
   isKnownCapability,
 } from './capabilities.mjs';
 
+import {
+  isSecretReference,
+} from './secret-reference.mjs';
+
 const KEYS = new Set([
   'grantId',
   'deviceId',
@@ -18,6 +22,7 @@ const SCOPE_KEYS = new Set([
   'repositories',
   'executables',
   'domains',
+  'secretRefs',
   'backgroundAllowed',
   'elevationAllowed',
   'maxTaskDurationSeconds',
@@ -98,6 +103,24 @@ function parseScope(value) {
       512,
     )
     || (
+      value.secretRefs !== undefined
+      && (
+        !Array.isArray(
+          value.secretRefs,
+        )
+        || value.secretRefs.length > 64
+        || value.secretRefs.some(
+          (reference) =>
+            !isSecretReference(
+              reference,
+            ),
+        )
+        || new Set(
+          value.secretRefs,
+        ).size !== value.secretRefs.length
+      )
+    )
+    || (
       value.backgroundAllowed
         !== undefined
       && typeof value.backgroundAllowed
@@ -142,6 +165,10 @@ function parseScope(value) {
     domains:
       Object.freeze([
         ...(value.domains ?? []),
+      ]),
+    secretRefs:
+      Object.freeze([
+        ...(value.secretRefs ?? []),
       ]),
     backgroundAllowed:
       value.backgroundAllowed === true,
