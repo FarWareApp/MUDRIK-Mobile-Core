@@ -323,20 +323,35 @@ Browser/screen/clipboard/system privileged backends, Git push/destructive Git ex
 
 ### Section 13 — Coding Engine and Autonomous Work Runner
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-PROVIDER LAYER 4 DEFERRED`
 
-Section 13 is now the active pre-device implementation section.
+Accepted candidate:
 
-Current architecture boundary:
+- `2ecce738edc3a15b962f8c92a49934196689a75b` — `Harden coding reviewer inspection flow`
 
-`Authorized Coding Job -> Coding Engine -> Model Adapter -> Structured Proposal -> Workflow Policy -> Section 11/12 Tool Execution -> Verification Evidence -> Reviewer -> Completion Gate`
+Evidence:
 
-The model layer is non-authoritative. It may reason and propose structured tool requests, but every execution remains subject to the existing signed-task, capability, grant, risk and sandbox boundaries. Concrete provider routing, credentials and failover remain Section 18.
+- Mobile Core Validation `#748` / ID `36488827607`: **SUCCESS**
+- CodeQL Security Analysis `#643` / ID `36488827657`: **SUCCESS**
+- real Pop!_OS Computer Agent regressions: **184/184 PASS**
+- GitHub Computer Agent suite: **184 tests / 160 PASS / 24 backend-dependent SKIP / 0 FAIL**
+- whole Mobile Core regressions: **792/792 PASS**
+- Expo Doctor: **21/21 PASS**
+- TypeScript / lint: **PASS**
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**
+- tracked/history secret gates: **PASS**
+- no known unresolved Blocker/Critical/High Section 13 defect
 
-Gate:
+Implemented boundaries include provider-neutral model adapters, strict job/model contracts, replay-safe turn binding, deterministic workflow/revision semantics, current-revision evidence, worker/reviewer separation, read-only reviewer inspection, bounded autonomous repair loops, Section 11/12 tool handoff, outer lifecycle/capability preservation, secret-signature rejection, tool/prompt-injection resistance and evidence-backed completion.
+
+Detailed evidence:
 
 - `docs/architecture/MUDRIK_CODING_ENGINE_AUTONOMOUS_RUNNER.md`
 - `docs/validation/SECTION_13_CODING_ENGINE_GATE.md`
+- `docs/validation/SECTION_13_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_13_DEFECTS.md`
+
+Concrete provider routing/failover/credentials remain Section 18. Real-provider/repository validation and durable coding-session restart recovery where required remain deferred to production/Layer 4 and Section 20.
 
 ## UI/UX Detail Preservation Rule
 
@@ -394,10 +409,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Execute Section 13 Coding Engine and Autonomous Work Runner from provider-neutral deterministic workflow contracts first.
-2. Preserve Sections 01–12 as open for their deferred Layer 4 obligations where applicable.
-3. Require verification evidence before an autonomous coding task can claim completion.
-4. Keep model/provider reasoning non-authoritative: coding plans may request tools, but Section 11/12 capability and sandbox boundaries remain final local authority.
+1. Establish Section 14 Control Plane and Reliable Task Routing from authenticated, replay-safe, outbound-first contracts.
+2. Preserve Sections 01–13 as open for their deferred Layer 4 obligations where applicable.
+3. Keep Sections 11/12 as the final local execution authority; routing/control-plane state must never manufacture tool authority.
+4. Require durable sequencing, reconnect/replay safety, revoke/kill controls and auditable state transitions before Section 14 pre-device completion.
 
 ## Development Rule
 

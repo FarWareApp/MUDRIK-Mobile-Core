@@ -2,7 +2,7 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-PROVIDER LAYER 4 DEFERRED`
 
 Section 13 adds autonomous coding orchestration. Model output remains untrusted and non-authoritative.
 

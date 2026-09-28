@@ -346,7 +346,7 @@ Scope:
 
 # Section 13 — Coding Engine and Autonomous Work Runner
 
-**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-PROVIDER LAYER 4 DEFERRED.**
 
 Scope:
 
@@ -506,7 +506,7 @@ This exception permits continued engineering progress without redefining incompl
 
 ## Current Pre-Device Workstream
 
-**Section 13 — Coding Engine and Autonomous Work Runner — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
+**Section 14 — Control Plane and Reliable Task Routing — NEXT for PRE-DEVICE IMPLEMENTATION.**
 
 Pre-device completed/open sections:
 
@@ -521,6 +521,7 @@ Pre-device completed/open sections:
 - Section 10 — Emergency Guardian;
 - Section 11 — Durable Computer Agent Runtime;
 - Section 12 — Computer Agent Tooling and Capability Sandbox.
+- Section 13 — Coding Engine and Autonomous Work Runner.
 
 ## Completion Definition
 
