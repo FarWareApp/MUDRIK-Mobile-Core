@@ -31,6 +31,11 @@ const SYSTEM_PREFIXES =
     '/var',
   ]);
 
+const DENIED_EXACT_TASK_ROOTS =
+  new Set([
+    '/tmp',
+  ]);
+
 function executableFile(value) {
   return (
     typeof value === 'string'
@@ -40,9 +45,10 @@ function executableFile(value) {
   );
 }
 
-function isDeniedWritableRoot(root) {
+function isDeniedTaskRoot(root) {
   if (
-    SYSTEM_PREFIXES.some(
+    DENIED_EXACT_TASK_ROOTS.has(root)
+    || SYSTEM_PREFIXES.some(
       (prefix) =>
         root === prefix
         || (
@@ -115,6 +121,23 @@ async function canonicalExecutable(
   }
 
   return real;
+}
+
+async function canonicalizeOptionalRoots(
+  roots,
+) {
+  if (
+    !Array.isArray(roots)
+    || roots.length > 64
+  ) {
+    return null;
+  }
+
+  if (roots.length === 0) {
+    return Object.freeze([]);
+  }
+
+  return canonicalizeRoots(roots);
 }
 
 function systemPath(
@@ -197,6 +220,7 @@ export class LinuxBubblewrapSandbox {
     input,
     {
       allowedRoots = [],
+      readOnlyRoots = [],
       signal,
     } = {},
   ) {
@@ -206,15 +230,34 @@ export class LinuxBubblewrapSandbox {
       );
     }
 
-    const roots =
-      await canonicalizeRoots(
+    const writableRoots =
+      await canonicalizeOptionalRoots(
         allowedRoots,
+      );
+    const canonicalReadOnlyRoots =
+      await canonicalizeOptionalRoots(
+        readOnlyRoots,
       );
 
     if (
-      !roots
+      !writableRoots
+      || !canonicalReadOnlyRoots
+    ) {
+      throw new Error(
+        'sandbox_root_denied',
+      );
+    }
+
+    const roots =
+      [...new Set([
+        ...writableRoots,
+        ...canonicalReadOnlyRoots,
+      ])];
+
+    if (
+      roots.length === 0
       || roots.some(
-        isDeniedWritableRoot,
+        isDeniedTaskRoot,
       )
     ) {
       throw new Error(
@@ -263,7 +306,26 @@ export class LinuxBubblewrapSandbox {
     const args =
       bubblewrapBaseArgs();
 
-    for (const root of roots) {
+    for (
+      const root of
+        canonicalReadOnlyRoots
+    ) {
+      if (
+        writableRoots.includes(root)
+      ) {
+        continue;
+      }
+
+      args.push(
+        '--dir',
+        root,
+        '--ro-bind',
+        root,
+        root,
+      );
+    }
+
+    for (const root of writableRoots) {
       args.push(
         '--dir',
         root,

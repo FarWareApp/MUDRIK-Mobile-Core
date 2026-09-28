@@ -152,6 +152,16 @@ test(
       /sandbox_root_denied/,
     );
 
+    await assert.rejects(
+      () => sandbox.run(
+        input('/tmp'),
+        {
+          allowedRoots: ['/tmp'],
+        },
+      ),
+      /sandbox_root_denied/,
+    );
+
     if (
       typeof process.env.HOME
         === 'string'
@@ -412,6 +422,70 @@ test(
     assert.equal(
       result.exitCode,
       0,
+    );
+  },
+);
+
+
+test(
+  'bubblewrap read-only roots cannot be modified by the child',
+  {
+    skip:
+      process.platform !== 'linux',
+  },
+  async (t) => {
+    const root = await fixture(t);
+    const sandbox =
+      new LinuxBubblewrapSandbox();
+
+    if (!await sandbox.available()) {
+      t.skip('bubblewrap unavailable');
+      return;
+    }
+
+    const file =
+      path.join(
+        root,
+        'readonly.txt',
+      );
+
+    await fs.writeFile(
+      file,
+      'original',
+    );
+
+    const result =
+      await sandbox.run(
+        input(
+          root,
+          {
+            args: [
+              '-e',
+              [
+                'const fs=require("fs");',
+                'try{fs.writeFileSync(',
+                JSON.stringify(file),
+                ',"changed");process.exit(9);}',
+                'catch{process.exit(0);}',
+              ].join(''),
+            ],
+          },
+        ),
+        {
+          readOnlyRoots: [root],
+        },
+      );
+
+    assert.equal(
+      result.exitCode,
+      0,
+    );
+    assert.equal(
+      await fs.readFile(
+        file,
+        'utf8',
+      ),
+      'original',
     );
   },
 );
