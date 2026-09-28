@@ -46,6 +46,7 @@ export class DurableComputerAgentRuntime {
     grants = [],
     clock = () => Date.now(),
     onEvent = () => {},
+    terminalSandbox,
   } = {}) {
     if (
       !store
@@ -77,6 +78,9 @@ export class DurableComputerAgentRuntime {
         grants: this.grants,
         clock: this.clock,
         onEvent: () => {},
+        ...(terminalSandbox
+          ? { terminalSandbox }
+          : {}),
       });
     this.active = new Set();
     this.initialized = false;

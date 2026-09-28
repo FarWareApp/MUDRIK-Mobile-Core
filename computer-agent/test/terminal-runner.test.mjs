@@ -6,6 +6,10 @@ import test from 'node:test';
 import { ComputerTaskRunner } from '../src/task-runner.mjs';
 import { runTerminalCommand } from '../src/tools/terminal.mjs';
 
+import {
+  createDirectTestTerminalSandbox,
+} from './helpers/direct-terminal-sandbox.mjs';
+
 function futureIso(minutes = 10) {
   return new Date(Date.now() + minutes * 60_000).toISOString();
 }
@@ -74,6 +78,8 @@ test('task runner executes inside an approved scope and emits progress', async (
   const runner = new ComputerTaskRunner({
     grants: [executionGrant(root)],
     onEvent: (event) => events.push(event),
+    terminalSandbox:
+      createDirectTestTerminalSandbox(),
   });
 
   const result = await runner.run({
@@ -259,6 +265,96 @@ test(
     assert.equal(
       result.policy.reason,
       'approval-required',
+    );
+  },
+);
+
+test(
+  'terminal sandbox receives only the grant that actually covered the step',
+  async () => {
+    const narrowRoot =
+      os.tmpdir();
+    const widerRoot =
+      path.dirname(narrowRoot);
+    const observed = [];
+
+    const narrow =
+      executionGrant(narrowRoot);
+    const wider = {
+      ...executionGrant(widerRoot),
+      grantId:
+        'grant-terminal-wider',
+    };
+
+    const sandbox = {
+      async run(input, options) {
+        observed.push(options);
+        return {
+          executable:
+            input.executable,
+          args: input.args,
+          cwd: input.cwd,
+          exitCode: 0,
+          signal: null,
+          timedOut: false,
+          aborted: false,
+          stdout: '',
+          stderr: '',
+          stdoutTruncated: false,
+          stderrTruncated: false,
+        };
+      },
+    };
+
+    const runner =
+      new ComputerTaskRunner({
+        grants: [
+          narrow,
+          wider,
+        ],
+        terminalSandbox: sandbox,
+      });
+
+    const result =
+      await runner.run({
+        taskId:
+          'covering-grant-scope-task',
+        deviceId: 'device-test',
+        intent:
+          'Keep execution scope narrow',
+        risk: 'medium',
+        requestedCapabilities: [
+          'terminal.execute',
+        ],
+        expiresAt: futureIso(),
+        steps: [{
+          stepId: 'step-1',
+          tool: 'terminal',
+          summary:
+            'Run inside narrow scope',
+          requiredCapabilities: [
+            'terminal.execute',
+          ],
+          input: {
+            executable:
+              process.execPath,
+            args: [],
+            cwd: narrowRoot,
+          },
+        }],
+      });
+
+    assert.equal(
+      result.status,
+      'succeeded',
+    );
+    assert.equal(
+      observed.length,
+      1,
+    );
+    assert.deepEqual(
+      observed[0].allowedRoots,
+      [narrowRoot],
     );
   },
 );

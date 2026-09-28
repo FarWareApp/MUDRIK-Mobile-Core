@@ -357,6 +357,21 @@ export function evaluateTaskPolicy({
   return {
     allowed: true,
     reason: 'authorized',
+    coveringGrantIds:
+      Object.freeze(
+        Object.fromEntries(
+          [...coveringGrants.entries()]
+            .map(
+              ([
+                capability,
+                grant,
+              ]) => [
+                capability,
+                grant.grantId,
+              ],
+            ),
+        ),
+      ),
   };
 }
 

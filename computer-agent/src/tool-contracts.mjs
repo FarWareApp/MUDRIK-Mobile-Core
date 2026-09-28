@@ -262,8 +262,10 @@ export function normalizeToolStep(
 
   if (step.tool === 'terminal') {
     if (
-      !step.requiredCapabilities
-        .includes('terminal.execute')
+      step.requiredCapabilities.length
+        !== 1
+      || step.requiredCapabilities[0]
+        !== 'terminal.execute'
     ) {
       return null;
     }

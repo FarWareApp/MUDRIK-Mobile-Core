@@ -9,12 +9,12 @@ import {
 } from './tool-contracts.mjs';
 
 import {
-  runFilesystemOperation,
-} from './tools/filesystem.mjs';
+  createDefaultTerminalSandbox,
+} from './linux-bubblewrap-sandbox.mjs';
 
 import {
-  runTerminalCommand,
-} from './tools/terminal.mjs';
+  runFilesystemOperation,
+} from './tools/filesystem.mjs';
 
 export function policyContextForStep(step) {
   return policyContextForToolStep(step);
@@ -37,10 +37,24 @@ export class ComputerTaskRunner {
     grants = [],
     onEvent = () => {},
     clock = () => Date.now(),
+    terminalSandbox =
+      createDefaultTerminalSandbox(),
   } = {}) {
+    if (
+      !terminalSandbox
+      || typeof terminalSandbox.run
+        !== 'function'
+    ) {
+      throw new TypeError(
+        'A terminal sandbox is required.',
+      );
+    }
+
     this.grants = grants;
     this.onEvent = onEvent;
     this.clock = clock;
+    this.terminalSandbox =
+      terminalSandbox;
     this.active = new Map();
   }
 
@@ -221,6 +235,10 @@ export class ComputerTaskRunner {
                   task.deviceId,
                 trustedNowMs:
                   stepPolicyTime,
+                coveringGrantIds:
+                  stepPolicy
+                    .coveringGrantIds
+                  ?? {},
               },
             );
           results.push({
@@ -298,29 +316,62 @@ export class ComputerTaskRunner {
     {
       deviceId,
       trustedNowMs,
+      coveringGrantIds = {},
     } = {},
   ) {
     const input =
       step.input ?? {};
 
     if (step.tool === 'terminal') {
-      return runTerminalCommand({
-        executable:
-          input.executable,
-        args: input.args,
-        cwd: input.cwd,
-        env: input.env,
-        timeoutMs:
-          input.timeoutMs,
-        maxOutputBytes:
-          input.maxOutputBytes,
-        signal,
-      });
+      const coveringGrantId =
+        coveringGrantIds[
+          'terminal.execute'
+        ];
+      const activeGrants =
+        activeCapabilityGrants({
+          grants: this.grants,
+          capability:
+            'terminal.execute',
+          deviceId,
+          trustedNowMs,
+        });
+      const coveringGrant =
+        activeGrants.find(
+          (grant) =>
+            grant.grantId
+              === coveringGrantId,
+        );
+      const allowedRoots =
+        coveringGrant
+          ? [
+              ...coveringGrant
+                .scope
+                .filesystemRoots,
+            ]
+          : [];
+
+      if (allowedRoots.length === 0) {
+        throw new Error(
+          'sandbox_scope_missing',
+        );
+      }
+
+      return this.terminalSandbox.run(
+        input,
+        {
+          allowedRoots,
+          signal,
+        },
+      );
     }
 
     if (step.tool === 'filesystem') {
       const capability =
         step.requiredCapabilities[0];
+      const coveringGrantId =
+        coveringGrantIds[
+          capability
+        ];
       const activeGrants =
         activeCapabilityGrants({
           grants: this.grants,
@@ -328,14 +379,20 @@ export class ComputerTaskRunner {
           deviceId,
           trustedNowMs,
         });
+      const coveringGrant =
+        activeGrants.find(
+          (grant) =>
+            grant.grantId
+              === coveringGrantId,
+        );
       const allowedRoots =
-        [...new Set(
-          activeGrants.flatMap(
-            (grant) =>
-              grant.scope
+        coveringGrant
+          ? [
+              ...coveringGrant
+                .scope
                 .filesystemRoots,
-          ),
-        )];
+            ]
+          : [];
 
       return runFilesystemOperation(
         input,

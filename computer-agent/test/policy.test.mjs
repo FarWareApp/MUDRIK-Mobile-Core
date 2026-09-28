@@ -69,6 +69,10 @@ test('allows scoped execution when grant covers cwd and executable', () => {
   assert.deepEqual(result, {
     allowed: true,
     reason: 'authorized',
+    coveringGrantIds: {
+      'terminal.execute':
+        'grant-policy-test',
+    },
   });
 });
 

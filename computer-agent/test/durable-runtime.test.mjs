@@ -17,6 +17,10 @@ import {
   DurableTaskStore,
 } from '../src/task-store.mjs';
 
+import {
+  createDirectTestTerminalSandbox,
+} from './helpers/direct-terminal-sandbox.mjs';
+
 const ACCOUNT =
   'acct_0123456789abcdef';
 const DEVICE =
@@ -185,6 +189,8 @@ async function fixture({
   grants,
   onEvent,
   clock,
+  terminalSandbox =
+    createDirectTestTerminalSandbox(),
 } = {}) {
   const root =
     await fs.mkdtemp(
@@ -223,6 +229,7 @@ async function fixture({
       clock:
         clock ?? tickingClock(),
       onEvent,
+      terminalSandbox,
     });
 
   return {
