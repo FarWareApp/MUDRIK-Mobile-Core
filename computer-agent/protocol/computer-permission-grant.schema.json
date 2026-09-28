@@ -114,6 +114,16 @@
             "pattern": "^secret_ref_[A-Za-z0-9_-]{16,240}$",
             "maxLength": 251
           }
+        },
+        "processRefs": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^proc_[A-Za-z0-9_-]{16,240}$",
+            "maxLength": 245
+          }
         }
       }
     },

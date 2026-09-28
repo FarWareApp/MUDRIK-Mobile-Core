@@ -184,6 +184,19 @@ function capabilityCovered(
     }
   }
 
+  if (context.processRef) {
+    if (
+      typeof context.processRef
+        !== 'string'
+      || scope.processRefs.length === 0
+      || !scope.processRefs.includes(
+        context.processRef,
+      )
+    ) {
+      return false;
+    }
+  }
+
   if (
     context.requiresBackground
     && scope.backgroundAllowed

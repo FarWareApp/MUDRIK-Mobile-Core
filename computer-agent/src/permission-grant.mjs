@@ -6,6 +6,10 @@ import {
   isSecretReference,
 } from './secret-reference.mjs';
 
+import {
+  isProcessReference,
+} from './process-contract.mjs';
+
 const KEYS = new Set([
   'grantId',
   'deviceId',
@@ -23,6 +27,7 @@ const SCOPE_KEYS = new Set([
   'executables',
   'domains',
   'secretRefs',
+  'processRefs',
   'backgroundAllowed',
   'elevationAllowed',
   'maxTaskDurationSeconds',
@@ -121,6 +126,24 @@ function parseScope(value) {
       )
     )
     || (
+      value.processRefs !== undefined
+      && (
+        !Array.isArray(
+          value.processRefs,
+        )
+        || value.processRefs.length > 128
+        || value.processRefs.some(
+          (reference) =>
+            !isProcessReference(
+              reference,
+            ),
+        )
+        || new Set(
+          value.processRefs,
+        ).size !== value.processRefs.length
+      )
+    )
+    || (
       value.backgroundAllowed
         !== undefined
       && typeof value.backgroundAllowed
@@ -169,6 +192,10 @@ function parseScope(value) {
     secretRefs:
       Object.freeze([
         ...(value.secretRefs ?? []),
+      ]),
+    processRefs:
+      Object.freeze([
+        ...(value.processRefs ?? []),
       ]),
     backgroundAllowed:
       value.backgroundAllowed === true,

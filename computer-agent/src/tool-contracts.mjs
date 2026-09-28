@@ -16,6 +16,11 @@ import {
 } from './secret-reference.mjs';
 
 import {
+  normalizeProcessStep,
+  processPolicyContext,
+} from './process-contract.mjs';
+
+import {
   DEFAULT_MAX_OUTPUT_BYTES,
   DEFAULT_TIMEOUT_MS,
 } from './tools/terminal.mjs';
@@ -331,6 +336,10 @@ export function normalizeToolStep(
     return normalizeGitStep(step);
   }
 
+  if (step.tool === 'process') {
+    return normalizeProcessStep(step);
+  }
+
   return null;
 }
 
@@ -383,6 +392,12 @@ export function policyContextForToolStep(
 
   if (normalized.tool === 'git') {
     return gitPolicyContext(normalized);
+  }
+
+  if (normalized.tool === 'process') {
+    return processPolicyContext(
+      normalized,
+    );
   }
 
   return null;

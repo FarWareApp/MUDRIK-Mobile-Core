@@ -24,6 +24,10 @@ import {
   runGitOperation,
 } from './tools/git.mjs';
 
+import {
+  OwnedProcessRuntime,
+} from './tools/process.mjs';
+
 export function policyContextForStep(step) {
   return policyContextForToolStep(step);
 }
@@ -48,6 +52,7 @@ export class ComputerTaskRunner {
     terminalSandbox =
       createDefaultTerminalSandbox(),
     secretResolver = null,
+    processRuntime = null,
   } = {}) {
     if (
       !terminalSandbox
@@ -76,10 +81,26 @@ export class ComputerTaskRunner {
       );
     }
 
+    if (
+      processRuntime !== null
+      && (
+        typeof processRuntime
+          !== 'object'
+        || typeof processRuntime.run
+          !== 'function'
+      )
+    ) {
+      throw new TypeError(
+        'Invalid process runtime.',
+      );
+    }
+
     this.terminalSandbox =
       terminalSandbox;
     this.secretResolver =
       secretResolver;
+    this.processRuntime =
+      processRuntime;
     this.active = new Map();
   }
 
@@ -580,6 +601,63 @@ export class ComputerTaskRunner {
           allowedRepositories,
           sandbox:
             this.terminalSandbox,
+          signal,
+        },
+      );
+    }
+
+    if (step.tool === 'process') {
+      if (!this.processRuntime) {
+        if (
+          typeof this.terminalSandbox
+            .spawnBackground
+            !== 'function'
+        ) {
+          throw new Error(
+            'process_runtime_unavailable',
+          );
+        }
+
+        this.processRuntime =
+          new OwnedProcessRuntime({
+            sandbox:
+              this.terminalSandbox,
+            clock: this.clock,
+          });
+      }
+
+      const capability =
+        step.requiredCapabilities[0];
+      const coveringGrantId =
+        coveringGrantIds[
+          capability
+        ];
+      const activeGrants =
+        activeCapabilityGrants({
+          grants: this.grants,
+          capability,
+          deviceId,
+          trustedNowMs,
+        });
+      const coveringGrant =
+        activeGrants.find(
+          (grant) =>
+            grant.grantId
+              === coveringGrantId,
+        );
+      const allowedRoots =
+        coveringGrant
+          ? [
+              ...coveringGrant
+                .scope
+                .filesystemRoots,
+            ]
+          : [];
+
+      return this.processRuntime.run(
+        input,
+        {
+          allowedRoots,
           signal,
         },
       );

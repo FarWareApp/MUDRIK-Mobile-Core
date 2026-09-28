@@ -194,3 +194,36 @@ test(
     );
   },
 );
+
+test(
+  'permission schema exposes opaque process reference scope',
+  () => {
+    const grant =
+      schema(
+        'computer-permission-grant.schema.json',
+      );
+    const processRefs =
+      grant.properties
+        .scope.properties
+        .processRefs;
+
+    assert.equal(
+      processRefs.type,
+      'array',
+    );
+    assert.equal(
+      processRefs.maxItems,
+      128,
+    );
+    assert.equal(
+      processRefs.uniqueItems,
+      true,
+    );
+    assert.match(
+      'proc_0123456789abcdef',
+      new RegExp(
+        processRefs.items.pattern,
+      ),
+    );
+  },
+);

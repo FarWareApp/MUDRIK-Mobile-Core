@@ -1,3 +1,6 @@
+import {
+  spawn,
+} from 'node:child_process';
 import fs from 'node:fs/promises';
 import {
   constants as fsConstants,
@@ -42,6 +45,39 @@ function executableFile(value) {
     && path.isAbsolute(value)
     && value.length <= 4096
     && !value.includes('\0')
+  );
+}
+
+function validInput(input) {
+  return (
+    input
+    && typeof input === 'object'
+    && executableFile(
+      input.executable,
+    )
+    && typeof input.cwd === 'string'
+    && path.isAbsolute(input.cwd)
+    && Array.isArray(input.args)
+    && input.args.every(
+      (arg) =>
+        typeof arg === 'string',
+    )
+    && (
+      input.env === undefined
+      || (
+        typeof input.env === 'object'
+        && input.env !== null
+        && !Array.isArray(input.env)
+        && Object.entries(input.env)
+          .every(
+            ([key, value]) =>
+              typeof key === 'string'
+              && typeof value === 'string'
+              && !key.includes('\0')
+              && !value.includes('\0'),
+          )
+      )
+    )
   );
 }
 
@@ -116,11 +152,9 @@ async function canonicalExecutable(
     return null;
   }
 
-  if (real !== executable) {
-    return null;
-  }
-
-  return real;
+  return real === executable
+    ? real
+    : null;
 }
 
 async function canonicalizeOptionalRoots(
@@ -140,9 +174,7 @@ async function canonicalizeOptionalRoots(
   return canonicalizeRoots(roots);
 }
 
-function systemPath(
-  candidate,
-) {
+function systemPath(candidate) {
   return (
     candidate === '/usr'
     || pathInsideRoot(
@@ -186,6 +218,17 @@ function bubblewrapBaseArgs() {
   ];
 }
 
+function hostEnvironment() {
+  return {
+    PATH:
+      process.env.PATH
+      ?? '/usr/bin:/bin',
+    LANG:
+      process.env.LANG
+      ?? 'C.UTF-8',
+  };
+}
+
 export class LinuxBubblewrapSandbox {
   constructor({
     bwrapPath =
@@ -216,17 +259,21 @@ export class LinuxBubblewrapSandbox {
     }
   }
 
-  async run(
+  async prepare(
     input,
     {
       allowedRoots = [],
       readOnlyRoots = [],
-      signal,
     } = {},
   ) {
-    if (!await this.available()) {
+    if (
+      !validInput(input)
+      || !await this.available()
+    ) {
       throw new Error(
-        'sandbox_unavailable',
+        !validInput(input)
+          ? 'sandbox_invalid_input'
+          : 'sandbox_unavailable',
       );
     }
 
@@ -388,13 +435,50 @@ export class LinuxBubblewrapSandbox {
       ...input.args,
     );
 
+    return Object.freeze({
+      executable:
+        this.bwrapPath,
+      args: Object.freeze(args),
+      cwd: '/',
+      env:
+        Object.freeze(
+          hostEnvironment(),
+        ),
+      innerExecutable:
+        executable,
+      innerArgs:
+        Object.freeze([
+          ...input.args,
+        ]),
+      innerCwd:
+        input.cwd,
+    });
+  }
+
+  async run(
+    input,
+    {
+      allowedRoots = [],
+      readOnlyRoots = [],
+      signal,
+    } = {},
+  ) {
+    const invocation =
+      await this.prepare(
+        input,
+        {
+          allowedRoots,
+          readOnlyRoots,
+        },
+      );
+
     const result =
       await runTerminalCommand({
         executable:
-          this.bwrapPath,
-        args,
-        cwd: '/',
-        env: {},
+          invocation.executable,
+        args: invocation.args,
+        cwd: invocation.cwd,
+        env: invocation.env,
         timeoutMs:
           input.timeoutMs,
         maxOutputBytes:
@@ -403,9 +487,12 @@ export class LinuxBubblewrapSandbox {
       });
 
     return Object.freeze({
-      executable,
-      args: input.args,
-      cwd: input.cwd,
+      executable:
+        invocation.innerExecutable,
+      args:
+        invocation.innerArgs,
+      cwd:
+        invocation.innerCwd,
       exitCode: result.exitCode,
       signal: result.signal,
       timedOut:
@@ -419,6 +506,241 @@ export class LinuxBubblewrapSandbox {
       stderrTruncated:
         result.stderrTruncated,
       sandbox: 'linux-bubblewrap',
+      network: 'isolated',
+    });
+  }
+
+  async spawnBackground(
+    input,
+    {
+      allowedRoots = [],
+      readOnlyRoots = [],
+      signal,
+    } = {},
+  ) {
+    if (
+      !Number.isInteger(
+        input.timeoutMs,
+      )
+      || input.timeoutMs < 1
+      || input.timeoutMs > 3_600_000
+    ) {
+      throw new Error(
+        'sandbox_invalid_timeout',
+      );
+    }
+
+    const invocation =
+      await this.prepare(
+        input,
+        {
+          allowedRoots,
+          readOnlyRoots,
+        },
+      );
+
+    const child = spawn(
+      invocation.executable,
+      invocation.args,
+      {
+        cwd: invocation.cwd,
+        env: invocation.env,
+        shell: false,
+        stdio: 'ignore',
+        detached: true,
+        windowsHide: true,
+      },
+    );
+
+    let running = true;
+    let exitCode = null;
+    let closeSignal = null;
+    let timedOut = false;
+    let forceKillTimer = null;
+
+    const killGroup = (sig) => {
+      if (
+        !running
+        || !Number.isInteger(child.pid)
+      ) {
+        return false;
+      }
+
+      try {
+        process.kill(
+          -child.pid,
+          sig,
+        );
+        return true;
+      } catch {
+        try {
+          return child.kill(sig);
+        } catch {
+          return false;
+        }
+      }
+    };
+
+    const terminate = () => {
+      if (!running) {
+        return false;
+      }
+
+      killGroup('SIGTERM');
+
+      if (!forceKillTimer) {
+        forceKillTimer =
+          setTimeout(() => {
+            if (running) {
+              killGroup('SIGKILL');
+            }
+          }, 1500);
+        forceKillTimer.unref();
+      }
+
+      return true;
+    };
+
+    let spawnError = null;
+
+    const completion =
+      new Promise(
+        (resolve) => {
+          child.once(
+            'error',
+            (error) => {
+              running = false;
+              spawnError = error;
+              clearTimeout(timer);
+
+              if (forceKillTimer) {
+                clearTimeout(
+                  forceKillTimer,
+                );
+              }
+
+              signal?.removeEventListener(
+                'abort',
+                onAbort,
+              );
+
+              resolve(
+                Object.freeze({
+                  exitCode: null,
+                  signal: null,
+                  timedOut,
+                  spawnFailed: true,
+                }),
+              );
+            },
+          );
+
+          child.once(
+            'close',
+            (code, sig) => {
+              running = false;
+              exitCode = code;
+              closeSignal = sig;
+              clearTimeout(timer);
+
+              if (forceKillTimer) {
+                clearTimeout(
+                  forceKillTimer,
+                );
+              }
+
+              signal?.removeEventListener(
+                'abort',
+                onAbort,
+              );
+
+              resolve(
+                Object.freeze({
+                  exitCode,
+                  signal:
+                    closeSignal,
+                  timedOut,
+                  spawnFailed: false,
+                }),
+              );
+            },
+          );
+        },
+      );
+
+    const timer =
+      setTimeout(() => {
+        timedOut = true;
+        terminate();
+      }, input.timeoutMs);
+    timer.unref();
+
+    const onAbort = () => {
+      terminate();
+    };
+
+    if (signal?.aborted) {
+      terminate();
+    } else {
+      signal?.addEventListener(
+        'abort',
+        onAbort,
+        { once: true },
+      );
+    }
+
+    await new Promise(
+      (resolve, reject) => {
+        const onSpawn = () => {
+          child.off(
+            'error',
+            onError,
+          );
+          resolve();
+        };
+        const onError = (error) => {
+          child.off(
+            'spawn',
+            onSpawn,
+          );
+          reject(error);
+        };
+
+        child.once(
+          'spawn',
+          onSpawn,
+        );
+        child.once(
+          'error',
+          onError,
+        );
+      },
+    ).catch((error) => {
+      void completion;
+      throw error;
+    });
+
+    if (spawnError) {
+      throw spawnError;
+    }
+
+    return Object.freeze({
+      running:
+        () => running,
+      snapshot:
+        () =>
+          Object.freeze({
+            running,
+            exitCode,
+            signal:
+              closeSignal,
+            timedOut,
+          }),
+      terminate,
+      wait:
+        () => completion,
+      sandbox:
+        'linux-bubblewrap',
       network: 'isolated',
     });
   }
