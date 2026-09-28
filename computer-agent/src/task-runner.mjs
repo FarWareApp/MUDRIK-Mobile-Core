@@ -26,8 +26,8 @@ import {
 } from './secret-reference.mjs';
 
 import {
-  runFilesystemOperation,
-} from './tools/filesystem.mjs';
+  SandboxedFilesystemAdapter,
+} from './tools/filesystem-sandbox.mjs';
 
 import {
   runGitOperation,
@@ -36,6 +36,10 @@ import {
 import {
   OwnedProcessRuntime,
 } from './tools/process.mjs';
+
+import {
+  ScopedHttpsNetworkAdapter,
+} from './tools/network.mjs';
 
 import {
   runRestrictedUnavailable,
@@ -66,6 +70,9 @@ export class ComputerTaskRunner {
       createDefaultTerminalSandbox(),
     secretResolver = null,
     processRuntime = null,
+    networkAdapter =
+      new ScopedHttpsNetworkAdapter(),
+    filesystemAdapter = null,
   } = {}) {
     if (
       !terminalSandbox
@@ -108,12 +115,44 @@ export class ComputerTaskRunner {
       );
     }
 
+    if (
+      !networkAdapter
+      || typeof networkAdapter.run
+        !== 'function'
+    ) {
+      throw new TypeError(
+        'Invalid network adapter.',
+      );
+    }
+
+    if (
+      filesystemAdapter !== null
+      && (
+        typeof filesystemAdapter
+          !== 'object'
+        || typeof filesystemAdapter.run
+          !== 'function'
+      )
+    ) {
+      throw new TypeError(
+        'Invalid filesystem adapter.',
+      );
+    }
+
     this.terminalSandbox =
       terminalSandbox;
     this.secretResolver =
       secretResolver;
     this.processRuntime =
       processRuntime;
+    this.networkAdapter =
+      networkAdapter;
+    this.filesystemAdapter =
+      filesystemAdapter
+      ?? new SandboxedFilesystemAdapter({
+        sandbox:
+          terminalSandbox,
+      });
     this.active = new Map();
   }
 
@@ -591,10 +630,11 @@ export class ComputerTaskRunner {
             ]
           : [];
 
-      return runFilesystemOperation(
+      return this.filesystemAdapter.run(
         input,
         {
           allowedRoots,
+          signal,
         },
       );
     }
@@ -643,6 +683,43 @@ export class ComputerTaskRunner {
           allowedRepositories,
           sandbox:
             this.terminalSandbox,
+          signal,
+        },
+      );
+    }
+
+    if (step.tool === 'network') {
+      const coveringGrantId =
+        coveringGrantIds[
+          'network.outbound'
+        ];
+      const activeGrants =
+        activeCapabilityGrants({
+          grants: this.grants,
+          capability:
+            'network.outbound',
+          deviceId,
+          trustedNowMs,
+        });
+      const coveringGrant =
+        activeGrants.find(
+          (grant) =>
+            grant.grantId
+              === coveringGrantId,
+        );
+      const allowedDomains =
+        coveringGrant
+          ? [
+              ...coveringGrant
+                .scope
+                .domains,
+            ]
+          : [];
+
+      return this.networkAdapter.run(
+        input,
+        {
+          allowedDomains,
           signal,
         },
       );

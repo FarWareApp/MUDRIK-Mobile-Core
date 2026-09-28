@@ -22,6 +22,14 @@ import {
   runFilesystemOperation,
 } from '../src/tools/filesystem.mjs';
 
+import {
+  SandboxedFilesystemAdapter,
+} from '../src/tools/filesystem-sandbox.mjs';
+
+import {
+  LinuxBubblewrapSandbox,
+} from '../src/linux-bubblewrap-sandbox.mjs';
+
 function futureIso() {
   return new Date(
     Date.now() + 600_000,
@@ -651,6 +659,142 @@ test(
         'utf8',
       ),
       'runner',
+    );
+  },
+);
+
+test(
+  'Bubblewrap filesystem mutation cannot escape during directory-to-symlink race',
+  {
+    skip:
+      process.platform !== 'linux',
+  },
+  async (t) => {
+    const parent =
+      await fs.mkdtemp(
+        path.join(
+          os.tmpdir(),
+          'mudrik-fs-race-',
+        ),
+      );
+    const root =
+      path.join(parent, 'root');
+    const outside =
+      path.join(parent, 'outside');
+    const swap =
+      path.join(root, 'swap');
+    const outsideTarget =
+      path.join(
+        outside,
+        'target.txt',
+      );
+
+    await fs.mkdir(root);
+    await fs.mkdir(outside);
+    await fs.writeFile(
+      outsideTarget,
+      'sentinel',
+    );
+
+    t.after(
+      () => fs.rm(
+        parent,
+        {
+          recursive: true,
+          force: true,
+        },
+      ),
+    );
+
+    const sandbox =
+      new LinuxBubblewrapSandbox();
+
+    if (!await sandbox.available()) {
+      t.skip('bubblewrap unavailable');
+      return;
+    }
+
+    const adapter =
+      new SandboxedFilesystemAdapter({
+        sandbox,
+      });
+
+    let stop = false;
+
+    const toggle =
+      (async () => {
+        while (!stop) {
+          await fs.rm(
+            swap,
+            {
+              recursive: true,
+              force: true,
+            },
+          ).catch(() => {});
+
+          await fs.mkdir(swap)
+            .catch(() => {});
+
+          await new Promise(
+            (resolve) =>
+              setImmediate(resolve),
+          );
+
+          await fs.rm(
+            swap,
+            {
+              recursive: true,
+              force: true,
+            },
+          ).catch(() => {});
+
+          await fs.symlink(
+            outside,
+            swap,
+          ).catch(() => {});
+
+          await new Promise(
+            (resolve) =>
+              setImmediate(resolve),
+          );
+        }
+      })();
+
+    try {
+      for (
+        let index = 0;
+        index < 16;
+        index += 1
+      ) {
+        await adapter.run(
+          {
+            operation: 'write',
+            path:
+              path.join(
+                swap,
+                'target.txt',
+              ),
+            encoding: 'utf8',
+            content:
+              'inside-'
+              + String(index),
+          },
+          {
+            allowedRoots: [root],
+          },
+        ).catch(() => {});
+      }
+    } finally {
+      stop = true;
+      await toggle;
+    }
+
+    assert.equal(
+      await fs.readFile(
+        outsideTarget,
+        'utf8',
+      ),
+      'sentinel',
     );
   },
 );

@@ -58,6 +58,7 @@ export function runTerminalCommand({
   env = {},
   timeoutMs = DEFAULT_TIMEOUT_MS,
   maxOutputBytes = DEFAULT_MAX_OUTPUT_BYTES,
+  stdin = null,
   signal,
 }) {
   if (typeof executable !== 'string' || executable.trim().length === 0) {
@@ -76,6 +77,27 @@ export function runTerminalCommand({
     throw new Error('Invalid output limit.');
   }
 
+  if (
+    stdin !== null
+    && typeof stdin !== 'string'
+    && !Buffer.isBuffer(stdin)
+  ) {
+    throw new Error('Invalid terminal stdin.');
+  }
+
+  const stdinBuffer =
+    stdin === null
+      ? null
+      : Buffer.from(stdin);
+
+  if (
+    stdinBuffer
+    && stdinBuffer.byteLength
+      > 1024 * 1024
+  ) {
+    throw new Error('Terminal stdin limit exceeded.');
+  }
+
   return new Promise((resolve, reject) => {
     let stdout = Buffer.alloc(0);
     let stderr = Buffer.alloc(0);
@@ -90,9 +112,23 @@ export function runTerminalCommand({
       cwd,
       env: minimalEnvironment(env),
       shell: false,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: [
+        stdinBuffer
+          ? 'pipe'
+          : 'ignore',
+        'pipe',
+        'pipe',
+      ],
       windowsHide: true,
     });
+
+    if (stdinBuffer && child.stdin) {
+      child.stdin.on(
+        'error',
+        () => {},
+      );
+      child.stdin.end(stdinBuffer);
+    }
 
     const finish = (callback) => {
       if (settled) {

@@ -21,6 +21,11 @@ import {
 } from './process-contract.mjs';
 
 import {
+  networkPolicyContext,
+  normalizeNetworkStep,
+} from './network-contract.mjs';
+
+import {
   parseExecutionProfileInput,
 } from './execution-profile.mjs';
 
@@ -379,6 +384,10 @@ export function normalizeToolStep(
     return normalizeProcessStep(step);
   }
 
+  if (step.tool === 'network') {
+    return normalizeNetworkStep(step);
+  }
+
   if (
     step.tool === 'browser'
     || step.tool === 'screen'
@@ -465,6 +474,12 @@ export function policyContextForToolStep(
 
   if (normalized.tool === 'process') {
     return processPolicyContext(
+      normalized,
+    );
+  }
+
+  if (normalized.tool === 'network') {
+    return networkPolicyContext(
       normalized,
     );
   }

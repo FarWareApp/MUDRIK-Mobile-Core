@@ -801,3 +801,73 @@ test(
     );
   },
 );
+
+test(
+  'owned process registry enforces a hard tracked-process limit',
+  {
+    skip:
+      process.platform !== 'linux',
+  },
+  async (t) => {
+    const root =
+      await fs.mkdtemp(
+        path.join(
+          os.tmpdir(),
+          'mudrik-process-limit-',
+        ),
+      );
+
+    t.after(
+      () => fs.rm(
+        root,
+        {
+          recursive: true,
+          force: true,
+        },
+      ),
+    );
+
+    const sandbox =
+      new LinuxBubblewrapSandbox();
+
+    if (!await sandbox.available()) {
+      t.skip('bubblewrap unavailable');
+      return;
+    }
+
+    const runtime =
+      new OwnedProcessRuntime({
+        sandbox,
+        maxTracked: 1,
+      });
+
+    t.after(
+      () => runtime.stopAll(),
+    );
+
+    await runtime.start(
+      startInput(root),
+      {
+        allowedRoots: [root],
+      },
+    );
+
+    await assert.rejects(
+      () => runtime.start(
+        {
+          ...startInput(root),
+          processRef:
+            'proc_1111111111111111',
+        },
+        {
+          allowedRoots: [root],
+        },
+      ),
+      (error) =>
+        error instanceof
+          ProcessToolError
+        && error.code
+          === 'process_registry_limit',
+    );
+  },
+);

@@ -63,6 +63,17 @@ function validInput(input) {
         typeof arg === 'string',
     )
     && (
+      input.stdin === undefined
+      || input.stdin === null
+      || (
+        typeof input.stdin === 'string'
+        && Buffer.byteLength(
+          input.stdin,
+          'utf8',
+        ) <= 1024 * 1024
+      )
+    )
+    && (
       input.env === undefined
       || (
         typeof input.env === 'object'
@@ -353,30 +364,24 @@ export class LinuxBubblewrapSandbox {
     const args =
       bubblewrapBaseArgs();
 
-    for (
-      const root of
-        canonicalReadOnlyRoots
-    ) {
-      if (
-        writableRoots.includes(root)
-      ) {
-        continue;
-      }
-
-      args.push(
-        '--dir',
-        root,
-        '--ro-bind',
-        root,
-        root,
-      );
-    }
-
     for (const root of writableRoots) {
       args.push(
         '--dir',
         root,
         '--bind',
+        root,
+        root,
+      );
+    }
+
+    for (
+      const root of
+        canonicalReadOnlyRoots
+    ) {
+      args.push(
+        '--dir',
+        root,
+        '--ro-bind',
         root,
         root,
       );
@@ -452,6 +457,8 @@ export class LinuxBubblewrapSandbox {
         ]),
       innerCwd:
         input.cwd,
+      stdin:
+        input.stdin ?? null,
     });
   }
 
@@ -483,6 +490,8 @@ export class LinuxBubblewrapSandbox {
           input.timeoutMs,
         maxOutputBytes:
           input.maxOutputBytes,
+        stdin:
+          invocation.stdin,
         signal,
       });
 

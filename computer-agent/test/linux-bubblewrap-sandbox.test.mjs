@@ -489,3 +489,91 @@ test(
     );
   },
 );
+
+test(
+  'nested read-only mount overrides a writable parent root',
+  {
+    skip:
+      process.platform !== 'linux',
+  },
+  async (t) => {
+    const root = await fixture(t);
+    const protectedDir =
+      path.join(root, 'protected');
+    const writableFile =
+      path.join(root, 'writable.txt');
+    const protectedFile =
+      path.join(
+        protectedDir,
+        'protected.txt',
+      );
+
+    await fs.mkdir(protectedDir);
+    await fs.writeFile(
+      protectedFile,
+      'original',
+    );
+
+    const sandbox =
+      new LinuxBubblewrapSandbox();
+
+    if (!await sandbox.available()) {
+      t.skip('bubblewrap unavailable');
+      return;
+    }
+
+    const result =
+      await sandbox.run(
+        input(
+          root,
+          {
+            args: [
+              '-e',
+              [
+                'const fs=require("fs");',
+                'fs.writeFileSync(',
+                JSON.stringify(
+                  writableFile,
+                ),
+                ',"ok");',
+                'let denied=false;',
+                'try{fs.writeFileSync(',
+                JSON.stringify(
+                  protectedFile,
+                ),
+                ',"changed");}',
+                'catch{denied=true;}',
+                'process.exit(denied?0:9);',
+              ].join(''),
+            ],
+          },
+        ),
+        {
+          allowedRoots: [root],
+          readOnlyRoots: [
+            protectedDir,
+          ],
+        },
+      );
+
+    assert.equal(
+      result.exitCode,
+      0,
+      result.stderr,
+    );
+    assert.equal(
+      await fs.readFile(
+        writableFile,
+        'utf8',
+      ),
+      'ok',
+    );
+    assert.equal(
+      await fs.readFile(
+        protectedFile,
+        'utf8',
+      ),
+      'original',
+    );
+  },
+);

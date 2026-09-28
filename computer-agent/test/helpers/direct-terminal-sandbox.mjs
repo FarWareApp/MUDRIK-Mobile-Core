@@ -20,6 +20,8 @@ export function createDirectTestTerminalSandbox() {
           input.timeoutMs,
         maxOutputBytes:
           input.maxOutputBytes,
+        stdin:
+          input.stdin ?? null,
         signal,
       });
     },

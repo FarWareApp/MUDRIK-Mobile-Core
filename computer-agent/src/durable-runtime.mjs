@@ -48,6 +48,8 @@ export class DurableComputerAgentRuntime {
     onEvent = () => {},
     terminalSandbox,
     secretResolver,
+    networkAdapter,
+    filesystemAdapter,
   } = {}) {
     if (
       !store
@@ -84,6 +86,12 @@ export class DurableComputerAgentRuntime {
           : {}),
         ...(secretResolver
           ? { secretResolver }
+          : {}),
+        ...(networkAdapter
+          ? { networkAdapter }
+          : {}),
+        ...(filesystemAdapter
+          ? { filesystemAdapter }
           : {}),
       });
     this.active = new Set();
