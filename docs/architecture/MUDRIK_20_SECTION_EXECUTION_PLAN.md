@@ -346,6 +346,8 @@ Scope:
 
 # Section 13 — Coding Engine and Autonomous Work Runner
 
+**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+
 Scope:
 
 - `CodingEngine -> ModelAdapter -> Provider` abstraction;

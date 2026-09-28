@@ -321,6 +321,23 @@ Detailed evidence:
 
 Browser/screen/clipboard/system privileged backends, Git push/destructive Git execution and unsupported platform guarantees remain fail-closed unavailable rather than being treated as implemented.
 
+### Section 13 — Coding Engine and Autonomous Work Runner
+
+`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+
+Section 13 is now the active pre-device implementation section.
+
+Current architecture boundary:
+
+`Authorized Coding Job -> Coding Engine -> Model Adapter -> Structured Proposal -> Workflow Policy -> Section 11/12 Tool Execution -> Verification Evidence -> Reviewer -> Completion Gate`
+
+The model layer is non-authoritative. It may reason and propose structured tool requests, but every execution remains subject to the existing signed-task, capability, grant, risk and sandbox boundaries. Concrete provider routing, credentials and failover remain Section 18.
+
+Gate:
+
+- `docs/architecture/MUDRIK_CODING_ENGINE_AUTONOMOUS_RUNNER.md`
+- `docs/validation/SECTION_13_CODING_ENGINE_GATE.md`
+
 ## UI/UX Detail Preservation Rule
 
 Authoritative detail ledger:
