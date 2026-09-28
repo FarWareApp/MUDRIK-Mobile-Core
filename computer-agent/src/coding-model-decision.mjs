@@ -45,6 +45,19 @@ const KINDS =
     'finish_claim',
   ]);
 
+const TOOL_STEP_KEYS =
+  new Set([
+    'stepId',
+    'tool',
+    'summary',
+    'requiredCapabilities',
+    'input',
+    'continueOnError',
+  ]);
+
+const STEP_ID =
+  /^cstep_[a-z0-9][a-z0-9_-]{15,127}$/;
+
 const BASE_KEYS = new Set([
   'decisionId',
   'jobId',
@@ -154,6 +167,35 @@ function parseToolPayload(
   const steps = [];
 
   for (const step of value.steps) {
+    if (
+      !plainObject(step)
+      || Object.keys(step).length
+        !== TOOL_STEP_KEYS.size
+      || Object.keys(step).some(
+        (key) =>
+          !TOOL_STEP_KEYS.has(key),
+      )
+      || typeof step.stepId
+        !== 'string'
+      || !STEP_ID.test(step.stepId)
+      || typeof step.tool
+        !== 'string'
+      || step.tool.length < 1
+      || step.tool.length > 64
+      || typeof step.summary
+        !== 'string'
+      || step.summary.length < 1
+      || step.summary.length > 1024
+      || step.summary.includes('\0')
+      || !Array.isArray(
+        step.requiredCapabilities,
+      )
+      || typeof step.continueOnError
+        !== 'boolean'
+    ) {
+      return null;
+    }
+
     const normalized =
       normalizeToolStep(step);
 

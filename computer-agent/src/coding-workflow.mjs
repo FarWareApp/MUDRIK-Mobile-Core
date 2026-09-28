@@ -29,6 +29,8 @@ const EVENTS = new Set([
   'research_not_required',
   'planned',
   'implementation_mutated',
+  'implementation_failed',
+  'implementation_failed_after_mutation',
   'implementation_no_change',
   'build_passed',
   'build_failed',
@@ -36,6 +38,8 @@ const EVENTS = new Set([
   'test_failed',
   'diagnosed',
   'repair_mutated',
+  'repair_failed',
+  'repair_failed_after_mutation',
   'retest_passed',
   'retest_failed',
   'review_accepted',
@@ -313,6 +317,43 @@ export function transitionCodingWorkflow(
   if (
     phase === 'implement'
     && event
+      === 'implementation_failed'
+  ) {
+    return move(
+      state,
+      {
+        phase: 'diagnose',
+        verificationRetries:
+          state.verificationRetries
+          + 1,
+      },
+      trustedNowMs,
+    );
+  }
+
+  if (
+    phase === 'implement'
+    && event
+      === 'implementation_failed_after_mutation'
+  ) {
+    return move(
+      state,
+      {
+        phase: 'diagnose',
+        revision:
+          state.revision + 1,
+        verificationRetries:
+          state.verificationRetries
+          + 1,
+        reviewerVerdict: null,
+      },
+      trustedNowMs,
+    );
+  }
+
+  if (
+    phase === 'implement'
+    && event
       === 'implementation_no_change'
   ) {
     return move(
@@ -406,6 +447,44 @@ export function transitionCodingWorkflow(
           state.revision + 1,
         repairCycles:
           state.repairCycles + 1,
+        reviewerVerdict: null,
+      },
+      trustedNowMs,
+    );
+  }
+
+  if (
+    phase === 'repair'
+    && event === 'repair_failed'
+  ) {
+    return move(
+      state,
+      {
+        phase: 'diagnose',
+        verificationRetries:
+          state.verificationRetries
+          + 1,
+      },
+      trustedNowMs,
+    );
+  }
+
+  if (
+    phase === 'repair'
+    && event
+      === 'repair_failed_after_mutation'
+  ) {
+    return move(
+      state,
+      {
+        phase: 'diagnose',
+        revision:
+          state.revision + 1,
+        repairCycles:
+          state.repairCycles + 1,
+        verificationRetries:
+          state.verificationRetries
+          + 1,
         reviewerVerdict: null,
       },
       trustedNowMs,

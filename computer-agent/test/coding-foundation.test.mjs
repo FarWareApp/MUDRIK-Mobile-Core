@@ -768,3 +768,46 @@ test(
     );
   },
 );
+
+test(
+  'model tool step exact contract rejects hidden authority-bearing nested fields',
+  () => {
+    const value =
+      decision({
+        kind: 'request_tools',
+        payload: {
+          purposeCode:
+            'inspect.repo',
+          steps: [{
+            stepId:
+              'cstep_7777777777777777',
+            tool: 'filesystem',
+            summary:
+              'Inspect file',
+            requiredCapabilities: [
+              'filesystem.read',
+            ],
+            input: {
+              operation: 'read',
+              path:
+                os.tmpdir()
+                + '/candidate.txt',
+              encoding: 'utf8',
+              maxBytes: 1024,
+            },
+            continueOnError: false,
+            approval: {
+              mode: 'automatic',
+            },
+          }],
+        },
+      });
+
+    assert.equal(
+      parseCodingModelDecision(
+        value,
+      ),
+      null,
+    );
+  },
+);
