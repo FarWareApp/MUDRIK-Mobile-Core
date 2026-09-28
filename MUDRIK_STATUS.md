@@ -353,6 +353,22 @@ Detailed evidence:
 
 Concrete provider routing/failover/credentials remain Section 18. Real-provider/repository validation and durable coding-session restart recovery where required remain deferred to production/Layer 4 and Section 20.
 
+### Section 14 — Control Plane and Reliable Task Routing
+
+`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+
+Current architecture boundary:
+
+`Authenticated Source Session + Trusted Device Registry -> Durable Command Admission -> Approval/Authorization -> Ordered Route State -> At-Least-Once Delivery -> Agent Ack/Event Reconciliation -> Terminal State + Audit`
+
+Section 14 is now the active pre-device implementation section. It reuses Section 3 account/session/device trust and preserves Sections 11/12 as the final local execution authority. Gateway, broker, presence or AI state can route work but cannot manufacture local capability grants.
+
+Gate:
+
+- `docs/architecture/MUDRIK_REALTIME_CONTROL_PLANE.md`
+- `docs/architecture/MUDRIK_CONTROL_PLANE_THREAT_MODEL.md`
+- `docs/validation/SECTION_14_CONTROL_PLANE_ROUTING_GATE.md`
+
 ## UI/UX Detail Preservation Rule
 
 Authoritative detail ledger:

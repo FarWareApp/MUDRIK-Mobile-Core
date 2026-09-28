@@ -360,6 +360,8 @@ Scope:
 
 # Section 14 — Control Plane and Reliable Task Routing
 
+**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+
 Scope:
 
 - authenticated device registry;
@@ -506,7 +508,7 @@ This exception permits continued engineering progress without redefining incompl
 
 ## Current Pre-Device Workstream
 
-**Section 14 — Control Plane and Reliable Task Routing — NEXT for PRE-DEVICE IMPLEMENTATION.**
+**Section 14 — Control Plane and Reliable Task Routing — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
 
 Pre-device completed/open sections:
 
