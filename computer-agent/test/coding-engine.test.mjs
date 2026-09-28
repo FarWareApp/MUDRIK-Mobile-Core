@@ -1507,3 +1507,183 @@ test(
     );
   },
 );
+
+test(
+  'reviewer may inspect with read-only tools before issuing verdict',
+  async () => {
+    const worker =
+      new ScriptedAdapter(
+        happyWorkerScript(),
+      );
+    const reviewer =
+      new ScriptedAdapter([
+        toolDecision(
+          'request_tools',
+          [fileReadStep()],
+          'review.inspect',
+        ),
+        review('accept'),
+      ]);
+    const tools =
+      new ScriptedToolExecutor();
+
+    const engine =
+      new CodingEngine({
+        job: job(),
+        workerAdapter: worker,
+        reviewerAdapter:
+          reviewer,
+        toolExecutor: tools,
+      });
+
+    const result =
+      await engine.run();
+
+    assert.equal(
+      result.state.phase,
+      'finished',
+    );
+    assert.equal(
+      reviewer.requests.length,
+      2,
+    );
+    assert.equal(
+      tools.calls.length,
+      5,
+    );
+  },
+);
+
+test(
+  'provider failure and replayed stale model turn become stable blocked states',
+  async () => {
+    const providerFailure =
+      new CodingEngine({
+        job: job(),
+        workerAdapter: {
+          async invoke() {
+            throw new Error(
+              'provider transport detail',
+            );
+          },
+        },
+        reviewerAdapter:
+          new ScriptedAdapter([]),
+        toolExecutor:
+          new ScriptedToolExecutor(),
+      });
+
+    const failed =
+      await providerFailure.run();
+
+    assert.equal(
+      failed.state.blockedReason,
+      'model_provider_error',
+    );
+
+    const replay =
+      new CodingEngine({
+        job: job(),
+        workerAdapter:
+          new ScriptedAdapter([
+            analysis(
+              'understand.complete',
+            ),
+            {
+              ...toolDecision(
+                'request_tools',
+                [fileReadStep()],
+                'inspect.replayed',
+              ),
+              turn: 1,
+            },
+          ]),
+        reviewerAdapter:
+          new ScriptedAdapter([]),
+        toolExecutor:
+          new ScriptedToolExecutor(),
+      });
+
+    const replayed =
+      await replay.run();
+
+    assert.equal(
+      replayed.state.blockedReason,
+      'model_decision_stale',
+    );
+  },
+);
+
+test(
+  'build and test phases reject arbitrary terminal commands outside trusted execution profiles',
+  async () => {
+    const rawTerminal = {
+      stepId: stepId(),
+      tool: 'terminal',
+      summary:
+        'Raw verification command',
+      requiredCapabilities: [
+        'terminal.execute',
+      ],
+      input: {
+        executable:
+          process.execPath,
+        args: [
+          '-e',
+          'process.exit(0)',
+        ],
+        cwd: os.tmpdir(),
+      },
+      continueOnError: false,
+    };
+
+    const worker =
+      new ScriptedAdapter([
+        analysis(
+          'understand.complete',
+        ),
+        toolDecision(
+          'request_tools',
+          [fileReadStep()],
+          'inspect.repo',
+        ),
+        codeDecision(
+          'plan',
+          'plan.ready',
+        ),
+        toolDecision(
+          'implementation_proposal',
+          [fileWriteStep()],
+          'implement.change',
+        ),
+        toolDecision(
+          'request_tools',
+          [rawTerminal],
+          'verify.raw',
+        ),
+      ]);
+    const tools =
+      new ScriptedToolExecutor();
+
+    const engine =
+      new CodingEngine({
+        job: job(),
+        workerAdapter: worker,
+        reviewerAdapter:
+          new ScriptedAdapter([]),
+        toolExecutor: tools,
+      });
+
+    const result =
+      await engine.run();
+
+    assert.equal(
+      result.state.blockedReason,
+      'verification_tool_invalid',
+    );
+    assert.equal(
+      tools.calls.length,
+      2,
+    );
+  },
+);

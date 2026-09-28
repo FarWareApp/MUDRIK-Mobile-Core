@@ -1307,11 +1307,41 @@ export class CodingEngine {
         const decision =
           await this.modelDecision(
             'reviewer',
-            ['review'],
+            [
+              'review',
+              'request_tools',
+            ],
             signal,
           );
 
         if (!decision) {
+          return;
+        }
+
+        if (
+          decision.kind
+            === 'request_tools'
+        ) {
+          const result =
+            await this.executeTools(
+              decision,
+              { readOnly: true },
+              signal,
+            );
+
+          if (!result) {
+            return;
+          }
+
+          if (
+            result.status
+              !== 'succeeded'
+          ) {
+            this.block(
+              'reviewer_tool_failed',
+            );
+          }
+
           return;
         }
 
