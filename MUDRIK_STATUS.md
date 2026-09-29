@@ -439,10 +439,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Establish Section 15 Web and Mobile Command Surfaces on top of the accepted Section 14 routing boundary.
-2. Preserve Sections 01–14 as open for their deferred Layer 4 obligations where applicable.
-3. Keep Sections 11/12 as the final local execution authority; routing/control-plane state must never manufacture tool authority.
-4. Keep browser/mobile command surfaces non-authoritative: every command must remain subordinate to Section 14 routing and Sections 11/12 local execution policy.
+1. Establish Section 16 Memory System on top of the accepted Section 15 surface boundary.
+2. Preserve Sections 01–15 as open for their deferred Layer 4 obligations where applicable.
+3. Keep Sections 11/12 as the final local execution authority; memory, surfaces and routing state must never manufacture tool authority.
+4. Keep memory provider-independent, privacy-bounded and fresh-conversation-by-default; retrieval must remain explicit, relevant and non-authoritative.
 
 ## Development Rule
 

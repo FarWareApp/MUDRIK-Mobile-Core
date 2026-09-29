@@ -508,7 +508,9 @@ This exception permits continued engineering progress without redefining incompl
 
 ## Current Pre-Device Workstream
 
-**Section 15 — Web and Mobile Command Surfaces — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
+**Section 15 — Web and Mobile Command Surfaces — PRE-DEVICE COMPLETE / REAL-SURFACE LAYER 4 DEFERRED.**
+
+**Section 16 — Memory System — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
 
 Pre-device completed/open sections:
 
@@ -525,6 +527,7 @@ Pre-device completed/open sections:
 - Section 12 — Computer Agent Tooling and Capability Sandbox.
 - Section 13 — Coding Engine and Autonomous Work Runner.
 - Section 14 — Control Plane and Reliable Task Routing.
+- Section 15 — Web and Mobile Command Surfaces.
 
 ## Completion Definition
 

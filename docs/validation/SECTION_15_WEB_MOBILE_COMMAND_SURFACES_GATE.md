@@ -2,7 +2,7 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-SURFACE LAYER 4 DEFERRED`
 
 Section 15 builds Web/Mobile control surfaces on top of the accepted Section 14 Control Plane. A UI surface may express intent, display authoritative state and submit bounded actions. It never becomes execution authority.
 
