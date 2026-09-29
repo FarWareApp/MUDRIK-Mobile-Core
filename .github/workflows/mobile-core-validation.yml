@@ -263,3 +263,6 @@ jobs:
 
       - name: Computer Agent runtime tests
         run: node --test computer-agent/test/*.test.mjs
+
+      - name: Control Plane routing tests
+        run: node --test control-plane/test/*.test.mjs
