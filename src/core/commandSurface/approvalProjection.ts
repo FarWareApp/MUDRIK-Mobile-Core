@@ -7,6 +7,10 @@ import {
   isCommandSurfaceId,
 } from './surfaceIds';
 
+import {
+  isSafeSurfaceText,
+} from './surfaceDisclosure';
+
 import type {
   CommandTaskRisk,
 } from './taskProjection';
@@ -95,11 +99,11 @@ function safeSummary(
     || value.length > 32
     || value.some(
       (entry) =>
-        typeof entry !== 'string'
-        || entry.length < 1
-        || entry.length > 240
-        || /[\u0000-\u001F\u007F]/
-          .test(entry),
+        !isSafeSurfaceText(
+          entry,
+          240,
+        )
+        || entry.length < 1,
     )
   ) {
     return null;

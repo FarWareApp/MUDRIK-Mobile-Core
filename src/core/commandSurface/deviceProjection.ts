@@ -2,6 +2,10 @@ import {
   isCommandSurfaceId,
 } from './surfaceIds';
 
+import {
+  isSafeSurfaceText,
+} from './surfaceDisclosure';
+
 export type CommandDevicePlatform =
   | 'linux'
   | 'windows'
@@ -119,13 +123,11 @@ export function parseCommandDeviceProjection(
       'device',
       record.deviceId,
     )
-    || typeof record.displayName
-      !== 'string'
-    || record.displayName.length < 1
-    || record.displayName.length > 120
-    || record.displayName.includes(
-      '\0',
+    || !isSafeSurfaceText(
+      record.displayName,
+      120,
     )
+    || record.displayName.length < 1
     || !PLATFORMS.includes(
       (record.platform as CommandDevicePlatform),
     )
