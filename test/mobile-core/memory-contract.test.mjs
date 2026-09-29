@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import test from 'node:test';
 
 import {
@@ -35,6 +36,19 @@ const {
   authorizeMemoryWrite,
 } = loadTypeScriptModule(
   'src/core/memory/memoryWritePolicy.ts',
+);
+
+const {
+  MemoryRegistry,
+} = loadTypeScriptModule(
+  'src/core/memory/memoryRegistry.ts',
+);
+
+const {
+  createMemoryAuditEvent,
+  parseMemoryAuditEvent,
+} = loadTypeScriptModule(
+  'src/core/memory/memoryAudit.ts',
 );
 
 const ACCOUNT =
@@ -611,6 +625,456 @@ test(
         active.expiresAtMs,
       ),
       false,
+    );
+  },
+);
+
+
+function retrievalRequest(
+  overrides = {},
+) {
+  return {
+    protocolVersion: '1.0',
+    accountId: ACCOUNT,
+    policyId: POLICY,
+    policyRevision: 3,
+    purpose:
+      'interaction_context',
+    queryTags: ['arabic'],
+    categories: [
+      'language_preference',
+    ],
+    maxResults: 4,
+    maxContextBytes: 4096,
+    requestedAtMs: NOW + 1,
+    grantsExecutionAuthority: false,
+    grantsSensorAuthority: false,
+    grantsToolAuthority: false,
+    ...overrides,
+  };
+}
+
+function reconstructionInput(
+  memoryProjection,
+) {
+  return {
+    accountId: ACCOUNT,
+    conversationId:
+      'conv_1111111111111111',
+    transcript: [{
+      messageId:
+        'msg_1111111111111111',
+      role: 'user',
+      content: 'Hello',
+      occurredAtMs: NOW,
+    }],
+    ephemeralContext: [],
+    memoryProjection,
+    generatedAtMs: NOW + 1,
+    maxBytes: 64 * 1024,
+  };
+}
+
+function integrityProvider() {
+  const digest = async (payload) =>
+    crypto
+      .createHash('sha256')
+      .update(
+        'section16-test-key:',
+      )
+      .update(payload)
+      .digest('hex');
+
+  return {
+    digest,
+    async verify(
+      payload,
+      expected,
+    ) {
+      return (
+        await digest(payload)
+      ) === expected;
+    },
+  };
+}
+
+test(
+  'registry retrieval projection is provenance-bound and invalidated by deletion while fresh reconstruction remains available',
+  () => {
+    const registry =
+      new MemoryRegistry();
+
+    assert.equal(
+      registry.setPolicy(
+        policy(),
+      ).accepted,
+      true,
+    );
+
+    const created =
+      registry.create({
+        candidate: candidate(),
+        approval: approval(),
+        memoryId: MEMORY,
+        trustedNowMs: NOW,
+      });
+
+    assert.equal(
+      created.accepted,
+      true,
+    );
+
+    const retrieval =
+      registry.retrieve(
+        retrievalRequest(),
+        NOW + 1,
+      );
+
+    assert.equal(
+      retrieval.accepted,
+      true,
+    );
+    assert.ok(
+      retrieval.projection,
+    );
+
+    const reconstructed =
+      registry.reconstruct(
+        reconstructionInput(
+          retrieval.projection,
+        ),
+      );
+
+    assert.ok(reconstructed);
+    assert.equal(
+      reconstructed.memoryIncluded,
+      true,
+    );
+
+    const copiedProjection =
+      JSON.parse(
+        JSON.stringify(
+          retrieval.projection,
+        ),
+      );
+
+    assert.equal(
+      registry.reconstruct(
+        reconstructionInput(
+          copiedProjection,
+        ),
+      ),
+      null,
+    );
+
+    const deleted =
+      registry.delete({
+        accountId: ACCOUNT,
+        memoryId: MEMORY,
+        expectedRevision: 1,
+        reason: 'user_deleted',
+        trustedNowMs: NOW + 2,
+      });
+
+    assert.equal(
+      deleted.accepted,
+      true,
+    );
+
+    assert.equal(
+      registry.reconstruct(
+        reconstructionInput(
+          retrieval.projection,
+        ),
+      ),
+      null,
+    );
+
+    const fresh =
+      registry.reconstruct(
+        reconstructionInput(null),
+      );
+
+    assert.ok(fresh);
+    assert.equal(
+      fresh.memoryIncluded,
+      false,
+    );
+  },
+);
+
+test(
+  'compaction preserves conflicting facts and is invalidated by policy revision changes',
+  () => {
+    const registry =
+      new MemoryRegistry();
+
+    registry.setPolicy(policy());
+
+    const secondCandidate =
+      'memory_candidate_2222222222222222';
+    const secondApproval =
+      'memory_approval_2222222222222222';
+    const secondMemory =
+      'memory_item_2222222222222222';
+
+    assert.equal(
+      registry.create({
+        candidate: candidate(),
+        approval: approval(),
+        memoryId: MEMORY,
+        trustedNowMs: NOW,
+      }).accepted,
+      true,
+    );
+
+    assert.equal(
+      registry.create({
+        candidate: candidate({
+          candidateId:
+            secondCandidate,
+          content:
+            'Prefer German for everyday conversation.',
+          explicitApprovalId:
+            secondApproval,
+        }),
+        approval: approval({
+          approvalId:
+            secondApproval,
+          candidateId:
+            secondCandidate,
+        }),
+        memoryId:
+          secondMemory,
+        trustedNowMs: NOW,
+      }).accepted,
+      true,
+    );
+
+    const compacted =
+      registry.compact({
+        accountId: ACCOUNT,
+        maxGroups: 8,
+        maxBytes: 16 * 1024,
+        trustedNowMs:
+          NOW + 1,
+      });
+
+    assert.ok(compacted);
+    assert.equal(
+      compacted.groups.length,
+      1,
+    );
+    assert.equal(
+      compacted.groups[0].state,
+      'conflict',
+    );
+    assert.deepEqual(
+      compacted.groups[0]
+        .sources
+        .map(
+          (entry) =>
+            entry.memoryId,
+        )
+        .sort(),
+      [
+        MEMORY,
+        secondMemory,
+      ].sort(),
+    );
+    assert.equal(
+      registry
+        .isCurrentDerivedProjection(
+          ACCOUNT,
+          compacted,
+        ),
+      true,
+    );
+
+    assert.equal(
+      registry.setPolicy(
+        policy({
+          revision: 4,
+          updatedAtMs:
+            NOW + 2,
+        }),
+      ).accepted,
+      true,
+    );
+
+    assert.equal(
+      registry
+        .isCurrentDerivedProjection(
+          ACCOUNT,
+          compacted,
+        ),
+      false,
+    );
+  },
+);
+
+test(
+  'sealed snapshot verifies before restore and preserves deletion replay protection across restart',
+  async () => {
+    const registry =
+      new MemoryRegistry();
+
+    registry.setPolicy(policy());
+    registry.create({
+      candidate: candidate(),
+      approval: approval(),
+      memoryId: MEMORY,
+      trustedNowMs: NOW,
+    });
+    registry.delete({
+      accountId: ACCOUNT,
+      memoryId: MEMORY,
+      expectedRevision: 1,
+      reason: 'user_deleted',
+      trustedNowMs: NOW + 1,
+    });
+
+    const provider =
+      integrityProvider();
+
+    const snapshot =
+      await registry.sealSnapshot(
+        ACCOUNT,
+        NOW + 2,
+        provider,
+      );
+
+    assert.ok(snapshot);
+    assert.equal(
+      snapshot.records.length,
+      0,
+    );
+    assert.equal(
+      snapshot.tombstones.length,
+      1,
+    );
+    assert.equal(
+      snapshot.candidateBindings
+        .length,
+      1,
+    );
+
+    const serialized =
+      JSON.parse(
+        JSON.stringify(snapshot),
+      );
+
+    const direct =
+      new MemoryRegistry()
+        .restoreSnapshot(
+          serialized,
+        );
+
+    assert.equal(
+      direct.accepted,
+      false,
+    );
+    assert.equal(
+      direct.reason,
+      'snapshot_unverified',
+    );
+
+    const tampered = {
+      ...serialized,
+      integrityDigest:
+        '0'.repeat(64),
+    };
+
+    const tamperedResult =
+      await new MemoryRegistry()
+        .verifyAndRestoreSnapshot(
+          tampered,
+          provider,
+        );
+
+    assert.equal(
+      tamperedResult.accepted,
+      false,
+    );
+    assert.equal(
+      tamperedResult.reason,
+      'snapshot_integrity_failed',
+    );
+
+    const restarted =
+      new MemoryRegistry();
+
+    const restored =
+      await restarted
+        .verifyAndRestoreSnapshot(
+          serialized,
+          provider,
+        );
+
+    assert.equal(
+      restored.accepted,
+      true,
+    );
+
+    const replay =
+      restarted.create({
+        candidate: candidate(),
+        approval: approval(),
+        memoryId:
+          'memory_item_3333333333333333',
+        trustedNowMs: NOW + 3,
+      });
+
+    assert.equal(
+      replay.accepted,
+      false,
+    );
+    assert.equal(
+      replay.reason,
+      'candidate_replay',
+    );
+  },
+);
+
+test(
+  'memory audit factory remains content-free and strict parser rejects private payload fields',
+  () => {
+    const event =
+      createMemoryAuditEvent({
+        auditId:
+          'memaudit_1111111111111111',
+        accountId: ACCOUNT,
+        eventType:
+          'memory_deleted',
+        reasonCode:
+          'user_deleted',
+        memoryId: MEMORY,
+        policyId: POLICY,
+        sourceCount: 1,
+        resultCount: 0,
+        occurredAtMs: NOW,
+      });
+
+    assert.ok(event);
+    assert.equal(
+      event.containsPrivateContent,
+      false,
+    );
+    assert.equal(
+      Object.hasOwn(
+        event,
+        'content',
+      ),
+      false,
+    );
+
+    assert.equal(
+      parseMemoryAuditEvent({
+        ...event,
+        content:
+          'private memory text',
+      }),
+      null,
     );
   },
 );

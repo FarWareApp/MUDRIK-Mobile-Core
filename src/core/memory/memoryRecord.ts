@@ -8,13 +8,16 @@ import type {
 } from './memoryCandidate';
 
 import {
+  parseCanonicalMemoryTopicTags,
+} from './memoryTopic';
+
+import {
   ACCOUNT_ID,
   MEMORY_APPROVAL_ID,
   MEMORY_CANDIDATE_ID,
   MEMORY_ID,
   MEMORY_POLICY_ID,
   exactObject,
-  freezeStrings,
   isSafeMemoryText,
   isSafeReference,
   safeInteger,
@@ -82,41 +85,6 @@ const SOURCES =
     'project_reference',
     'imported_user_data',
   ]);
-
-function parseTags(
-  value: unknown,
-): readonly string[] | null {
-  if (
-    !Array.isArray(value)
-    || value.length > 32
-    || value.some(
-      (entry) =>
-        typeof entry !== 'string'
-        || !isSafeMemoryText(
-          entry,
-          80,
-        ),
-    )
-  ) {
-    return null;
-  }
-
-  const tags =
-    [...value] as string[];
-
-  if (
-    new Set(tags).size
-      !== tags.length
-    || [...tags].sort().some(
-      (entry, index) =>
-        entry !== tags[index],
-    )
-  ) {
-    return null;
-  }
-
-  return freezeStrings(tags);
-}
 
 export function parseMemoryRecord(
   input: unknown,
@@ -240,7 +208,9 @@ export function parseMemoryRecord(
   }
 
   const topicTags =
-    parseTags(value.topicTags);
+    parseCanonicalMemoryTopicTags(
+      value.topicTags,
+    );
 
   if (!topicTags) {
     return null;

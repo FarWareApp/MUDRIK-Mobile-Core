@@ -4,12 +4,15 @@ import {
 } from './memoryCategories';
 
 import {
+  parseMemoryTopicTags,
+} from './memoryTopic';
+
+import {
   ACCOUNT_ID,
   MEMORY_APPROVAL_ID,
   MEMORY_CANDIDATE_ID,
   MEMORY_POLICY_ID,
   exactObject,
-  freezeStrings,
   isSafeMemoryText,
   isSafeReference,
   safeInteger,
@@ -70,73 +73,6 @@ const SOURCES =
     'project_reference',
     'imported_user_data',
   ]);
-
-function normalizeTag(
-  value: unknown,
-): string | null {
-  if (
-    typeof value !== 'string'
-    || value.length < 1
-    || value.length > 80
-    || /[\u0000-\u001F\u007F]/
-      .test(value)
-  ) {
-    return null;
-  }
-
-  const normalized =
-    value
-      .normalize('NFKC')
-      .trim()
-      .toLowerCase();
-
-  if (
-    normalized.length < 1
-    || normalized.length > 80
-    || !isSafeMemoryText(
-      normalized,
-      80,
-    )
-  ) {
-    return null;
-  }
-
-  return normalized;
-}
-
-function parseTags(
-  value: unknown,
-): readonly string[] | null {
-  if (
-    !Array.isArray(value)
-    || value.length > 32
-  ) {
-    return null;
-  }
-
-  const tags:
-    string[] = [];
-
-  for (const entry of value) {
-    const normalized =
-      normalizeTag(entry);
-
-    if (!normalized) {
-      return null;
-    }
-
-    tags.push(normalized);
-  }
-
-  const unique =
-    [...new Set(tags)].sort();
-
-  if (unique.length !== tags.length) {
-    return null;
-  }
-
-  return freezeStrings(unique);
-}
 
 export function parseMemoryCandidate(
   input: unknown,
@@ -219,7 +155,9 @@ export function parseMemoryCandidate(
   }
 
   const topicTags =
-    parseTags(record.topicTags);
+    parseMemoryTopicTags(
+      record.topicTags,
+    );
 
   if (!topicTags) {
     return null;
