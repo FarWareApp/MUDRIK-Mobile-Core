@@ -439,10 +439,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Establish Section 16 Memory System on top of the accepted Section 15 surface boundary.
-2. Preserve Sections 01–15 as open for their deferred Layer 4 obligations where applicable.
-3. Keep Sections 11/12 as the final local execution authority; memory, surfaces and routing state must never manufacture tool authority.
-4. Keep memory provider-independent, privacy-bounded and fresh-conversation-by-default; retrieval must remain explicit, relevant and non-authoritative.
+1. Establish Section 17 Knowledge Engine and Developer Knowledge System on top of the accepted Section 16 memory boundary.
+2. Preserve Sections 01–16 as open for their deferred Layer 4 obligations where applicable.
+3. Keep Sections 11/12 as the final local execution authority; knowledge, memory, surfaces and routing state must never manufacture tool authority.
+4. Keep knowledge provider-independent, provenance-bound, freshness-aware and citation-oriented; retrieved source text is untrusted data, not executable instruction.
 
 ## Development Rule
 

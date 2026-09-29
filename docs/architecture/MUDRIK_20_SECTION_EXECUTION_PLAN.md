@@ -391,6 +391,8 @@ Scope:
 
 # Section 16 — Memory System
 
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED.**
+
 Scope:
 
 - long-term memory independent of model provider;
@@ -404,6 +406,8 @@ Scope:
 - fresh-conversation-by-default behavior with relevant prior-context retrieval.
 
 # Section 17 — Knowledge Engine and Developer Knowledge System
+
+**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
 
 Scope:
 
@@ -508,9 +512,9 @@ This exception permits continued engineering progress without redefining incompl
 
 ## Current Pre-Device Workstream
 
-**Section 15 — Web and Mobile Command Surfaces — PRE-DEVICE COMPLETE / REAL-SURFACE LAYER 4 DEFERRED.**
+**Section 16 — Memory System — PRE-DEVICE COMPLETE / REAL-ENVIRONMENT LAYER 4 DEFERRED.**
 
-**Section 16 — Memory System — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
+**Section 17 — Knowledge Engine and Developer Knowledge System — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
 
 Pre-device completed/open sections:
 
@@ -528,6 +532,7 @@ Pre-device completed/open sections:
 - Section 13 — Coding Engine and Autonomous Work Runner.
 - Section 14 — Control Plane and Reliable Task Routing.
 - Section 15 — Web and Mobile Command Surfaces.
+- Section 16 — Memory System.
 
 ## Completion Definition
 

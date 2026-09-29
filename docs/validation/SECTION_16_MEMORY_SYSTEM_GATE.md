@@ -2,7 +2,7 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
 
 Section 16 implements provider-independent personal long-term memory while preserving fresh-conversation-by-default behavior and strict separation from execution, device, sensor and approval authority.
 
