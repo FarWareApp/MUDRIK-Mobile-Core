@@ -38,6 +38,26 @@ On the connected Pop!_OS development machine, the exact candidate passed:
 
 The dependency acceptance gate blocks High/Critical findings. Moderate findings remain tracked and are not represented as zero-risk or silently suppressed.
 
+## GitHub Validation Evidence
+
+### Mobile Core Validation
+
+- Workflow: Mobile Core Validation
+- Run ID: 36620054699
+- Head SHA: a7aa9931c438eae93beea2ceaccdca299b8ad79c
+- Result: SUCCESS
+- Hosted Control Plane routing suite: 59/59 PASS
+
+The hosted workflow also executed the repository's frozen dependency installation, tracked/history secret gates, dependency High/Critical gate, lint, TypeScript, Mobile Core, Computer Agent and Expo validation on the accepted candidate.
+
+### CodeQL
+
+- Workflow: CodeQL Security Analysis
+- Run ID: 36620054563
+- Head SHA: a7aa9931c438eae93beea2ceaccdca299b8ad79c
+- Result: SUCCESS
+- JavaScript/TypeScript analysis: PASS
+
 ## Implemented Section 15 Controls
 
 The accepted candidate provides:

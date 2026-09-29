@@ -13,7 +13,11 @@ Local validation:
 - dependency gate: 0 Critical / 0 High / 5 Moderate
 - worktree secret-signature gate: PASS
 
-Hosted CI/CodeQL evidence is recorded in the automated evidence document after the accepted candidate workflows complete.
+Hosted validation on the accepted candidate:
+
+- Mobile Core Validation run ID 36620054699: SUCCESS
+- CodeQL Security Analysis run ID 36620054563: SUCCESS
+- hosted Control Plane regressions: 59/59 PASS
 
 ## S15-SESSION-001 — Surface actions lacked explicit stale-tab/replay binding
 
