@@ -1,5 +1,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import {
+  constants as fsConstants,
+} from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -9,6 +12,9 @@ import {
 import {
   parseControlTaskRecord,
 } from './task-state.mjs';
+
+const MAX_RECORD_BYTES =
+  4 * 1024 * 1024;
 
 function canonical(record) {
   return JSON.stringify(record);
@@ -145,6 +151,21 @@ export class DurableControlTaskStore {
     }
   }
 
+  async fsyncDirectory() {
+    let handle;
+
+    try {
+      handle =
+        await fs.open(
+          this.directory,
+          'r',
+        );
+      await handle.sync();
+    } finally {
+      await handle?.close();
+    }
+  }
+
   async writeAtomic(
     taskId,
     record,
@@ -167,41 +188,62 @@ export class DurableControlTaskStore {
           record,
         ),
     };
-
-    await fs.writeFile(
-      temp,
+    const body =
       JSON.stringify(
         envelope,
         null,
         2,
-      ) + '\n',
-      {
-        mode: 0o600,
-        flag: 'wx',
-      },
-    );
+      ) + '\n';
 
-    await fs.rename(
-      temp,
-      file,
-    );
+    let handle;
 
-    await fs.chmod(
-      file,
-      0o600,
-    );
+    try {
+      handle =
+        await fs.open(
+          temp,
+          'wx',
+          0o600,
+        );
+      await handle.writeFile(
+        body,
+        'utf8',
+      );
+      await handle.sync();
+      await handle.close();
+      handle = null;
+
+      await fs.rename(
+        temp,
+        file,
+      );
+      await fs.chmod(
+        file,
+        0o600,
+      );
+      await this.fsyncDirectory();
+    } catch (error) {
+      await handle?.close()
+        .catch(() => {});
+      await fs.unlink(temp)
+        .catch(() => {});
+      throw error;
+    }
   }
 
   async readUnlocked(taskId) {
     const file =
       this.filePath(taskId);
-    let raw;
+    let handle;
 
     try {
-      raw =
-        await fs.readFile(
+      handle =
+        await fs.open(
           file,
-          'utf8',
+          fsConstants.O_RDONLY
+            | (
+              fsConstants.O_NOFOLLOW
+              ?? 0
+            ),
         );
     } catch (error) {
       if (
@@ -211,7 +253,34 @@ export class DurableControlTaskStore {
         return null;
       }
 
-      throw error;
+      throw new Error(
+        'control_store_corrupt',
+      );
+    }
+
+    let raw;
+
+    try {
+      const stat =
+        await handle.stat();
+
+      if (
+        !stat.isFile()
+        || stat.size < 2
+        || stat.size
+          > MAX_RECORD_BYTES
+      ) {
+        throw new Error(
+          'control_store_corrupt',
+        );
+      }
+
+      raw =
+        await handle.readFile(
+          'utf8',
+        );
+    } finally {
+      await handle.close();
     }
 
     let envelope;
@@ -245,7 +314,11 @@ export class DurableControlTaskStore {
         envelope.record,
       );
 
-    if (!record) {
+    if (
+      !record
+      || record.task.taskId
+        !== taskId
+    ) {
       throw new Error(
         'control_store_corrupt',
       );
@@ -281,6 +354,63 @@ export class DurableControlTaskStore {
     );
   }
 
+  async findTaskByNonce(
+    nonce,
+    excludingTaskId = null,
+  ) {
+    let names;
+
+    try {
+      names =
+        await fs.readdir(
+          this.directory,
+        );
+    } catch {
+      throw new Error(
+        'control_store_corrupt',
+      );
+    }
+
+    for (const name of names.sort()) {
+      if (!name.endsWith('.json')) {
+        continue;
+      }
+
+      const taskId =
+        name.slice(0, -5);
+
+      if (
+        !isControlId(
+          'task',
+          taskId,
+        )
+      ) {
+        throw new Error(
+          'control_store_corrupt',
+        );
+      }
+
+      if (taskId === excludingTaskId) {
+        continue;
+      }
+
+      const record =
+        await this.readUnlocked(
+          taskId,
+        );
+
+      if (
+        record
+        && record.task.nonce
+          === nonce
+      ) {
+        return record;
+      }
+    }
+
+    return null;
+  }
+
   async create(recordInput) {
     const record =
       parseControlTaskRecord(
@@ -297,7 +427,7 @@ export class DurableControlTaskStore {
       record.task.taskId;
 
     return this.withLock(
-      taskId,
+      '__create__',
       async () => {
         const existing =
           await this
@@ -319,6 +449,22 @@ export class DurableControlTaskStore {
             accepted: false,
             reason:
               'control_store_conflict',
+          });
+        }
+
+        const nonceConflict =
+          await this.findTaskByNonce(
+            record.task.nonce,
+            taskId,
+          );
+
+        if (nonceConflict) {
+          return Object.freeze({
+            accepted: false,
+            reason:
+              'control_store_nonce_replay',
+            record:
+              nonceConflict,
           });
         }
 

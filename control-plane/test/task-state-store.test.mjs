@@ -683,3 +683,156 @@ test(
     );
   },
 );
+
+test(
+  'durable task store rejects nonce replay across different task ids after restart',
+  async (t) => {
+    const directory =
+      await fs.mkdtemp(
+        path.join(
+          os.tmpdir(),
+          'mudrik-control-nonce-',
+        ),
+      );
+    const key =
+      crypto.randomBytes(32);
+
+    t.after(
+      () => fs.rm(
+        directory,
+        {
+          recursive: true,
+          force: true,
+        },
+      ),
+    );
+
+    const store =
+      await new DurableControlTaskStore({
+        directory,
+        integrityKey: key,
+      }).init();
+
+    const first =
+      createControlTaskRecord(
+        task(),
+        NOW,
+      );
+
+    assert.equal(
+      (
+        await store.create(first)
+      ).accepted,
+      true,
+    );
+
+    const restarted =
+      await new DurableControlTaskStore({
+        directory,
+        integrityKey: key,
+      }).init();
+
+    const replayTask =
+      parseRoutedTask({
+        ...task(),
+        taskId:
+          'ctask_4444444444444444',
+        sequence: 2,
+      });
+
+    const replay =
+      await restarted.create(
+        createControlTaskRecord(
+          replayTask,
+          NOW + 1,
+        ),
+      );
+
+    assert.equal(
+      replay.accepted,
+      false,
+    );
+    assert.equal(
+      replay.reason,
+      'control_store_nonce_replay',
+    );
+    assert.equal(
+      replay.record.task.taskId,
+      first.task.taskId,
+    );
+  },
+);
+
+test(
+  'concurrent task creation serializes nonce uniqueness',
+  async (t) => {
+    const directory =
+      await fs.mkdtemp(
+        path.join(
+          os.tmpdir(),
+          'mudrik-control-nonce-race-',
+        ),
+      );
+    const key =
+      crypto.randomBytes(32);
+
+    t.after(
+      () => fs.rm(
+        directory,
+        {
+          recursive: true,
+          force: true,
+        },
+      ),
+    );
+
+    const store =
+      await new DurableControlTaskStore({
+        directory,
+        integrityKey: key,
+      }).init();
+
+    const a =
+      createControlTaskRecord(
+        parseRoutedTask({
+          ...task(),
+          taskId:
+            'ctask_5555555555555555',
+          sequence: 3,
+        }),
+        NOW,
+      );
+    const b =
+      createControlTaskRecord(
+        parseRoutedTask({
+          ...task(),
+          taskId:
+            'ctask_6666666666666666',
+          sequence: 4,
+        }),
+        NOW,
+      );
+
+    const results =
+      await Promise.all([
+        store.create(a),
+        store.create(b),
+      ]);
+
+    assert.equal(
+      results.filter(
+        (entry) =>
+          entry.accepted,
+      ).length,
+      1,
+    );
+    assert.equal(
+      results.filter(
+        (entry) =>
+          entry.reason
+            === 'control_store_nonce_replay',
+      ).length,
+      1,
+    );
+  },
+);

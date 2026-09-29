@@ -500,3 +500,31 @@ test(
     );
   },
 );
+
+test(
+  'rate limiter reclaims expired keys automatically before cardinality rejection',
+  () => {
+    const limiter =
+      new FixedWindowRateLimiter({
+        windowMs: 100,
+        maxEvents: 1,
+        maxKeys: 1,
+      });
+
+    assert.equal(
+      limiter.check(
+        'device:first',
+        NOW,
+      ).allowed,
+      true,
+    );
+
+    assert.equal(
+      limiter.check(
+        'device:second',
+        NOW + 101,
+      ).allowed,
+      true,
+    );
+  },
+);

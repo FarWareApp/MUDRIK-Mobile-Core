@@ -384,6 +384,44 @@ export function transitionControlTask(
       record.state,
     )
   ) {
+    const sameTerminal =
+      (
+        event === 'block'
+        && record.state === 'blocked'
+      )
+      || (
+        event === 'succeed'
+        && record.state === 'succeeded'
+      )
+      || (
+        event === 'fail'
+        && record.state === 'failed'
+      )
+      || (
+        event === 'cancel'
+        && record.state === 'cancelled'
+      )
+      || (
+        event === 'revoke'
+        && record.state === 'revoked'
+      )
+      || (
+        event === 'expire'
+        && record.state === 'expired'
+      );
+
+    if (
+      sameTerminal
+      && typeof reason === 'string'
+      && reason === record.terminalReason
+    ) {
+      return Object.freeze({
+        accepted: true,
+        duplicate: true,
+        record,
+      });
+    }
+
     return Object.freeze({
       accepted: false,
       reason:
