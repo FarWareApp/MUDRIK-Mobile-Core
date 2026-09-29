@@ -2,7 +2,7 @@
 
 ## Status
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-INFRASTRUCTURE LAYER 4 DEFERRED`
 
 Section 14 implements the deterministic and durable Control Plane core without coupling production transport into the Mobile Core. Real WebSocket infrastructure, broker/database deployment, multi-region behavior and production credentials remain real-environment work.
 

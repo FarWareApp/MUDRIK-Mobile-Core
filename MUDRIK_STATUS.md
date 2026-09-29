@@ -355,19 +355,33 @@ Concrete provider routing/failover/credentials remain Section 18. Real-provider/
 
 ### Section 14 — Control Plane and Reliable Task Routing
 
-`PRE-DEVICE IMPLEMENTATION — ACTIVE`
+`PRE-DEVICE COMPLETE — OPEN / REAL-INFRASTRUCTURE LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`ec2233eacd28332d13a83b809760e022918cc908`
+
+Evidence:
+
+- Mobile Core Validation #755 / `36591646407`: SUCCESS;
+- CodeQL #651 / `36591646475`: SUCCESS;
+- Control Plane regressions: **59/59 PASS**;
+- Mobile Core regressions: **792/792 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency audit: **0 Critical / 0 High / 2 reviewed Moderate**;
+- tracked/history secret gates: PASS.
 
 Current architecture boundary:
 
 `Authenticated Source Session + Trusted Device Registry -> Durable Command Admission -> Approval/Authorization -> Ordered Route State -> At-Least-Once Delivery -> Agent Ack/Event Reconciliation -> Terminal State + Audit`
 
-Section 14 is now the active pre-device implementation section. It reuses Section 3 account/session/device trust and preserves Sections 11/12 as the final local execution authority. Gateway, broker, presence or AI state can route work but cannot manufacture local capability grants.
+Sections 11/12 remain the final local execution authority. Gateway, broker, presence or AI state can route work but cannot manufacture local capability grants.
 
-Gate:
+Detailed evidence:
 
-- `docs/architecture/MUDRIK_REALTIME_CONTROL_PLANE.md`
-- `docs/architecture/MUDRIK_CONTROL_PLANE_THREAT_MODEL.md`
 - `docs/validation/SECTION_14_CONTROL_PLANE_ROUTING_GATE.md`
+- `docs/validation/SECTION_14_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_14_DEFECTS.md`
 
 ## UI/UX Detail Preservation Rule
 
@@ -425,10 +439,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Establish Section 14 Control Plane and Reliable Task Routing from authenticated, replay-safe, outbound-first contracts.
-2. Preserve Sections 01–13 as open for their deferred Layer 4 obligations where applicable.
+1. Establish Section 15 Web and Mobile Command Surfaces on top of the accepted Section 14 routing boundary.
+2. Preserve Sections 01–14 as open for their deferred Layer 4 obligations where applicable.
 3. Keep Sections 11/12 as the final local execution authority; routing/control-plane state must never manufacture tool authority.
-4. Require durable sequencing, reconnect/replay safety, revoke/kill controls and auditable state transitions before Section 14 pre-device completion.
+4. Keep browser/mobile command surfaces non-authoritative: every command must remain subordinate to Section 14 routing and Sections 11/12 local execution policy.
 
 ## Development Rule
 
