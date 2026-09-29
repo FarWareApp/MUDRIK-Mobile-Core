@@ -51,6 +51,18 @@ const {
   'src/core/memory/memoryAudit.ts',
 );
 
+const {
+  createDefaultCompanionProfile,
+} = loadTypeScriptModule(
+  'src/contracts/Companion.ts',
+);
+
+const {
+  resolveCompanionMemoryPolicyBinding,
+} = loadTypeScriptModule(
+  'src/core/companion/companionMemoryBinding.ts',
+);
+
 const ACCOUNT =
   'acct_1111111111111111';
 const OTHER_ACCOUNT =
@@ -1075,6 +1087,574 @@ test(
           'private memory text',
       }),
       null,
+    );
+  },
+);
+
+
+function companionProfile(
+  overrides = {},
+) {
+  return {
+    ...createDefaultCompanionProfile(),
+    memoryPolicyId: POLICY,
+    createdAt: 1000,
+    updatedAt: 1000,
+    ...overrides,
+  };
+}
+
+test(
+  'companion memory binding is exact-account exact-policy reference only and cannot widen memory authority',
+  () => {
+    const bound =
+      resolveCompanionMemoryPolicyBinding(
+        companionProfile(),
+        policy(),
+        ACCOUNT,
+      );
+
+    assert.equal(
+      bound.bound,
+      true,
+    );
+    assert.equal(
+      bound.retrievalPermitted,
+      true,
+    );
+    assert.equal(
+      bound.policyRevision,
+      3,
+    );
+    assert.equal(
+      bound.grantsMemoryAuthority,
+      false,
+    );
+    assert.equal(
+      bound.grantsMemoryCategoryAccess,
+      false,
+    );
+    assert.equal(
+      bound.grantsRetrievalAuthority,
+      false,
+    );
+    assert.equal(
+      Object.hasOwn(
+        bound,
+        'allowedCategories',
+      ),
+      false,
+    );
+
+    const wrongAccount =
+      resolveCompanionMemoryPolicyBinding(
+        companionProfile(),
+        policy(),
+        OTHER_ACCOUNT,
+      );
+
+    assert.equal(
+      wrongAccount.bound,
+      false,
+    );
+    assert.equal(
+      wrongAccount.reason,
+      'account_mismatch',
+    );
+
+    const wrongPolicy =
+      resolveCompanionMemoryPolicyBinding(
+        companionProfile(),
+        policy({
+          policyId:
+            'memory_policy_2222222222222222',
+        }),
+        ACCOUNT,
+      );
+
+    assert.equal(
+      wrongPolicy.bound,
+      false,
+    );
+    assert.equal(
+      wrongPolicy.reason,
+      'policy_mismatch',
+    );
+
+    const disabled =
+      resolveCompanionMemoryPolicyBinding(
+        companionProfile(),
+        policy({
+          mode: 'disabled',
+          allowedCategories: [],
+          categoryRetentionMs: {},
+          retrievalEnabled: false,
+          conversationReconstructionEnabled:
+            false,
+        }),
+        ACCOUNT,
+      );
+
+    assert.equal(
+      disabled.bound,
+      true,
+    );
+    assert.equal(
+      disabled.retrievalPermitted,
+      false,
+    );
+    assert.equal(
+      disabled.reason,
+      'memory_disabled',
+    );
+  },
+);
+
+test(
+  'registry policy and candidate replay rules are idempotent conflict-safe and revision ordered',
+  () => {
+    const registry =
+      new MemoryRegistry();
+
+    const firstPolicy =
+      registry.setPolicy(
+        policy(),
+      );
+
+    assert.equal(
+      firstPolicy.accepted,
+      true,
+    );
+
+    const duplicatePolicy =
+      registry.setPolicy(
+        policy(),
+      );
+
+    assert.equal(
+      duplicatePolicy.accepted,
+      true,
+    );
+    assert.equal(
+      duplicatePolicy.duplicate,
+      true,
+    );
+
+    const sameRevisionConflict =
+      registry.setPolicy(
+        policy({
+          maxRetrievalCount: 7,
+        }),
+      );
+
+    assert.equal(
+      sameRevisionConflict.accepted,
+      false,
+    );
+    assert.equal(
+      sameRevisionConflict.reason,
+      'policy_revision_conflict',
+    );
+
+    const stale =
+      registry.setPolicy(
+        policy({
+          revision: 2,
+          updatedAtMs:
+            NOW - 200,
+        }),
+      );
+
+    assert.equal(
+      stale.accepted,
+      false,
+    );
+    assert.equal(
+      stale.reason,
+      'stale_policy',
+    );
+
+    const gap =
+      registry.setPolicy(
+        policy({
+          revision: 5,
+          updatedAtMs:
+            NOW + 1,
+        }),
+      );
+
+    assert.equal(
+      gap.accepted,
+      false,
+    );
+    assert.equal(
+      gap.reason,
+      'policy_revision_gap',
+    );
+
+    const created =
+      registry.create({
+        candidate: candidate(),
+        approval: approval(),
+        memoryId: MEMORY,
+        trustedNowMs: NOW,
+      });
+
+    assert.equal(
+      created.accepted,
+      true,
+    );
+
+    const duplicate =
+      registry.create({
+        candidate: candidate(),
+        approval: approval(),
+        memoryId: MEMORY,
+        trustedNowMs: NOW,
+      });
+
+    assert.equal(
+      duplicate.accepted,
+      true,
+    );
+    assert.equal(
+      duplicate.duplicate,
+      true,
+    );
+
+    const candidateReplay =
+      registry.create({
+        candidate: candidate(),
+        approval: approval(),
+        memoryId:
+          'memory_item_3333333333333333',
+        trustedNowMs: NOW,
+      });
+
+    assert.equal(
+      candidateReplay.accepted,
+      false,
+    );
+    assert.equal(
+      candidateReplay.reason,
+      'candidate_replay',
+    );
+
+    const otherCandidate =
+      'memory_candidate_3333333333333333';
+    const otherApproval =
+      'memory_approval_3333333333333333';
+
+    const memoryConflict =
+      registry.create({
+        candidate: candidate({
+          candidateId:
+            otherCandidate,
+          explicitApprovalId:
+            otherApproval,
+        }),
+        approval: approval({
+          approvalId:
+            otherApproval,
+          candidateId:
+            otherCandidate,
+        }),
+        memoryId: MEMORY,
+        trustedNowMs: NOW,
+      });
+
+    assert.equal(
+      memoryConflict.accepted,
+      false,
+    );
+    assert.equal(
+      memoryConflict.reason,
+      'memory_id_conflict',
+    );
+  },
+);
+
+test(
+  'supersession preserves old provenance and rejects stale repeat updates',
+  () => {
+    const registry =
+      new MemoryRegistry();
+
+    registry.setPolicy(policy());
+    registry.create({
+      candidate: candidate(),
+      approval: approval(),
+      memoryId: MEMORY,
+      trustedNowMs: NOW,
+    });
+
+    const nextCandidate =
+      'memory_candidate_4444444444444444';
+    const nextApproval =
+      'memory_approval_4444444444444444';
+    const nextMemory =
+      'memory_item_4444444444444444';
+
+    const superseded =
+      registry.supersede({
+        accountId: ACCOUNT,
+        currentMemoryId: MEMORY,
+        expectedRevision: 1,
+        candidate: candidate({
+          candidateId:
+            nextCandidate,
+          content:
+            'Prefer concise Arabic for everyday conversation.',
+          explicitApprovalId:
+            nextApproval,
+        }),
+        approval: approval({
+          approvalId:
+            nextApproval,
+          candidateId:
+            nextCandidate,
+        }),
+        newMemoryId:
+          nextMemory,
+        trustedNowMs:
+          NOW + 1,
+      });
+
+    assert.equal(
+      superseded.accepted,
+      true,
+    );
+    assert.equal(
+      superseded.reason,
+      'superseded',
+    );
+
+    const state =
+      registry.exportAccountState(
+        ACCOUNT,
+      );
+
+    assert.ok(state);
+
+    const oldRecord =
+      state.records.find(
+        (record) =>
+          record.memoryId
+            === MEMORY,
+      );
+    const newRecord =
+      state.records.find(
+        (record) =>
+          record.memoryId
+            === nextMemory,
+      );
+
+    assert.ok(oldRecord);
+    assert.ok(newRecord);
+    assert.equal(
+      oldRecord.state,
+      'superseded',
+    );
+    assert.equal(
+      oldRecord.revision,
+      2,
+    );
+    assert.equal(
+      oldRecord
+        .supersededByMemoryId,
+      nextMemory,
+    );
+    assert.equal(
+      newRecord.state,
+      'active',
+    );
+
+    const staleRepeat =
+      registry.supersede({
+        accountId: ACCOUNT,
+        currentMemoryId: MEMORY,
+        expectedRevision: 1,
+        candidate: candidate({
+          candidateId:
+            'memory_candidate_5555555555555555',
+          explicitApprovalId:
+            'memory_approval_5555555555555555',
+        }),
+        approval: approval({
+          approvalId:
+            'memory_approval_5555555555555555',
+          candidateId:
+            'memory_candidate_5555555555555555',
+        }),
+        newMemoryId:
+          'memory_item_5555555555555555',
+        trustedNowMs:
+          NOW + 2,
+      });
+
+    assert.equal(
+      staleRepeat.accepted,
+      false,
+    );
+    assert.equal(
+      staleRepeat.reason,
+      'supersession_source_invalid',
+    );
+  },
+);
+
+test(
+  'retrieval is account category time count byte and expiry bounded',
+  () => {
+    const registry =
+      new MemoryRegistry();
+
+    registry.setPolicy(policy());
+
+    registry.create({
+      candidate: candidate({
+        requestedRetentionMs:
+          60 * 60 * 1000,
+      }),
+      approval: approval(),
+      memoryId: MEMORY,
+      trustedNowMs: NOW,
+    });
+
+    const wrongAccount =
+      registry.retrieve(
+        retrievalRequest({
+          accountId:
+            OTHER_ACCOUNT,
+        }),
+        NOW + 1,
+      );
+
+    assert.equal(
+      wrongAccount.accepted,
+      false,
+    );
+    assert.equal(
+      wrongAccount.reason,
+      'binding_mismatch',
+    );
+
+    const deniedCategory =
+      registry.retrieve(
+        retrievalRequest({
+          categories: ['routine'],
+        }),
+        NOW + 1,
+      );
+
+    assert.equal(
+      deniedCategory.accepted,
+      false,
+    );
+    assert.equal(
+      deniedCategory.reason,
+      'category_denied',
+    );
+
+    const deniedCount =
+      registry.retrieve(
+        retrievalRequest({
+          maxResults: 9,
+        }),
+        NOW + 1,
+      );
+
+    assert.equal(
+      deniedCount.accepted,
+      false,
+    );
+    assert.equal(
+      deniedCount.reason,
+      'limit_denied',
+    );
+
+    const deniedBytes =
+      registry.retrieve(
+        retrievalRequest({
+          maxContextBytes:
+            16 * 1024 + 1,
+        }),
+        NOW + 1,
+      );
+
+    assert.equal(
+      deniedBytes.accepted,
+      false,
+    );
+    assert.equal(
+      deniedBytes.reason,
+      'limit_denied',
+    );
+
+    const futureRequest =
+      registry.retrieve(
+        retrievalRequest({
+          requestedAtMs:
+            NOW + 10,
+        }),
+        NOW + 5,
+      );
+
+    assert.equal(
+      futureRequest.accepted,
+      false,
+    );
+    assert.equal(
+      futureRequest.reason,
+      'time_invalid',
+    );
+
+    const afterExpiry =
+      NOW + 60 * 60 * 1000;
+
+    const expired =
+      registry.retrieve(
+        retrievalRequest({
+          requestedAtMs:
+            afterExpiry,
+        }),
+        afterExpiry,
+      );
+
+    assert.equal(
+      expired.accepted,
+      true,
+    );
+    assert.equal(
+      expired.projection.entries
+        .length,
+      0,
+    );
+
+    assert.equal(
+      registry.purgeExpired(
+        ACCOUNT,
+        afterExpiry,
+      ),
+      1,
+    );
+
+    const tombstone =
+      registry.getTombstone(
+        MEMORY,
+      );
+
+    assert.ok(tombstone);
+    assert.equal(
+      tombstone.reason,
+      'retention_expired',
+    );
+    assert.equal(
+      Object.hasOwn(
+        tombstone,
+        'content',
+      ),
+      false,
     );
   },
 );
