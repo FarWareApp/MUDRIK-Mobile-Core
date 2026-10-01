@@ -129,6 +129,13 @@ test(
     assert.match(avatar, /accessibilityLiveRegion="polite"/);
     assert.match(avatar, /typeScale\.title/);
     assert.match(avatar, /typeScale\.caption/);
+    assert.match(avatar, /InsetSurfaceCard/);
+    assert.match(avatar, /companionStudioEyebrow/);
+    assert.match(avatar, /companionPresenceTitle/);
+    assert.match(avatar, /phase === 'speaking'/);
+    assert.match(avatar, /phase === 'listening'/);
+    assert.match(avatar, /phase === 'processing'/);
+    assert.doesNotMatch(avatar, /Math\.random/);
     assert.doesNotMatch(avatar, /[♀♂]/u);
     assert.doesNotMatch(avatar, /\{phase\}/);
 
@@ -309,6 +316,11 @@ test(
       'cancelCompanionReset',
       'companionSessionFailed',
       'retryLoadingCompanion',
+      'companionStudioEyebrow',
+      'companionPresenceTitle',
+      'companionPresenceActiveCaption',
+      'companionPresenceIdleCaption',
+      'companionPresenceCapability',
       'companionPhaseIdle',
       'companionPhaseListening',
       'companionPhaseProcessing',

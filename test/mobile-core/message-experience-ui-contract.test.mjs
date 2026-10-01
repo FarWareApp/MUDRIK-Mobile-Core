@@ -78,7 +78,11 @@ test(
     );
     assert.match(
       emptyState,
-      /spacing\.huge/,
+      /spacing\.xl/,
+    );
+    assert.match(
+      emptyState,
+      /HomeCommandTile/,
     );
     assert.match(
       emptyState,

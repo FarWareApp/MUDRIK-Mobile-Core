@@ -108,6 +108,15 @@ test(
   () => {
     for (const key of [
       'quickActions',
+      'homeCommandEyebrow',
+      'homeCommandBody',
+      'homeCommandReady',
+      'homeVoiceDescription',
+      'homeConversationsDescription',
+      'homeProjectsDescription',
+      'homeCompanionDescription',
+      'homeSettingsDescription',
+      'homeComposerHint',
       'closeQuickActions',
       'addAttachment',
       'chooseAttachmentSource',

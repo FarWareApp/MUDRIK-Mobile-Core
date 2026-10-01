@@ -27,6 +27,11 @@ import { MessageDateSeparator } from './MessageDateSeparator';
 
 type Props = {
   messages: ChatMessage[];
+  onVoice: () => void;
+  onConversations: () => void;
+  onProjects: () => void;
+  onCompanion: () => void;
+  onSettings: () => void;
 };
 
 function getMessageListItemKey(
@@ -56,6 +61,11 @@ function renderMessageListItem({
 
 export function MessageList({
   messages,
+  onVoice,
+  onConversations,
+  onProjects,
+  onCompanion,
+  onSettings,
 }: Props) {
   const listRef = useRef<FlatList<MessageListItem>>(null);
   const shouldFollowEndRef = useRef(true);
@@ -104,10 +114,20 @@ export function MessageList({
       data={items}
       keyExtractor={getMessageListItemKey}
       renderItem={renderMessageListItem}
-      ListEmptyComponent={EmptyChatState}
+      ListEmptyComponent={(
+        <EmptyChatState
+          onVoice={onVoice}
+          onConversations={onConversations}
+          onProjects={onProjects}
+          onCompanion={onCompanion}
+          onSettings={onSettings}
+        />
+      )}
       contentContainerStyle={[
         styles.content,
-        messages.length === 0 && styles.emptyContent,
+        messages.length === 0
+          ? styles.emptyContent
+          : styles.filledContent,
       ]}
       keyboardShouldPersistTaps="handled"
       onScroll={handleScroll}
@@ -124,5 +144,9 @@ const styles = StyleSheet.create({
   },
   emptyContent: {
     flexGrow: 1,
+  },
+  filledContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
   },
 });

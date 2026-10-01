@@ -22,6 +22,16 @@ export const companionTranslations = {
       'حدث خطأ في جلسة الرفيق.',
     retryLoadingCompanion:
       'إعادة محاولة تحميل الرفيق',
+    companionStudioEyebrow:
+      'MUDRIK COMPANION',
+    companionPresenceTitle:
+      'حضور الرفيق',
+    companionPresenceActiveCaption:
+      'الجلسة نشطة والرفيق متصل بحالة التفاعل الحالية.',
+    companionPresenceIdleCaption:
+      'جاهز لبدء جلسة جديدة عند الطلب.',
+    companionPresenceCapability:
+      'الملف الشخصي والحضور المحلي جاهزان · الصوت والذكاء يبقيان ضمن صلاحيات الجلسة',
     companionPhaseIdle:
       'جاهز',
     companionPhaseListening:
@@ -60,6 +70,16 @@ export const companionTranslations = {
       'In der Begleiter-Sitzung ist ein Fehler aufgetreten.',
     retryLoadingCompanion:
       'Begleiter erneut laden',
+    companionStudioEyebrow:
+      'MUDRIK COMPANION',
+    companionPresenceTitle:
+      'Begleiter-Präsenz',
+    companionPresenceActiveCaption:
+      'Die Sitzung ist aktiv und der Begleiter folgt dem aktuellen Interaktionsstatus.',
+    companionPresenceIdleCaption:
+      'Bereit für eine neue Sitzung, sobald du sie startest.',
+    companionPresenceCapability:
+      'Profil und lokale Präsenz sind bereit · Stimme und Intelligenz bleiben sitzungsgebunden',
     companionPhaseIdle:
       'Bereit',
     companionPhaseListening:
@@ -98,6 +118,16 @@ export const companionTranslations = {
       'The companion session encountered an error.',
     retryLoadingCompanion:
       'Retry loading companion',
+    companionStudioEyebrow:
+      'MUDRIK COMPANION',
+    companionPresenceTitle:
+      'Companion presence',
+    companionPresenceActiveCaption:
+      'The session is active and the companion follows the current interaction state.',
+    companionPresenceIdleCaption:
+      'Ready for a new session whenever you start one.',
+    companionPresenceCapability:
+      'Profile and local presence ready · voice and intelligence remain session-scoped',
     companionPhaseIdle:
       'Ready',
     companionPhaseListening:

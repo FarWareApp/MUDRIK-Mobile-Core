@@ -1,6 +1,15 @@
 export const chatTranslations = {
   ar: {
     quickActions: 'الإجراءات السريعة',
+    homeCommandEyebrow: 'MUDRIK COMMAND',
+    homeCommandBody: 'اختر ما تريد أن تبدأ به أو اكتب مباشرة في مربع الرسالة.',
+    homeCommandReady: 'النظام جاهز · الذاكرة المحلية والميزات الأساسية متاحة',
+    homeVoiceDescription: 'ابدأ وضع الصوت عالي الجودة.',
+    homeConversationsDescription: 'ارجع إلى محادثاتك ونظمها.',
+    homeProjectsDescription: 'افتح مساحة عمل لمشروع طويل.',
+    homeCompanionDescription: 'ابدأ جلسة مع الرفيق الذكي.',
+    homeSettingsDescription: 'خصّص اللغة والخصوصية والتجربة.',
+    homeComposerHint: 'يمكنك أيضًا البدء مباشرة بالكتابة أو إضافة مرفق.',
     closeQuickActions: 'إغلاق الإجراءات السريعة',
     addAttachment: 'إضافة مرفق',
     chooseAttachmentSource: 'اختر مصدر المرفق',
@@ -15,6 +24,15 @@ export const chatTranslations = {
 
   de: {
     quickActions: 'Schnellaktionen',
+    homeCommandEyebrow: 'MUDRIK COMMAND',
+    homeCommandBody: 'Wähle einen Einstieg oder schreibe direkt in das Nachrichtenfeld.',
+    homeCommandReady: 'System bereit · lokaler Speicher und Kernfunktionen verfügbar',
+    homeVoiceDescription: 'Starte den hochwertigen Sprachmodus.',
+    homeConversationsDescription: 'Öffne und organisiere deine Unterhaltungen.',
+    homeProjectsDescription: 'Öffne einen Arbeitsbereich für längere Projekte.',
+    homeCompanionDescription: 'Starte eine Sitzung mit deinem Begleiter.',
+    homeSettingsDescription: 'Passe Sprache, Datenschutz und Erlebnis an.',
+    homeComposerHint: 'Du kannst auch direkt schreiben oder einen Anhang hinzufügen.',
     closeQuickActions: 'Schnellaktionen schließen',
     addAttachment: 'Anhang hinzufügen',
     chooseAttachmentSource: 'Quelle für den Anhang auswählen',
@@ -29,6 +47,15 @@ export const chatTranslations = {
 
   en: {
     quickActions: 'Quick actions',
+    homeCommandEyebrow: 'MUDRIK COMMAND',
+    homeCommandBody: 'Choose where to start, or type directly in the message field.',
+    homeCommandReady: 'System ready · local memory and core capabilities available',
+    homeVoiceDescription: 'Start the high-fidelity voice mode.',
+    homeConversationsDescription: 'Open and organize your conversations.',
+    homeProjectsDescription: 'Open a workspace for longer projects.',
+    homeCompanionDescription: 'Start a session with your companion.',
+    homeSettingsDescription: 'Tune language, privacy, and experience.',
+    homeComposerHint: 'You can also start by typing or adding an attachment.',
     closeQuickActions: 'Close quick actions',
     addAttachment: 'Add attachment',
     chooseAttachmentSource: 'Choose an attachment source',

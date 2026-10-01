@@ -206,6 +206,22 @@ export function ChatScreen({
             <View style={styles.content}>
               <MessageList
                 messages={messages}
+                onVoice={() => {
+                  setQuickActionsOpen(false);
+                  router.push('/voice');
+                }}
+                onConversations={() =>
+                  navigate('/conversations')
+                }
+                onProjects={() =>
+                  navigate('/projects')
+                }
+                onCompanion={() =>
+                  navigate('/companion')
+                }
+                onSettings={() =>
+                  navigate('/settings')
+                }
               />
 
               {sending && (

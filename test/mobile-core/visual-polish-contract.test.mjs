@@ -205,3 +205,72 @@ test(
     assert.doesNotMatch(source, /<Text\b/);
   },
 );
+
+test(
+  'empty chat is a real command center with routed capability surfaces',
+  () => {
+    const emptyState = fs.readFileSync(
+      'src/features/chat/components/EmptyChatState.tsx',
+      'utf8',
+    );
+    const messageList = fs.readFileSync(
+      'src/features/chat/components/MessageList.tsx',
+      'utf8',
+    );
+    const chatScreen = fs.readFileSync(
+      'src/features/chat/ChatScreen.tsx',
+      'utf8',
+    );
+    const tile = fs.readFileSync(
+      'src/features/chat/components/HomeCommandTile.tsx',
+      'utf8',
+    );
+
+    assert.match(emptyState, /HomeCommandTile/);
+    assert.match(emptyState, /HomeVoiceIcon/);
+    assert.match(emptyState, /QuickActionConversationsIcon/);
+    assert.match(emptyState, /QuickActionProjectsIcon/);
+    assert.match(emptyState, /QuickActionCompanionIcon/);
+    assert.match(emptyState, /QuickActionSettingsIcon/);
+
+    assert.match(messageList, /onVoice/);
+    assert.match(messageList, /onConversations/);
+    assert.match(messageList, /onProjects/);
+    assert.match(messageList, /onCompanion/);
+    assert.match(messageList, /onSettings/);
+
+    for (const route of [
+      '/voice',
+      '/conversations',
+      '/projects',
+      '/companion',
+      '/settings',
+    ]) {
+      assert.match(
+        chatScreen,
+        new RegExp(
+          route.replace('/', '\\/'),
+        ),
+      );
+    }
+
+    assert.match(tile, /accessibilityHint=\{description\}/);
+    assert.match(tile, /motion\.press\.subtleScale/);
+    assert.match(tile, /minHeight:\s*126/);
+  },
+);
+
+test(
+  'short conversations anchor toward the composer while empty home remains flexible',
+  () => {
+    const messageList = fs.readFileSync(
+      'src/features/chat/components/MessageList.tsx',
+      'utf8',
+    );
+
+    assert.match(messageList, /styles\.filledContent/);
+    assert.match(messageList, /flexGrow:\s*1/);
+    assert.match(messageList, /justifyContent:\s*'flex-end'/);
+    assert.match(messageList, /styles\.emptyContent/);
+  },
+);
