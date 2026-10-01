@@ -80,6 +80,10 @@ test(
       "preview.distribution !== 'internal'",
       "preview.environment !== 'preview'",
       "preview?.android?.buildType !== 'apk'",
+      'MUDRIK_RELEASE_MANIFEST',
+      'releaseManifest?.candidateSha !== head',
+      'evaluateWholeSystemReleaseGate',
+      'releaseDecision.productionAllowed',
     ]) {
       assert.match(
         preflight,
