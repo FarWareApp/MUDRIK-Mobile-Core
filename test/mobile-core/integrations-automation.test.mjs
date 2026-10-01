@@ -3920,3 +3920,275 @@ test(
     );
   },
 );
+
+test(
+  'vendor-only unsupported capability remains descriptive and cannot be admitted as a known action',
+  () => {
+    const registry =
+      new IntegrationRegistry();
+
+    assert.equal(
+      registry.setPolicy(
+        policy(),
+        NOW,
+      ).accepted,
+      true,
+    );
+    assert.equal(
+      registry.registerAdapter(
+        adapter(),
+        NOW,
+      ).accepted,
+      true,
+    );
+
+    const unsupportedDiscovery =
+      discovery({
+        vendorCapabilities: [
+          'vendor_magic_action',
+        ],
+        mappedCapabilities: [],
+      });
+
+    assert.ok(
+      parseIntegrationDiscoveryRecord(
+        unsupportedDiscovery,
+      ),
+    );
+
+    assert.equal(
+      registry.ingestDiscovery(
+        unsupportedDiscovery,
+        NOW,
+      ).accepted,
+      true,
+    );
+
+    const admission =
+      registry.admitBinding(
+        binding({
+          capabilities: [
+            'power.set',
+          ],
+        }),
+        DISCOVERY,
+        NOW,
+      );
+
+    assert.equal(
+      admission.accepted,
+      false,
+    );
+    assert.equal(
+      admission.reason,
+      'discovery_binding_mismatch',
+    );
+  },
+);
+
+test(
+  'discovery cannot be admitted into another account even with matching device metadata',
+  () => {
+    const registry =
+      new IntegrationRegistry();
+
+    assert.equal(
+      registry.setPolicy(
+        policy(),
+        NOW,
+      ).accepted,
+      true,
+    );
+    assert.equal(
+      registry.registerAdapter(
+        adapter(),
+        NOW,
+      ).accepted,
+      true,
+    );
+    assert.equal(
+      registry.ingestDiscovery(
+        discovery(),
+        NOW,
+      ).accepted,
+      true,
+    );
+
+    const crossAccount =
+      registry.admitBinding(
+        binding({
+          accountId:
+            'acct_2222222222222222',
+        }),
+        DISCOVERY,
+        NOW,
+      );
+
+    assert.equal(
+      crossAccount.accepted,
+      false,
+    );
+    assert.equal(
+      crossAccount.reason,
+      'discovery_binding_mismatch',
+    );
+  },
+);
+
+test(
+  'security disarm requires dedicated security capability and exact approval',
+  () => {
+    const securityPolicy =
+      policy({
+        allowedCapabilities: [
+          'state.read',
+          'power.set',
+          'security.disarm',
+        ],
+      });
+    const securityBinding =
+      binding({
+        capabilities: [
+          'power.set',
+          'security.disarm',
+        ],
+      });
+    const disarm =
+      command({
+        capability: 'security.disarm',
+        value: null,
+        mode: 'approved',
+      });
+    const securityApproval =
+      approval({
+        capability: 'security.disarm',
+      });
+
+    const genericGrant =
+      authorizeIntegrationCommand(
+        {
+          policy: securityPolicy,
+          binding: securityBinding,
+          command: disarm,
+          approval: securityApproval,
+          capabilityGrants: [
+            grant(
+              'home.device.control',
+              false,
+            ),
+          ],
+        },
+        NOW,
+        false,
+        true,
+      );
+
+    assert.equal(
+      genericGrant.authorized,
+      false,
+    );
+    assert.equal(
+      genericGrant.reason,
+      'capability_denied',
+    );
+
+    const dedicatedGrant =
+      authorizeIntegrationCommand(
+        {
+          policy: securityPolicy,
+          binding: securityBinding,
+          command: disarm,
+          approval: securityApproval,
+          capabilityGrants: [
+            grant(
+              'home.security.control',
+              false,
+            ),
+          ],
+        },
+        NOW,
+        false,
+        true,
+      );
+
+    assert.equal(
+      dedicatedGrant.authorized,
+      true,
+      dedicatedGrant.reason,
+    );
+  },
+);
+
+test(
+  'automation trigger fails closed after its validity window',
+  () => {
+    const registry =
+      configuredRegistry();
+
+    assert.equal(
+      registry.setRoutine(
+        routine(),
+        NOW,
+      ).accepted,
+      true,
+    );
+    assert.equal(
+      registry.setAutomation(
+        automation({
+          validUntilMs: NOW + 5,
+        }),
+        NOW,
+      ).accepted,
+      true,
+    );
+
+    const trigger =
+      registry.authorizeAutomationTrigger(
+        {
+          eventId: TRIGGER,
+          automationId: AUTOMATION,
+          automationRevision: 1,
+          routineId: ROUTINE,
+          routineRevision: 1,
+          triggerKind: 'schedule',
+          triggerRef: 'schedule-evening',
+        },
+        NOW + 5,
+      );
+
+    assert.equal(
+      trigger.accepted,
+      false,
+    );
+    assert.equal(
+      trigger.reason,
+      'automation_window_closed',
+    );
+  },
+);
+
+test(
+  'result contract rejects secret-shaped references',
+  () => {
+    assert.equal(
+      parseIntegrationResultEnvelope({
+        protocolVersion: '1.0',
+        commandId: COMMAND,
+        bindingId: BINDING,
+        deviceId: DEVICE,
+        adapterId: ADAPTER,
+        integrationId: INTEGRATION,
+        status: 'failed',
+        reasonCode: 'provider_error',
+        resultRef:
+          'secret:credentialmaterial',
+        completedAtMs: NOW,
+        grantsExecutionAuthority: false,
+        grantsSensorAuthority: false,
+        grantsApprovalAuthority: false,
+        grantsCapabilityAuthority: false,
+      }),
+      null,
+    );
+  },
+);
