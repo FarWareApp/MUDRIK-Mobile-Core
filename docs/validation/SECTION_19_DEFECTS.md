@@ -4,19 +4,19 @@
 
 Implementation candidate:
 
-`15193f2592d6210a9414c90dab9cc9a7f2574c68`
+`e82a40c62585ad6b28a1b043825daebf29c9feb3`
 
 Local validation:
 
-- Section 19 suite: 37/37 PASS
-- whole Mobile Core: 958/958 PASS
+- Section 19 suite: 57/57 PASS
+- whole Mobile Core: 976/976 PASS
 - Computer Agent: 184/184 PASS
 - Control Plane: 59/59 PASS
 - Expo Doctor: 21/21 PASS
 - dependency audit blocking gate: 0 Critical / 0 High
 - TypeScript / ESLint / diff check: PASS
 
-Hosted validation on the exact candidate passed: Mobile Core Validation #785 / 36899671966 SUCCESS; CodeQL #681 / 36899671945 SUCCESS. No known unresolved Blocker, Critical or High Section 19 defect remains in the automated/pre-device scope.
+Hosted validation on the exact candidate passed: Mobile Core Validation #789 / 36901033163 SUCCESS; CodeQL #685 / 36901033032 SUCCESS. No known unresolved Blocker, Critical or High Section 19 defect remains in the automated/pre-device scope.
 
 ## S19-DISCOVERY-001 — Vendor discovery must not become admission authority
 

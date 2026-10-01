@@ -494,14 +494,14 @@ Detailed evidence:
 
 Accepted implementation candidate:
 
-`15193f2592d6210a9414c90dab9cc9a7f2574c68`
+`e82a40c62585ad6b28a1b043825daebf29c9feb3`
 
 Evidence:
 
-- Mobile Core Validation #785 / `36899671966`: SUCCESS;
-- CodeQL #681 / `36899671945`: SUCCESS;
-- Section 19 integrations/automation suite: **37/37 PASS**;
-- whole Mobile Core regressions: **958/958 PASS**;
+- Mobile Core Validation #789 / `36901033163`: SUCCESS;
+- CodeQL #685 / `36901033032`: SUCCESS;
+- Section 19 integrations/automation suite: **57/57 PASS**;
+- whole Mobile Core regressions: **976/976 PASS**;
 - Computer Agent regressions: **184/184 PASS**;
 - Control Plane regressions: **59/59 PASS**;
 - Expo Doctor: **21/21 PASS**;

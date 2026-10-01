@@ -9,8 +9,15 @@ This evidence covers deterministic and automated pre-device obligations for Sect
 ## Candidate
 
 - Branch: mudrik-core-v1
-- Implementation candidate: 15193f2592d6210a9414c90dab9cc9a7f2574c68
-- Candidate message: Build Section 19 integrations and automation core
+- Final accepted candidate: e82a40c62585ad6b28a1b043825daebf29c9feb3
+- Final candidate message: Expand Section 19 adversarial integration coverage
+
+Accepted implementation chain:
+
+- 15193f2 — Build Section 19 integrations and automation core
+- 287494f — Harden Section 19 alias and invocation lifecycle
+- e0098a9 — Bind Section 19 approvals to policy revisions
+- e82a40c — Expand Section 19 adversarial integration coverage
 
 ## Local Evidence
 
@@ -20,8 +27,8 @@ On the connected Pop!_OS development machine, the candidate passed:
 - dependency blocking audit: 0 Critical / 0 High / 5 reviewed Moderate
 - TypeScript: PASS
 - ESLint: PASS
-- Section 19 integrations/automation suite: 37/37 PASS
-- whole Mobile Core regressions: 958/958 PASS
+- Section 19 integrations/automation suite: 57/57 PASS
+- whole Mobile Core regressions: 976/976 PASS
 - Expo Doctor 1.20.4: 21/21 PASS
 - Computer Agent regressions: 184/184 PASS
 - Control Plane regressions: 59/59 PASS
@@ -32,17 +39,17 @@ On the connected Pop!_OS development machine, the candidate passed:
 ### Mobile Core Validation
 
 - Workflow: Mobile Core Validation
-- Run number: 785
-- Run ID: 36899671966
-- Head SHA: 15193f2592d6210a9414c90dab9cc9a7f2574c68
+- Run number: 789
+- Run ID: 36901033163
+- Head SHA: e82a40c62585ad6b28a1b043825daebf29c9feb3
 - Result: SUCCESS
 
 ### CodeQL
 
 - Workflow: CodeQL Security Analysis
-- Run number: 681
-- Run ID: 36899671945
-- Head SHA: 15193f2592d6210a9414c90dab9cc9a7f2574c68
+- Run number: 685
+- Run ID: 36901033032
+- Head SHA: e82a40c62585ad6b28a1b043825daebf29c9feb3
 - Result: SUCCESS
 
 ## Implemented Controls
