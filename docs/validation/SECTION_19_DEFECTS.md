@@ -109,6 +109,71 @@ ID reuse with changed semantics could cause duplicate external actions or stale 
 
 Trigger events, adapter invocations, automation action claims and result envelopes retain semantic fingerprints or exact issued provenance. Exact retries are idempotent; changed semantics under an existing identity fail closed.
 
+## S19-ALIAS-008 — Alias and room metadata must not become command authority
+
+- Severity: High
+- Status: Closed
+
+### Problem
+
+Human-friendly aliases and room names are useful for resolution, but ambiguity or stale metadata must never select a device with authority.
+
+### Repair
+
+Alias resolution returns only an exact binding/revision/device tuple or not-found/ambiguous state. Room projection returns bounded active exact targets. Revoked and cross-account/workspace bindings are excluded and every projection carries zero authority.
+
+## S19-LIFETIME-009 — Invocation lifetime must not outlive approval, automation or adapter validity
+
+- Severity: High
+- Status: Closed
+
+### Problem
+
+An already-authorized command could otherwise remain replayable after the approval, automation execution or adapter session that justified it had expired.
+
+### Repair
+
+Issued adapter invocations now carry an exclusive expiresAtMs bounded by adapter validity, a short maximum invocation lifetime, and—where applicable—the recorded approval or automation execution expiry. Expired invocations cannot be replayed and late results fail as result_expired.
+
+## S19-APPROVAL-010 — High-risk approvals must bind the current integration policy revision
+
+- Severity: High
+- Status: Closed
+
+### Problem
+
+Binding an approval only to command/device/capability would allow a previously issued high-risk approval to survive a later integration-policy revision.
+
+### Repair
+
+Integration approvals now carry exact policyId and policyRevision. Registry recording and command authorization both require the current matching policy revision. Old approvals cannot cross policy updates.
+
+## S19-TERMINAL-011 — Revoked identities and disabled policy must fail closed
+
+- Severity: High
+- Status: Closed
+
+### Problem
+
+A revoked binding, routine or automation must not be resurrected with a higher revision, and disabling integration policy must stop credential resolution immediately.
+
+### Repair
+
+Revoked binding/routine/automation identities are terminal for that identity. Exact retries remain idempotent, but later active/enabled revisions fail closed. Adapter credential resolution additionally requires the current workspace integration policy to remain enabled.
+
+## S19-VENDOR-012 — Unsupported vendor capabilities must remain descriptive only
+
+- Severity: Medium
+- Status: Closed
+
+### Problem
+
+A vendor may advertise features outside the MUDRIK capability vocabulary. Guessing a mapping or silently substituting another action could manufacture authority.
+
+### Repair
+
+Unknown vendor capability labels may exist only in discovery metadata. Admission and commands require an explicit known mapped capability. Vendor-only features cannot be admitted as another action, and no hidden fallback is created.
+
 ## Deferred Layer 4
 
 Real vendors/hubs/devices, physical high-risk controls, credential lifecycle, network/cloud outages, scheduler persistence, partial routine failure, vendor limits, privacy/data-residency review and independent security testing remain mandatory before Section 20 production closure.

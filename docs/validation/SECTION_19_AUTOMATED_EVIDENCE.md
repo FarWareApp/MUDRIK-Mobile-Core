@@ -90,6 +90,15 @@ The candidate provides:
 - result replay idempotency and result-conflict detection;
 - content/credential-minimized audit contracts;
 - zero execution/sensor/approval/capability authority on discovery, policy, command, routine, automation, invocation, result and audit surfaces;
+- alias/room resolution as metadata-only exact-target projection with ambiguity rejection;
+- terminal revoked binding/routine/automation identities;
+- approval binding to exact current integration policy revision;
+- adapter credential resolution requiring current enabled policy;
+- adapter invocation expiry bounded by adapter/approval/automation lifetime;
+- late adapter-result rejection after invocation expiry;
+- unsupported vendor-only capabilities remaining descriptive and non-admittable;
+- explicit cross-account discovery/admission rejection;
+- dedicated security-control grant enforcement;
 - preservation of Sections 11/12 as the final execution/capability authority.
 
 ## Adversarial Evidence Highlights
@@ -121,7 +130,16 @@ Regression coverage proves at minimum:
 - the same automation action cannot be claimed under another command ID;
 - adapter invocation carries no credential material;
 - result identity must match an issued invocation;
-- hidden vendor payloads and authority escalation fields are rejected from result/audit contracts.
+- hidden vendor payloads and authority escalation fields are rejected from result/audit contracts;
+- aliases cannot silently resolve an ambiguous device and room projections grant no authority;
+- revoked identities cannot be resurrected with a higher revision;
+- an old high-risk approval cannot cross a policy revision;
+- disabling integration policy immediately blocks adapter credential resolution;
+- unsupported vendor-only features cannot be admitted as a guessed MUDRIK capability;
+- discovery cannot cross account/workspace boundaries;
+- security disarm requires the dedicated security-control capability;
+- automation triggers fail closed outside their validity window;
+- secret-shaped result references fail strict result parsing.
 
 ## Deferred Layer 4
 

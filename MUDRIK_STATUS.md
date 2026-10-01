@@ -508,7 +508,7 @@ Evidence:
 - dependency audit blocking gate: **0 Critical / 0 High / 5 reviewed Moderate**;
 - frozen install, TypeScript, ESLint and diff checks: PASS.
 
-Implemented boundaries include zero-authority vendor discovery, explicit discovery-to-admission binding, dedicated home read/access/security capabilities, versioned integration policy, exact command/value contracts, high-risk approval provenance, exact-target routines, cross-device revision binding, bounded automation permissions, short-lived automation executions, action-index replay protection, binding/policy/routine/automation revocation propagation, credential-free adapter invocations, issued-result provenance and content-minimized audit contracts.
+Implemented boundaries include zero-authority vendor discovery, explicit account/workspace discovery-to-admission binding, dedicated home read/access/security capabilities, versioned integration policy, exact command/value contracts, high-risk approval provenance bound to the current policy revision, metadata-only alias/room resolution, exact-target routines, cross-device revision binding, bounded automation permissions, short-lived trigger-issued automation executions, action-index replay protection, terminal binding/routine/automation revocation, policy-aware credential resolution, bounded adapter-invocation lifetime, issued-result provenance, unsupported-vendor fail-closed behavior and content-minimized audit contracts.
 
 Detailed evidence:
 
