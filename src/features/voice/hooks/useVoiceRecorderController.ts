@@ -17,6 +17,9 @@ import {
 import { MicrophonePermissionService } from '../services/MicrophonePermissionService';
 import { VoiceAudioSessionService } from '../services/VoiceAudioSessionService';
 import {
+  VoiceRecordingFileStore,
+} from '../storage/VoiceRecordingFileStore';
+import {
   MUDRIK_VOICE_RECORDING_OPTIONS,
 } from '../VoiceRecordingProfile';
 import type {
@@ -28,7 +31,8 @@ import type {
 
 type RecorderOperation =
   | 'start'
-  | 'stop';
+  | 'stop'
+  | 'discard';
 
 export function useVoiceRecorderController() {
   const recorder = useAudioRecorder(
@@ -43,6 +47,11 @@ export function useVoiceRecorderController() {
 
   const audioSession = useMemo(
     () => new VoiceAudioSessionService(),
+    [],
+  );
+
+  const recordingFileStore = useMemo(
+    () => new VoiceRecordingFileStore(),
     [],
   );
 
@@ -61,7 +70,24 @@ export function useVoiceRecorderController() {
 
   const mountedRef = useRef(true);
   const phaseRef = useRef<VoiceRecorderPhase>(phase);
+  const draftRef = useRef<VoiceRecordingDraft | null>(draft);
   const operationRef = useRef<RecorderOperation | null>(null);
+
+  const deleteRecordingFile = useCallback(
+    (uri: string | null | undefined): boolean => {
+      if (!uri) {
+        return true;
+      }
+
+      try {
+        recordingFileStore.delete(uri);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [recordingFileStore],
+  );
 
   const restorePlayback = useCallback(async () => {
     try {
@@ -86,26 +112,52 @@ export function useVoiceRecorderController() {
       }
 
       const currentPhase = phaseRef.current;
+      const nativeStatus = recorder.getStatus();
       const recordingIsActive =
+        nativeStatus.isRecording ||
         currentPhase === 'recording' ||
         currentPhase === 'paused';
 
       if (recordingIsActive) {
+        const activeUri =
+          nativeStatus.url ??
+          recorder.uri;
+
         void (async () => {
           try {
             await recorder.stop();
           } catch {
-            // Playback restoration still has to run when stop cleanup fails.
+            // Cleanup still deletes the private draft and restores playback.
           }
+
+          deleteRecordingFile(
+            recorder.getStatus().url ??
+            recorder.uri ??
+            activeUri,
+          );
 
           await restorePlayback();
         })();
         return;
       }
 
+      const currentDraft =
+        draftRef.current;
+
+      if (currentDraft) {
+        deleteRecordingFile(
+          currentDraft.uri,
+        );
+        draftRef.current = null;
+      }
+
       void restorePlayback();
     };
-  }, [recorder, restorePlayback]);
+  }, [
+    deleteRecordingFile,
+    recorder,
+    restorePlayback,
+  ]);
 
   useEffect(() => {
     if (!isForeground) {
@@ -174,7 +226,29 @@ export function useVoiceRecorderController() {
     let recordingSessionPrepared = false;
 
     setErrorCode(null);
-    setDraft(null);
+
+    const currentDraft =
+      draftRef.current;
+
+    if (currentDraft) {
+      const deleted =
+        deleteRecordingFile(
+          currentDraft.uri,
+        );
+
+      if (!deleted) {
+        setErrorCode(
+          'recording-delete-failed',
+        );
+        setPhase('stopped');
+        operationRef.current = null;
+        return;
+      }
+
+      draftRef.current = null;
+      setDraft(null);
+    }
+
     setPhase('preparing');
 
     try {
@@ -210,6 +284,10 @@ export function useVoiceRecorderController() {
         !mountedRef.current ||
         operationRef.current !== 'start'
       ) {
+        deleteRecordingFile(
+          recorder.getStatus().url ??
+          recorder.uri,
+        );
         await restorePlayback();
         return;
       }
@@ -234,6 +312,7 @@ export function useVoiceRecorderController() {
     }
   }, [
     audioSession,
+    deleteRecordingFile,
     ensurePermission,
     phase,
     recorder,
@@ -276,15 +355,20 @@ export function useVoiceRecorderController() {
     }
 
     operationRef.current = 'stop';
+    const durationMs =
+      recorderState.durationMillis;
 
     try {
       await recorder.stop();
 
-      const uri = recorder.uri;
+      const uri =
+        recorder.getStatus().url ??
+        recorder.uri;
 
       await audioSession.preparePlayback();
 
       if (!mountedRef.current) {
+        deleteRecordingFile(uri);
         return;
       }
 
@@ -294,11 +378,14 @@ export function useVoiceRecorderController() {
         return;
       }
 
-      setDraft({
+      const nextDraft = {
         uri,
-        durationMs: recorderState.durationMillis,
+        durationMs,
         createdAt: Date.now(),
-      });
+      };
+
+      draftRef.current = nextDraft;
+      setDraft(nextDraft);
 
       setPhase('stopped');
     } catch {
@@ -317,6 +404,7 @@ export function useVoiceRecorderController() {
     }
   }, [
     audioSession,
+    deleteRecordingFile,
     phase,
     recorder,
     recorderState.durationMillis,
@@ -328,10 +416,34 @@ export function useVoiceRecorderController() {
       return;
     }
 
-    setDraft(null);
-    setErrorCode(null);
-    setPhase('idle');
-  }, []);
+    const currentDraft = draftRef.current;
+
+    if (!currentDraft) {
+      setErrorCode(null);
+      setPhase('idle');
+      return;
+    }
+
+    operationRef.current = 'discard';
+
+    try {
+      recordingFileStore.delete(
+        currentDraft.uri,
+      );
+
+      draftRef.current = null;
+      setDraft(null);
+      setErrorCode(null);
+      setPhase('idle');
+    } catch {
+      setErrorCode(
+        'recording-delete-failed',
+      );
+      setPhase('stopped');
+    } finally {
+      operationRef.current = null;
+    }
+  }, [recordingFileStore]);
 
   const dismissError = useCallback(() => {
     if (operationRef.current) {

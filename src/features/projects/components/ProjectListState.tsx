@@ -13,6 +13,8 @@ import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { typeScale } from '../../../design-system/tokens/typography';
+import { ProjectAddIcon } from './ProjectAddIcon';
+import { ProjectEmptyIcon } from './ProjectEmptyIcon';
 
 type Props = {
   mode:
@@ -21,11 +23,13 @@ type Props = {
     | 'empty'
     | 'search-empty';
   onRetry?: () => void;
+  onCreateProject?: () => void;
 };
 
 export function ProjectListState({
   mode,
   onRetry,
+  onCreateProject,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -34,6 +38,7 @@ export function ProjectListState({
     mode === 'error'
       ? colors.error
       : colors.border;
+  const empty = mode === 'empty';
 
   const message =
     mode === 'loading'
@@ -63,6 +68,24 @@ export function ProjectListState({
           />
         ) : null}
 
+        {empty ? (
+          <View
+            importantForAccessibility="no-hide-descendants"
+            style={[
+              styles.emptyIconSurface,
+              {
+                backgroundColor:
+                  colors.accentSoft,
+              },
+            ]}
+          >
+            <ProjectEmptyIcon
+              color={colors.textSecondary}
+              accentColor={colors.accent}
+            />
+          </View>
+        ) : null}
+
         <Text
           accessibilityRole={
             mode === 'error'
@@ -78,14 +101,51 @@ export function ProjectListState({
             styles.body,
             {
               color:
-                mode === 'error'
+                mode === 'error' || empty
                   ? colors.textPrimary
                   : colors.textSecondary,
             },
+            empty && styles.emptyTitle,
           ]}
         >
           {message}
         </Text>
+
+        {empty && onCreateProject ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('createProject')}
+            onPress={onCreateProject}
+            style={({ pressed }) => [
+              styles.create,
+              {
+                backgroundColor: colors.accent,
+                opacity: pressed ? 0.86 : 1,
+                transform: [
+                  {
+                    scale: pressed
+                      ? motion.press.subtleScale
+                      : 1,
+                  },
+                ],
+              },
+            ]}
+          >
+            <ProjectAddIcon
+              color={colors.accentText}
+            />
+            <Text
+              style={[
+                styles.createLabel,
+                {
+                  color: colors.accentText,
+                },
+              ]}
+            >
+              {t('createProject')}
+            </Text>
+          </Pressable>
+        ) : null}
 
         {mode === 'error' && onRetry ? (
           <Pressable
@@ -146,10 +206,39 @@ const styles = StyleSheet.create({
       height: 4,
     },
   },
+  emptyIconSurface: {
+    width: 104,
+    height: 104,
+    marginBottom: spacing.lg,
+    borderRadius: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   body: {
     ...typeScale.secondary,
     marginTop: spacing.sm,
     textAlign: 'center',
+    writingDirection: 'auto',
+  },
+  emptyTitle: {
+    ...typeScale.body,
+    fontWeight: '700',
+    marginTop: 0,
+  },
+  create: {
+    minHeight: 48,
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.pill,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  createLabel: {
+    ...typeScale.secondary,
+    fontWeight: '700',
+    writingDirection: 'auto',
   },
   retry: {
     minHeight: 44,

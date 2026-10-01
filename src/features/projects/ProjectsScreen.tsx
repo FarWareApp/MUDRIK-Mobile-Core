@@ -167,6 +167,14 @@ export function ProjectsScreen({
                 }
               : undefined
           }
+          onCreateProject={
+            stateMode === 'empty'
+              ? () => {
+                  controller.dismissError();
+                  setCreateOpen(true);
+                }
+              : undefined
+          }
         />
       ) : (
         <ProjectList

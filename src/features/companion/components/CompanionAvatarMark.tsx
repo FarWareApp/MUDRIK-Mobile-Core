@@ -25,6 +25,11 @@ export function CompanionAvatarMark({
     ? accentColor
     : color;
 
+  const side =
+    presentation === 'female'
+      ? styles.accentStart
+      : styles.accentEnd;
+
   return (
     <View
       importantForAccessibility="no-hide-descendants"
@@ -33,49 +38,63 @@ export function CompanionAvatarMark({
     >
       <View
         style={[
-          styles.orbit,
-          presentation === 'female'
-            ? styles.orbitForward
-            : styles.orbitBackward,
-          { borderColor: activeColor },
+          styles.presenceHalo,
+          {
+            borderColor: activeColor,
+            opacity: active ? 0.24 : 0.12,
+          },
         ]}
       />
 
       <View
         style={[
-          styles.bridge,
-          { backgroundColor: color },
+          styles.shoulders,
+          {
+            borderColor: activeColor,
+          },
         ]}
       />
 
       <View
         style={[
-          styles.node,
-          styles.startNode,
-          { backgroundColor: activeColor },
-        ]}
-      />
-      <View
-        style={[
-          styles.node,
-          styles.endNode,
-          { backgroundColor: activeColor },
-        ]}
-      />
-
-      <View
-        style={[
-          styles.core,
-          { borderColor: activeColor },
+          styles.head,
+          {
+            backgroundColor: activeColor,
+            borderColor: activeColor,
+          },
         ]}
       >
         <View
           style={[
-            styles.coreDot,
-            { backgroundColor: activeColor },
+            styles.faceCutout,
+            {
+              backgroundColor: 'transparent',
+              borderColor: color,
+            },
           ]}
         />
       </View>
+
+      <View
+        style={[
+          styles.presentationAccent,
+          side,
+          {
+            backgroundColor: accentColor,
+          },
+        ]}
+      />
+
+      {active ? (
+        <View
+          style={[
+            styles.activeDot,
+            {
+              backgroundColor: accentColor,
+            },
+          ]}
+        />
+      ) : null}
     </View>
   );
 }
@@ -87,50 +106,62 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  orbit: {
+  presenceHalo: {
     position: 'absolute',
-    width: 78,
-    height: 34,
+    width: 82,
+    height: 82,
     borderWidth: 2,
-    borderRadius: 999,
-    opacity: 0.72,
+    borderRadius: 41,
   },
-  orbitForward: {
-    transform: [{ rotate: '18deg' }],
-  },
-  orbitBackward: {
-    transform: [{ rotate: '-18deg' }],
-  },
-  bridge: {
+  head: {
     position: 'absolute',
-    width: 58,
-    height: 2,
-    borderRadius: 1,
-    opacity: 0.72,
-  },
-  node: {
-    position: 'absolute',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  startNode: {
-    left: 8,
-  },
-  endNode: {
-    right: 8,
-  },
-  core: {
-    width: 38,
-    height: 38,
-    borderWidth: 2,
-    borderRadius: 19,
+    top: 15,
+    width: 31,
+    height: 31,
+    borderWidth: 1,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 2,
   },
-  coreDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  faceCutout: {
+    width: 11,
+    height: 6,
+    marginTop: 6,
+    borderBottomWidth: 1.5,
+    borderRadius: 8,
+    opacity: 0.72,
+  },
+  shoulders: {
+    position: 'absolute',
+    bottom: 14,
+    width: 58,
+    height: 31,
+    borderWidth: 2,
+    borderRadius: 18,
+  },
+  presentationAccent: {
+    position: 'absolute',
+    bottom: 25,
+    width: 13,
+    height: 4,
+    borderRadius: 2,
+    zIndex: 3,
+  },
+  accentStart: {
+    start: 13,
+    transform: [{ rotate: '-24deg' }],
+  },
+  accentEnd: {
+    end: 13,
+    transform: [{ rotate: '24deg' }],
+  },
+  activeDot: {
+    position: 'absolute',
+    top: 10,
+    end: 10,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
   },
 });

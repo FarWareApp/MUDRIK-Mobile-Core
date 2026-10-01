@@ -24,6 +24,7 @@ export const voiceTranslations = {
     voiceRecordingStartFailed: 'تعذر بدء التسجيل الصوتي.',
     voiceRecordingStopFailed: 'تعذر إنهاء التسجيل الصوتي.',
     voiceRecordingUnavailable: 'تعذر الوصول إلى ملف التسجيل بعد إيقافه.',
+    voiceRecordingDeleteFailed: 'تعذر حذف ملف التسجيل الصوتي. لم تتم إزالة التسجيل.',
   },
 
   de: {
@@ -51,6 +52,7 @@ export const voiceTranslations = {
     voiceRecordingStartFailed: 'Die Sprachaufnahme konnte nicht gestartet werden.',
     voiceRecordingStopFailed: 'Die Sprachaufnahme konnte nicht beendet werden.',
     voiceRecordingUnavailable: 'Die Aufnahmedatei ist nach dem Beenden nicht verfügbar.',
+    voiceRecordingDeleteFailed: 'Die Aufnahmedatei konnte nicht gelöscht werden. Die Aufnahme wurde nicht entfernt.',
   },
 
   en: {
@@ -78,6 +80,7 @@ export const voiceTranslations = {
     voiceRecordingStartFailed: 'Unable to start voice recording.',
     voiceRecordingStopFailed: 'Unable to stop voice recording.',
     voiceRecordingUnavailable: 'The recording file is unavailable after stopping.',
+    voiceRecordingDeleteFailed: 'Unable to delete the voice recording file. The recording was not removed.',
   },
 } as const;
 

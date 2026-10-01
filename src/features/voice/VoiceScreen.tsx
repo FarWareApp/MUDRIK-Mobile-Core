@@ -31,7 +31,9 @@ export function VoiceScreen() {
           ? t('voiceRecordingStopFailed')
           : recorder.errorCode === 'recording-uri-unavailable'
             ? t('voiceRecordingUnavailable')
-            : null;
+            : recorder.errorCode === 'recording-delete-failed'
+              ? t('voiceRecordingDeleteFailed')
+              : null;
 
   return (
     <SafeAreaView

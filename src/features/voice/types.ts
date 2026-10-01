@@ -10,7 +10,8 @@ export type VoiceRecorderErrorCode =
   | 'microphone-permission-denied'
   | 'recording-start-failed'
   | 'recording-stop-failed'
-  | 'recording-uri-unavailable';
+  | 'recording-uri-unavailable'
+  | 'recording-delete-failed';
 
 export type VoiceRecordingDraft = {
   uri: string;

@@ -154,3 +154,54 @@ test(
     );
   },
 );
+
+test(
+  'project empty state offers an intentional visual and the existing create flow',
+  () => {
+    const state = fs.readFileSync(
+      'src/features/projects/components/ProjectListState.tsx',
+      'utf8',
+    );
+    const icon = fs.readFileSync(
+      'src/features/projects/components/ProjectEmptyIcon.tsx',
+      'utf8',
+    );
+    const screen = fs.readFileSync(
+      'src/features/projects/ProjectsScreen.tsx',
+      'utf8',
+    );
+
+    assert.match(state, /ProjectEmptyIcon/);
+    assert.match(state, /onCreateProject/);
+    assert.match(state, /t\('createProject'\)/);
+    assert.match(state, /minHeight:\s*48/);
+    assert.match(icon, /styles\.folder/);
+    assert.match(icon, /styles\.plusHorizontal/);
+    assert.match(icon, /styles\.plusVertical/);
+    assert.doesNotMatch(icon, /<Text\b/);
+
+    assert.match(
+      screen,
+      /stateMode === 'empty'[\s\S]*?setCreateOpen\(true\)/,
+    );
+  },
+);
+
+test(
+  'companion avatar mark uses a clean presence silhouette rather than crossed orbit geometry',
+  () => {
+    const source = fs.readFileSync(
+      'src/features/companion/components/CompanionAvatarMark.tsx',
+      'utf8',
+    );
+
+    assert.match(source, /presenceHalo/);
+    assert.match(source, /styles\.head/);
+    assert.match(source, /styles\.shoulders/);
+    assert.match(source, /presentation === 'female'/);
+    assert.match(source, /activeDot/);
+    assert.doesNotMatch(source, /styles\.orbit/);
+    assert.doesNotMatch(source, /styles\.bridge/);
+    assert.doesNotMatch(source, /<Text\b/);
+  },
+);
