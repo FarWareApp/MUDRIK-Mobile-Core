@@ -84,7 +84,13 @@ export function ProjectEditorModal({
             ? 'padding'
             : 'height'
         }
-        style={styles.overlay}
+        style={[
+          styles.overlay,
+          {
+            backgroundColor:
+              colors.overlay,
+          },
+        ]}
       >
         <View
           accessibilityViewIsModal
@@ -257,7 +263,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: spacing.xxl,
-    backgroundColor: 'rgba(0,0,0,0.48)',
   },
   card: {
     borderWidth: StyleSheet.hairlineWidth,

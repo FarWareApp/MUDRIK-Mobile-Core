@@ -15,6 +15,7 @@ import { useTheme } from '../../../design-system/theme/ThemeProvider';
 import { motion } from '../../../design-system/tokens/motion';
 import { radius } from '../../../design-system/tokens/radius';
 
+import { AttachmentKindIcon } from './AttachmentKindIcon';
 import { AttachmentRemoveButton } from './AttachmentRemoveButton';
 
 type Props = {
@@ -57,16 +58,14 @@ export function AttachmentDraftItem({
           importantForAccessibility="no-hide-descendants"
           style={styles.fileIcon}
         >
-          <Text
-            style={[
-              styles.fileGlyph,
-              { color: colors.textSecondary },
-            ]}
-          >
-            {attachment.kind === 'video'
-              ? '▶'
-              : '▤'}
-          </Text>
+          <AttachmentKindIcon
+            kind={
+              attachment.kind === 'video'
+                ? 'video'
+                : 'file'
+            }
+            color={colors.textSecondary}
+          />
         </View>
       )}
 
@@ -105,9 +104,6 @@ const styles = StyleSheet.create({
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fileGlyph: {
-    fontSize: 22,
   },
   name: {
     marginTop: 5,

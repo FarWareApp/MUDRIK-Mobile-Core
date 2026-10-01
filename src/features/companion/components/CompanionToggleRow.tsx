@@ -68,6 +68,18 @@ export function CompanionToggleRow({
         disabled={disabled}
         value={value}
         onValueChange={onChange}
+        trackColor={{
+          false: colors.surfacePressed,
+          true: colors.accentSoft,
+        }}
+        thumbColor={
+          value
+            ? colors.accent
+            : colors.textSecondary
+        }
+        ios_backgroundColor={
+          colors.surfacePressed
+        }
       />
     </View>
   );

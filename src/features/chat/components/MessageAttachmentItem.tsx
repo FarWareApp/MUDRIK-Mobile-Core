@@ -29,6 +29,9 @@ import {
   typography,
 } from '../../../design-system/tokens/typography';
 import {
+  AttachmentKindIcon,
+} from '../../attachments/components/AttachmentKindIcon';
+import {
   formatAttachmentBytes,
 } from '../formatters/formatAttachmentBytes';
 import type {
@@ -148,20 +151,19 @@ export function MessageAttachmentItem({
         },
       ]}
     >
-      <Text
-        importantForAccessibility="no"
-        style={[
-          styles.icon,
-          {
-            color:
-              colors.textSecondary,
-          },
-        ]}
+      <View
+        importantForAccessibility="no-hide-descendants"
+        style={styles.icon}
       >
-        {attachment.kind === 'video'
-          ? '▶'
-          : '▤'}
-      </Text>
+        <AttachmentKindIcon
+          kind={
+            attachment.kind === 'video'
+              ? 'video'
+              : 'file'
+          }
+          color={colors.textSecondary}
+        />
+      </View>
 
       <View style={styles.fileText}>
         <Text
@@ -226,8 +228,9 @@ const styles = StyleSheet.create({
   },
   icon: {
     width: 34,
-    fontSize: 22,
-    textAlign: 'center',
+    minHeight: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fileText: {
     flex: 1,

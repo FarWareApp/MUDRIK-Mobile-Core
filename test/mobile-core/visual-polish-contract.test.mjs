@@ -94,3 +94,63 @@ test(
     }
   },
 );
+
+test(
+  'companion controls share the MUDRIK switch palette',
+  () => {
+    const source = fs.readFileSync(
+      'src/features/companion/components/CompanionToggleRow.tsx',
+      'utf8',
+    );
+
+    assert.match(source, /trackColor=\{\{/);
+    assert.match(source, /true:\s*colors\.accentSoft/);
+    assert.match(source, /thumbColor=/);
+    assert.match(source, /colors\.accent/);
+  },
+);
+
+test(
+  'attachment previews use drawn media primitives instead of text glyph icons',
+  () => {
+    const icon = fs.readFileSync(
+      'src/features/attachments/components/AttachmentKindIcon.tsx',
+      'utf8',
+    );
+    const message = fs.readFileSync(
+      'src/features/chat/components/MessageAttachmentItem.tsx',
+      'utf8',
+    );
+    const draft = fs.readFileSync(
+      'src/features/attachments/components/AttachmentDraftItem.tsx',
+      'utf8',
+    );
+
+    assert.match(icon, /videoFrame/);
+    assert.match(icon, /playTriangle/);
+    assert.match(icon, /fileFrame/);
+    assert.match(message, /AttachmentKindIcon/);
+    assert.match(draft, /AttachmentKindIcon/);
+    assert.doesNotMatch(message, /[▶▤]/u);
+    assert.doesNotMatch(draft, /[▶▤]/u);
+  },
+);
+
+test(
+  'project editor modal uses the themed overlay token',
+  () => {
+    const source = fs.readFileSync(
+      'src/features/projects/components/ProjectEditorModal.tsx',
+      'utf8',
+    );
+
+    assert.match(
+      source,
+      /backgroundColor:\s*colors\.overlay/,
+    );
+    assert.doesNotMatch(
+      source,
+      /rgba\(0,0,0,0\.48\)/,
+    );
+  },
+);
