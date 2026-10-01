@@ -1658,3 +1658,225 @@ test(
     );
   },
 );
+
+test(
+  'policy disable invalidates prior retrieval projection and blocks further durable memory context',
+  () => {
+    const registry =
+      new MemoryRegistry();
+
+    assert.equal(
+      registry.setPolicy(
+        policy(),
+      ).accepted,
+      true,
+    );
+
+    assert.equal(
+      registry.create({
+        candidate: candidate(),
+        approval: approval(),
+        memoryId: MEMORY,
+        trustedNowMs: NOW,
+      }).accepted,
+      true,
+    );
+
+    const retrieved =
+      registry.retrieve(
+        retrievalRequest(),
+        NOW + 1,
+      );
+
+    assert.equal(
+      retrieved.accepted,
+      true,
+    );
+    assert.ok(
+      retrieved.projection,
+    );
+
+    const disabledPolicy =
+      policy({
+        mode: 'disabled',
+        allowedCategories: [],
+        categoryRetentionMs: {},
+        retrievalEnabled: false,
+        conversationReconstructionEnabled:
+          false,
+        revision: 4,
+        updatedAtMs: NOW + 2,
+      });
+
+    const disabled =
+      registry.setPolicy(
+        disabledPolicy,
+      );
+
+    assert.equal(
+      disabled.accepted,
+      true,
+    );
+
+    assert.equal(
+      registry.reconstruct(
+        reconstructionInput(
+          retrieved.projection,
+        ),
+      ),
+      null,
+    );
+
+    const afterDisable =
+      registry.retrieve(
+        retrievalRequest({
+          policyRevision: 4,
+          requestedAtMs: NOW + 3,
+        }),
+        NOW + 3,
+      );
+
+    assert.equal(
+      afterDisable.accepted,
+      false,
+    );
+
+    const fresh =
+      registry.reconstruct(
+        reconstructionInput(null),
+      );
+
+    assert.ok(fresh);
+    assert.equal(
+      fresh.memoryIncluded,
+      false,
+    );
+  },
+);
+
+test(
+  'supersession invalidates prior compaction and reconstruction never mutates source inputs',
+  () => {
+    const registry =
+      new MemoryRegistry();
+
+    registry.setPolicy(policy());
+
+    assert.equal(
+      registry.create({
+        candidate: candidate(),
+        approval: approval(),
+        memoryId: MEMORY,
+        trustedNowMs: NOW,
+      }).accepted,
+      true,
+    );
+
+    const compacted =
+      registry.compact({
+        accountId: ACCOUNT,
+        policyId: POLICY,
+        policyRevision: 3,
+        categories: [
+          'language_preference',
+        ],
+        maxGroups: 8,
+        maxBytes: 8192,
+        trustedNowMs: NOW + 1,
+      });
+
+    assert.ok(compacted);
+    assert.equal(
+      registry
+        .isCurrentDerivedProjection(
+          ACCOUNT,
+          compacted,
+        ),
+      true,
+    );
+
+    const nextCandidate =
+      'memory_candidate_6666666666666666';
+    const nextApproval =
+      'memory_approval_6666666666666666';
+    const nextMemory =
+      'memory_item_6666666666666666';
+
+    const superseded =
+      registry.supersede({
+        accountId: ACCOUNT,
+        currentMemoryId: MEMORY,
+        expectedRevision: 1,
+        candidate: candidate({
+          candidateId:
+            nextCandidate,
+          content:
+            'Prefer concise Arabic responses.',
+          explicitApprovalId:
+            nextApproval,
+          createdAtMs: NOW + 2,
+        }),
+        approval: approval({
+          approvalId:
+            nextApproval,
+          candidateId:
+            nextCandidate,
+          approvedAtMs: NOW + 3,
+          expiresAtMs:
+            NOW + DAY,
+        }),
+        newMemoryId:
+          nextMemory,
+        trustedNowMs: NOW + 4,
+      });
+
+    assert.equal(
+      superseded.accepted,
+      true,
+    );
+
+    assert.equal(
+      registry
+        .isCurrentDerivedProjection(
+          ACCOUNT,
+          compacted,
+        ),
+      false,
+    );
+
+    const retrieved =
+      registry.retrieve(
+        retrievalRequest({
+          requestedAtMs: NOW + 5,
+        }),
+        NOW + 5,
+      );
+
+    assert.equal(
+      retrieved.accepted,
+      true,
+    );
+
+    const input =
+      reconstructionInput(
+        retrieved.projection,
+      );
+    const before =
+      JSON.parse(
+        JSON.stringify(input),
+      );
+
+    const reconstructed =
+      registry.reconstruct(input);
+
+    assert.ok(reconstructed);
+    assert.deepEqual(
+      input,
+      before,
+    );
+    assert.equal(
+      input.transcript[0].content,
+      'Hello',
+    );
+  },
+);
