@@ -138,7 +138,7 @@ No undocumented "it worked on my machine" completion.
 
 # Section 1 — Mobile Core Freeze
 
-**Status: ACTIVE / OPEN — PHYSICAL GATE DEFERRED BY RECORDED OWNER-DIRECTED EXCEPTION.**
+**Status: OPEN — PHYSICAL GATE DEFERRED BY RECORDED OWNER-DIRECTED EXCEPTION; NOT THE PRIMARY IMPLEMENTATION SECTION.**
 
 Scope:
 
@@ -377,6 +377,8 @@ Scope:
 
 # Section 15 — Web and Mobile Command Surfaces
 
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-SURFACE LAYER 4 DEFERRED.**
+
 Scope:
 
 - lightweight Web command/control interface;
@@ -452,6 +454,8 @@ Scope:
 
 # Section 20 — Whole-System Integration, Security Certification and Production Release Gate
 
+**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE / FINAL RELEASE BLOCKED BY DEFERRED LAYER 4.**
+
 Scope:
 
 - full-system E2E across Mobile, Web, Control Plane, Computer Agent, Voice, Companion, Memory, Knowledge and supported device integrations;
@@ -497,7 +501,7 @@ The owner elected to defer phone/physical-device testing until the broader pre-d
 
 Rules of this exception:
 
-1. Section 1 remains `ACTIVE / OPEN`; `MOBILE-CORE-FROZEN` must not be created until its physical matrix passes.
+1. Section 1 remains `OPEN — PHYSICAL GATE DEFERRED`; it is not the primary implementation section. `MOBILE-CORE-FROZEN` must not be created until its physical matrix passes.
 2. Later sections may enter `PRE-DEVICE IMPLEMENTATION` even though Section 1 remains open.
 3. A later section may complete Layers 1–3 and the automation-only portions of Layer 5, but it must remain `OPEN — PHYSICAL/REAL-ENVIRONMENT GATE DEFERRED` whenever Layer 4 requires actual hardware, OS, network, external service, or production-like infrastructure.
 4. No deferred section may receive a stable production/freeze tag before its required Layer 4 evidence exists.
@@ -516,9 +520,7 @@ This exception permits continued engineering progress without redefining incompl
 
 ## Current Pre-Device Workstream
 
-**Section 16 — Memory System — PRE-DEVICE COMPLETE / REAL-ENVIRONMENT LAYER 4 DEFERRED.**
-
-**Section 17 — Knowledge Engine and Developer Knowledge System — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
+**Section 20 — Whole-System Integration, Security Certification and Production Release Gate — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
 
 Pre-device completed/open sections:
 
@@ -532,11 +534,16 @@ Pre-device completed/open sections:
 - Section 9 — Smart Device Finder and Spatial Locating;
 - Section 10 — Emergency Guardian;
 - Section 11 — Durable Computer Agent Runtime;
-- Section 12 — Computer Agent Tooling and Capability Sandbox.
-- Section 13 — Coding Engine and Autonomous Work Runner.
-- Section 14 — Control Plane and Reliable Task Routing.
-- Section 15 — Web and Mobile Command Surfaces.
-- Section 16 — Memory System.
+- Section 12 — Computer Agent Tooling and Capability Sandbox;
+- Section 13 — Coding Engine and Autonomous Work Runner;
+- Section 14 — Control Plane and Reliable Task Routing;
+- Section 15 — Web and Mobile Command Surfaces;
+- Section 16 — Memory System;
+- Section 17 — Knowledge Engine and Developer Knowledge System;
+- Section 18 — Intelligence Router and Model/Provider Layer;
+- Section 19 — Smart-Home, External Integrations and Automation.
+
+Sections 01–19 remain open wherever mandatory Layer 4 evidence is deferred. Section 20 cannot close the production release gate until those obligations are completed or explicitly proven not applicable.
 
 ## Completion Definition
 
