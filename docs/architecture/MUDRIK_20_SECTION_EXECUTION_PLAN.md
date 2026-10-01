@@ -436,6 +436,8 @@ Scope:
 
 # Section 19 — Smart-Home, External Integrations and Automation
 
+**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+
 Scope:
 
 - adapter framework for supported smart-home/services;
