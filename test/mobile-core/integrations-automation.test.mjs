@@ -3595,3 +3595,328 @@ test(
     );
   },
 );
+
+test(
+  'high-risk approval is bound to the exact current policy revision',
+  () => {
+    const registry =
+      configuredRegistry();
+
+    const updatedPolicy =
+      policy({
+        revision: 2,
+        updatedAtMs: NOW + 1,
+      });
+
+    assert.equal(
+      registry.setPolicy(
+        updatedPolicy,
+        NOW + 1,
+      ).accepted,
+      true,
+    );
+
+    const stale =
+      registry.recordApproval(
+        approval(),
+        NOW + 1,
+      );
+
+    assert.equal(
+      stale.accepted,
+      false,
+    );
+    assert.equal(
+      stale.reason,
+      'approval_policy_denied',
+    );
+
+    const currentApproval =
+      approval({
+        approvalId:
+          'iapproval_3333333333333333',
+        commandId:
+          'icommand_3333333333333333',
+        policyRevision: 2,
+        approvedAtMs: NOW + 1,
+        expiresAtMs: NOW + 10_000,
+      });
+
+    assert.equal(
+      registry.recordApproval(
+        currentApproval,
+        NOW + 1,
+      ).accepted,
+      true,
+    );
+
+    const authorized =
+      registry.authorizeCommand(
+        command({
+          commandId:
+            'icommand_3333333333333333',
+          policyRevision: 2,
+          capability: 'access.unlock',
+          value: null,
+          mode: 'approved',
+        }),
+        currentApproval,
+        [
+          grant(
+            'home.access.control',
+            false,
+          ),
+        ],
+        NOW + 1,
+      );
+
+    assert.equal(
+      authorized.authorized,
+      true,
+      authorized.reason,
+    );
+  },
+);
+
+test(
+  'revoked binding routine and automation identities cannot be resurrected by a later revision',
+  () => {
+    const bindingRegistry =
+      configuredRegistry();
+
+    const revokedBinding =
+      bindingRegistry.revokeBinding(
+        BINDING,
+        NOW + 1,
+      );
+
+    assert.equal(
+      revokedBinding.accepted,
+      true,
+      revokedBinding.reason,
+    );
+
+    const bindingResurrection =
+      bindingRegistry.admitBinding(
+        binding({
+          revision: 3,
+          state: 'active',
+          admittedAtMs: NOW + 2,
+          revokedAtMs: null,
+        }),
+        DISCOVERY,
+        NOW + 2,
+      );
+
+    assert.equal(
+      bindingResurrection.accepted,
+      false,
+    );
+    assert.equal(
+      bindingResurrection.reason,
+      'binding_revoked',
+    );
+
+    const routineRegistry =
+      configuredRegistry();
+
+    assert.equal(
+      routineRegistry.setRoutine(
+        routine(),
+        NOW,
+      ).accepted,
+      true,
+    );
+
+    assert.equal(
+      routineRegistry.setRoutine(
+        routine({
+          revision: 2,
+          state: 'revoked',
+          updatedAtMs: NOW + 1,
+          revokedAtMs: NOW + 1,
+        }),
+        NOW + 1,
+      ).accepted,
+      true,
+    );
+
+    const routineResurrection =
+      routineRegistry.setRoutine(
+        routine({
+          revision: 3,
+          state: 'active',
+          updatedAtMs: NOW + 2,
+          revokedAtMs: null,
+        }),
+        NOW + 2,
+      );
+
+    assert.equal(
+      routineResurrection.accepted,
+      false,
+    );
+    assert.equal(
+      routineResurrection.reason,
+      'routine_revoked',
+    );
+
+    const automationRegistry =
+      configuredRegistry();
+
+    assert.equal(
+      automationRegistry.setRoutine(
+        routine(),
+        NOW,
+      ).accepted,
+      true,
+    );
+    assert.equal(
+      automationRegistry.setAutomation(
+        automation(),
+        NOW,
+      ).accepted,
+      true,
+    );
+    assert.equal(
+      automationRegistry.setAutomation(
+        automation({
+          revision: 2,
+          state: 'revoked',
+          updatedAtMs: NOW + 1,
+        }),
+        NOW + 1,
+      ).accepted,
+      true,
+    );
+
+    const automationResurrection =
+      automationRegistry.setAutomation(
+        automation({
+          revision: 3,
+          state: 'enabled',
+          updatedAtMs: NOW + 2,
+        }),
+        NOW + 2,
+      );
+
+    assert.equal(
+      automationResurrection.accepted,
+      false,
+    );
+    assert.equal(
+      automationResurrection.reason,
+      'automation_revoked',
+    );
+  },
+);
+
+test(
+  'recorded high-risk approval cannot cross an integration policy revision',
+  () => {
+    const registry =
+      configuredRegistry();
+    const oldApproval =
+      approval();
+
+    assert.equal(
+      registry.recordApproval(
+        oldApproval,
+        NOW,
+      ).accepted,
+      true,
+    );
+
+    assert.equal(
+      registry.setPolicy(
+        policy({
+          revision: 2,
+          updatedAtMs: NOW + 1,
+        }),
+        NOW + 1,
+      ).accepted,
+      true,
+    );
+
+    const revisedCommand =
+      command({
+        policyRevision: 2,
+        capability: 'access.unlock',
+        value: null,
+        mode: 'approved',
+        requestedAtMs: NOW + 1,
+      });
+
+    const denied =
+      registry.authorizeCommand(
+        revisedCommand,
+        oldApproval,
+        [
+          grant(
+            'home.access.control',
+            false,
+          ),
+        ],
+        NOW + 1,
+      );
+
+    assert.equal(
+      denied.authorized,
+      false,
+    );
+    assert.equal(
+      denied.reason,
+      'approval_invalid',
+    );
+
+    const rerecord =
+      registry.recordApproval(
+        oldApproval,
+        NOW + 1,
+      );
+
+    assert.equal(
+      rerecord.accepted,
+      false,
+    );
+    assert.equal(
+      rerecord.reason,
+      'approval_policy_denied',
+    );
+  },
+);
+
+test(
+  'disabling integration policy immediately blocks adapter credential resolution',
+  () => {
+    const registry =
+      configuredRegistry();
+
+    assert.ok(
+      registry.resolveAdapterCredential(
+        BINDING,
+        NOW,
+      ),
+    );
+
+    assert.equal(
+      registry.setPolicy(
+        policy({
+          revision: 2,
+          enabled: false,
+          updatedAtMs: NOW + 1,
+        }),
+        NOW + 1,
+      ).accepted,
+      true,
+    );
+
+    assert.equal(
+      registry.resolveAdapterCredential(
+        BINDING,
+        NOW + 1,
+      ),
+      null,
+    );
+  },
+);

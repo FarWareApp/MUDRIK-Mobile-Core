@@ -3,6 +3,7 @@ import {
   INTEGRATION_APPROVAL_ID,
   INTEGRATION_BINDING_ID,
   INTEGRATION_COMMAND_ID,
+  INTEGRATION_POLICY_ID,
   WORKSPACE_ID,
   exactObject,
   safeInteger,
@@ -20,6 +21,8 @@ export type IntegrationApproval =
     commandId: string;
     accountId: string;
     workspaceId: string;
+    policyId: string;
+    policyRevision: number;
     bindingId: string;
     bindingRevision: number;
     capability: IntegrationCapabilityId;
@@ -39,6 +42,8 @@ const KEYS =
     'commandId',
     'accountId',
     'workspaceId',
+    'policyId',
+    'policyRevision',
     'bindingId',
     'bindingRevision',
     'capability',
@@ -74,6 +79,14 @@ export function parseIntegrationApproval(
     || !WORKSPACE_ID.test(
       record.workspaceId,
     )
+    || typeof record.policyId !== 'string'
+    || !INTEGRATION_POLICY_ID.test(
+      record.policyId,
+    )
+    || !safeInteger(
+      record.policyRevision,
+    )
+    || Number(record.policyRevision) < 1
     || typeof record.bindingId !== 'string'
     || !INTEGRATION_BINDING_ID.test(
       record.bindingId,
@@ -113,6 +126,10 @@ export function parseIntegrationApproval(
     accountId: record.accountId as string,
     workspaceId:
       record.workspaceId as string,
+    policyId:
+      record.policyId as string,
+    policyRevision:
+      record.policyRevision as number,
     bindingId: record.bindingId as string,
     bindingRevision:
       record.bindingRevision as number,

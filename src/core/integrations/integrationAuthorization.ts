@@ -107,6 +107,10 @@ function approvalMatches(
       === command.accountId
     && approval.workspaceId
       === command.workspaceId
+    && approval.policyId
+      === command.policyId
+    && approval.policyRevision
+      === command.policyRevision
     && approval.bindingId
       === command.bindingId
     && approval.bindingRevision
