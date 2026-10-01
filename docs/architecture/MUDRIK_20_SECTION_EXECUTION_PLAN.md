@@ -454,7 +454,7 @@ Scope:
 
 # Section 20 — Whole-System Integration, Security Certification and Production Release Gate
 
-**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE / FINAL RELEASE BLOCKED BY DEFERRED LAYER 4.**
+**Status: PRE-DEVICE AUTOMATED COMPOSITION COMPLETE — OPEN / FINAL RELEASE BLOCKED BY DEFERRED LAYER 4.**
 
 Scope:
 
@@ -520,7 +520,7 @@ This exception permits continued engineering progress without redefining incompl
 
 ## Current Pre-Device Workstream
 
-**Section 20 — Whole-System Integration, Security Certification and Production Release Gate — ACTIVE in PRE-DEVICE IMPLEMENTATION mode.**
+**Section 20 — Whole-System Integration, Security Certification and Production Release Gate — AUTOMATED COMPOSITION COMPLETE; REAL-ENVIRONMENT LAYER 4 EXECUTION ACTIVE.**
 
 Pre-device completed/open sections:
 

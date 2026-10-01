@@ -517,6 +517,40 @@ Detailed evidence:
 - `docs/validation/SECTION_19_AUTOMATED_EVIDENCE.md`
 - `docs/validation/SECTION_19_DEFECTS.md`
 
+### Section 20 — Whole-System Integration, Security Certification and Production Release Gate
+
+`PRE-DEVICE AUTOMATED COMPOSITION COMPLETE — OPEN / FINAL RELEASE BLOCKED BY DEFERRED LAYER 4`
+
+Accepted automated-composition candidate:
+
+`bee020aed301b2889ea36aadfbd8f9f0c7aae0c6`
+
+Evidence:
+
+- Mobile Core Validation #794 / `36903705654`: SUCCESS;
+- CodeQL #690 / `36903705476`: SUCCESS;
+- Section 20 authority/release/preflight tests: **17/17 PASS**;
+- whole Mobile Core regressions: **993/993 PASS**;
+- Computer Agent regressions: **184/184 PASS**;
+- Control Plane regressions: **59/59 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency audit blocking gate: **0 Critical / 0 High / 5 reviewed Moderate**;
+- production preflight without a certification manifest: **FAIL-CLOSED as designed**;
+- frozen install, TypeScript, ESLint and diff checks: PASS.
+
+Implemented boundaries include an explicit system authority matrix, executable whole-system release manifest, exact Section 01–19 evidence completeness, trusted-time and exact-SHA release binding, independent production certification blockers, cross-subsystem non-escalation tests, and `release:preflight` enforcement using the same Section 20 release policy. Memory, Knowledge, Intelligence, Integration results and Control Plane routing remain unable to manufacture capability grants, approvals or signed Computer Agent admission.
+
+Production remains explicitly blocked. The authoritative open Layer 4/certification debt is recorded in `docs/validation/SECTION_20_DEFERRED_LAYER4_INVENTORY.md`; no stable production/freeze tag is authorized yet.
+
+Detailed evidence:
+
+- `docs/architecture/MUDRIK_WHOLE_SYSTEM_INTEGRATION_SECURITY.md`
+- `docs/architecture/MUDRIK_SYSTEM_AUTHORITY_MATRIX.md`
+- `docs/validation/SECTION_20_WHOLE_SYSTEM_RELEASE_GATE.md`
+- `docs/validation/SECTION_20_DEFERRED_LAYER4_INVENTORY.md`
+- `docs/validation/SECTION_20_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_20_DEFECTS.md`
+
 ## UI/UX Detail Preservation Rule
 
 Authoritative detail ledger:
@@ -573,10 +607,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Establish Section 20 Whole-System Integration, Security Certification and Production Release Gate across the accepted Mobile, Web, Control Plane, Computer Agent, Voice, Companion, Memory, Knowledge, Intelligence Router and Integrations boundaries.
-2. Preserve Sections 01–19 as open for all deferred Layer 4 obligations until their real-environment matrices are executed.
-3. Re-run the complete threat model at subsystem boundaries and verify that no composition path manufactures execution, sensor, approval, memory, disclosure or capability authority.
-4. Build whole-system E2E, recovery/rollback, upgrade, key-rotation, incident-response, privacy, reliability/load and final release evidence; no stable production tag before every mandatory gate passes.
+1. Execute the deferred Layer 4 program on current candidate artifacts, beginning with Section 01 physical Android validation because a real Android device is now available over ADB.
+2. Rebuild/install the current exact candidate on the physical device and execute lifecycle, permissions, storage, notification, voice/privacy, upgrade/recovery and failure matrices; every defect must return to the normal fix/regression loop.
+3. Continue Layer 4 through real provider/network validation, production-like Control Plane/Computer Agent infrastructure, and real supported integration/vendor/device matrices without weakening the Section 20 release gate.
+4. Complete independent security/privacy, disaster-recovery, key-rotation, incident-response, load/reliability and upgrade/rollback evidence. Production remains blocked and no stable/freeze tag is authorized until the executable release gate passes with exact-SHA evidence.
 
 ## Development Rule
 
