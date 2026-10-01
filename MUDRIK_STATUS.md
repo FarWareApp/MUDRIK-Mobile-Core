@@ -1,6 +1,6 @@
 # MUDRIK Project Status
 
-Last consolidated: 2026-09-25
+Last consolidated: 2026-10-01
 
 ## Authoritative Execution Model
 
@@ -383,6 +383,82 @@ Detailed evidence:
 - `docs/validation/SECTION_14_AUTOMATED_EVIDENCE.md`
 - `docs/validation/SECTION_14_DEFECTS.md`
 
+### Section 15 — Web and Mobile Command Surfaces
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-SURFACE LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`a7aa9931c438eae93beea2ceaccdca299b8ad79c`
+
+Evidence:
+
+- Mobile Core Validation `36620054699`: SUCCESS;
+- CodeQL `36620054563`: SUCCESS;
+- Mobile Core regressions: **842/842 PASS**;
+- Computer Agent regressions: **184/184 PASS**;
+- Control Plane regressions: **59/59 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency High/Critical gate: PASS.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_15_WEB_MOBILE_COMMAND_SURFACES_GATE.md`
+- `docs/validation/SECTION_15_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_15_DEFECTS.md`
+
+### Section 16 — Memory System
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted implementation candidate:
+
+`b367dcd277601e3c1745a58cbffdf818e8497d2f`
+
+Additional adversarial regression coverage continued through `25a0ea77dc64122366df145911e86350c0a3cbbe`.
+
+Evidence:
+
+- accepted-candidate Mobile Core Validation `36626840155`: SUCCESS;
+- accepted-candidate CodeQL `36626840066`: SUCCESS;
+- provider-independent long-term memory, deletion/tombstone integrity, conflict preservation, bounded retrieval/compaction and restart integrity are covered;
+- no known unresolved Blocker/Critical/High Section 16 defect in the automated/pre-device scope.
+
+Detailed evidence:
+
+- `docs/validation/SECTION_16_MEMORY_SYSTEM_GATE.md`
+- `docs/validation/SECTION_16_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_16_DEFECTS.md`
+
+### Section 17 — Knowledge Engine and Developer Knowledge System
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED`
+
+Accepted candidate:
+
+`a7a9d305e9af84198bddd945954e285e6d092d12`
+
+Evidence:
+
+- Mobile Core Validation #778 / `36886675072`: SUCCESS;
+- CodeQL #674 / `36886674753`: SUCCESS;
+- Section 17 knowledge suite: **30/30 PASS**;
+- whole Mobile Core regressions: **892/892 PASS**;
+- Computer Agent regressions: **184/184 PASS**;
+- Control Plane regressions: **59/59 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency audit blocking gate: **0 Critical / 0 High**;
+- frozen dependency install, lint, TypeScript and diff checks: PASS.
+
+Implemented boundaries include provenance-bound/versioned source truth, deterministic bounded ingestion/chunking, provider-independent index truth, official/current documentation preference, freshness/version filtering, exact citation/licensing metadata, bounded embedding/reranker abstractions, deletion/revocation invalidation, race-safe publication, prompt/tool-injection resistance and strict zero-authority knowledge projections.
+
+Detailed evidence:
+
+- `docs/architecture/MUDRIK_KNOWLEDGE_ENGINE.md`
+- `docs/validation/SECTION_17_KNOWLEDGE_ENGINE_GATE.md`
+- `docs/validation/SECTION_17_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_17_DEFECTS.md`
+
 ## UI/UX Detail Preservation Rule
 
 Authoritative detail ledger:
@@ -439,10 +515,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Establish Section 17 Knowledge Engine and Developer Knowledge System on top of the accepted Section 16 memory boundary.
-2. Preserve Sections 01–16 as open for their deferred Layer 4 obligations where applicable.
-3. Keep Sections 11/12 as the final local execution authority; knowledge, memory, surfaces and routing state must never manufacture tool authority.
-4. Keep knowledge provider-independent, provenance-bound, freshness-aware and citation-oriented; retrieved source text is untrusted data, not executable instruction.
+1. Establish Section 18 Intelligence Router and Model/Provider Layer on top of the accepted provider-independent Mobile, Agent, Memory and Knowledge boundaries.
+2. Preserve Sections 01–17 as open for their deferred Layer 4 obligations where applicable.
+3. Keep Sections 11/12 as the final local execution authority; models, knowledge, memory, surfaces and routing state must never manufacture tool authority.
+4. Add general/coding/vision/STT/TTS provider abstractions with health/latency/cost/quality-aware routing, bounded failover and isolated provider credentials.
 
 ## Development Rule
 

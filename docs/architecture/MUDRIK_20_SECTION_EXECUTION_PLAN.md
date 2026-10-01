@@ -198,7 +198,7 @@ No device is trusted merely because it is on the same network.
 
 # Section 4 — Privacy, Permissions and Observation Control
 
-**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED.**
 
 Scope:
 
@@ -407,7 +407,7 @@ Scope:
 
 # Section 17 — Knowledge Engine and Developer Knowledge System
 
-**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-ENVIRONMENT LAYER 4 DEFERRED.**
 
 Scope:
 
