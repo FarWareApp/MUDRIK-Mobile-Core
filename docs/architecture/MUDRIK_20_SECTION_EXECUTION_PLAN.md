@@ -422,6 +422,8 @@ Scope:
 
 # Section 18 — Intelligence Router and Model/Provider Layer
 
+**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+
 Scope:
 
 - general/coding/vision/STT/TTS provider abstraction;
