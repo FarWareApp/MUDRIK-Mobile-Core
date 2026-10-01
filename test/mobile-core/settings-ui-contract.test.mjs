@@ -10,6 +10,10 @@ const optionGroup = fs.readFileSync(
   'src/features/settings/components/SettingOptionGroup.tsx',
   'utf8',
 );
+const systemOverview = fs.readFileSync(
+  'src/features/settings/components/SettingsSystemOverview.tsx',
+  'utf8',
+);
 const permissionRow = fs.readFileSync(
   'src/features/settings/components/PermissionRow.tsx',
   'utf8',
@@ -59,6 +63,7 @@ test(
       'SettingsScreenHeader',
       'SettingsScreenState',
       'SettingsSectionTitle',
+      'SettingsSystemOverview',
       'SettingsNavigationRow',
       'SettingsPermissionList',
       'ResetSettingsButton',
@@ -153,7 +158,20 @@ test(
     for (const key of [
       'dismissError',
       'loadingSettings',
+      'settingsOverviewEyebrow',
+      'settingsOverviewDescription',
+      'settingsStatusReady',
+      'settingsStatusLoading',
+      'settingsStatusEnabled',
+      'settingsStatusDisabled',
+      'settingsStatusUnavailable',
+      'settingsVersion',
+      'settingsResolvedLanguage',
+      'settingsResolvedTheme',
+      'settingsPermissionSummary',
+      'settingsDiagnosticsStatus',
       'settingsAppSection',
+      'settingsExperienceSection',
       'theme',
       'themeSystem',
       'themeLight',
@@ -198,5 +216,24 @@ test(
         `${key} must exist in ar, de and en`,
       );
     }
+  },
+);
+
+
+test(
+  'settings system overview is backed by runtime application and permission state',
+  () => {
+    assert.match(systemOverview, /from 'expo-application'/);
+    assert.match(systemOverview, /nativeApplicationVersion/);
+    assert.match(systemOverview, /nativeBuildVersion/);
+    assert.match(systemOverview, /applicationId/);
+    assert.match(systemOverview, /permission\.status === 'granted'/);
+    assert.match(systemOverview, /permissionsLoading/);
+    assert.match(systemOverview, /useTheme/);
+    assert.match(systemOverview, /useLocale/);
+    assert.match(systemOverview, /mode === 'dark'/);
+    assert.doesNotMatch(systemOverview, /getAndroidId/);
+    assert.doesNotMatch(systemOverview, /identifierForVendor/);
+    assert.doesNotMatch(systemOverview, /Math\.random/);
   },
 );

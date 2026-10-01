@@ -34,6 +34,7 @@ import { SettingsPermissionList } from './components/SettingsPermissionList';
 import { SettingsScreenHeader } from './components/SettingsScreenHeader';
 import { SettingsScreenState } from './components/SettingsScreenState';
 import { SettingsSectionCard } from './components/SettingsSectionCard';
+import { SettingsSystemOverview } from './components/SettingsSystemOverview';
 import { SettingsSectionTitle } from './components/SettingsSectionTitle';
 import { getSettingsErrorTranslationKey } from './getSettingsErrorTranslationKey';
 
@@ -160,6 +161,14 @@ export function SettingsScreen({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            <SettingsSystemOverview
+              permissions={permissions.permissions}
+              permissionsLoading={permissions.loading}
+              diagnosticsEnabled={
+                settings.settings.diagnosticsEnabled
+              }
+            />
+
             <SettingsSectionTitle title={t('settingsAppSection')} />
 
             <SettingsSectionCard>
@@ -182,7 +191,11 @@ export function SettingsScreen({
                   void settings.update('language', value);
                 }}
               />
+            </SettingsSectionCard>
 
+            <SettingsSectionTitle title={t('settingsExperienceSection')} />
+
+            <SettingsSectionCard>
               <SettingToggleRow
                 label={t('saveTextDrafts')}
                 description={t('saveTextDraftsDescription')}
