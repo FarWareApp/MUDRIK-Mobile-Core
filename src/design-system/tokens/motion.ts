@@ -5,6 +5,7 @@ export const motion = {
     fast: 160,
     standard: 220,
     deliberate: 320,
+    ambient: 1800,
   },
 
   stagger: {

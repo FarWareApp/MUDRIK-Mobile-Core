@@ -65,6 +65,7 @@ export function VoiceRecorderStatus({
 
   return (
     <PremiumHeroSurface
+      active={active}
       style={styles.container}
     >
       <View style={styles.header}>

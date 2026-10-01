@@ -87,6 +87,7 @@ export function CompanionAvatar({
 
   return (
     <PremiumHeroSurface
+      active={active}
       style={styles.card}
     >
       <View style={styles.header}>

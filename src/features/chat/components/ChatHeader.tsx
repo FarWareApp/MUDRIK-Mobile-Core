@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -32,9 +32,10 @@ type Props = {
   onNewConversation: () => void;
 };
 
-export function ChatHeader({
-  onNewConversation,
-}: Props) {
+export const ChatHeader = memo(
+  function ChatHeader({
+    onNewConversation,
+  }: Props) {
   const { t, isRTL } = useLocale();
   const { colors } = useTheme();
 
@@ -140,7 +141,8 @@ export function ChatHeader({
       </Pressable>
     </View>
   );
-}
+  },
+);
 
 const styles = StyleSheet.create({
   header: {

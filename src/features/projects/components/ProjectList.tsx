@@ -64,6 +64,12 @@ export function ProjectList({
       renderItem={renderItem}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      initialNumToRender={12}
+      maxToRenderPerBatch={10}
+      updateCellsBatchingPeriod={40}
+      windowSize={7}
+      showsVerticalScrollIndicator={false}
     />
   );
 }

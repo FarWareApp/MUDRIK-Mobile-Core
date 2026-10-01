@@ -1,4 +1,5 @@
 import React, {
+  memo,
   type ReactNode,
 } from 'react';
 import {
@@ -35,13 +36,14 @@ type Props = {
   onPress: () => void;
 };
 
-export function HomeCommandTile({
-  label,
-  description,
-  icon,
-  primary = false,
-  onPress,
-}: Props) {
+export const HomeCommandTile = memo(
+  function HomeCommandTile({
+    label,
+    description,
+    icon,
+    primary = false,
+    onPress,
+  }: Props) {
   const { colors } = useTheme();
   const { reducedMotion } =
     useAccessibility();
@@ -151,7 +153,8 @@ export function HomeCommandTile({
       </Text>
     </Pressable>
   );
-}
+  },
+);
 
 const styles = StyleSheet.create({
   tile: {

@@ -1,4 +1,5 @@
 import React, {
+  memo,
   useCallback,
   useMemo,
   useRef,
@@ -59,14 +60,15 @@ function renderMessageListItem({
   );
 }
 
-export function MessageList({
-  messages,
-  onVoice,
-  onConversations,
-  onProjects,
-  onCompanion,
-  onSettings,
-}: Props) {
+export const MessageList = memo(
+  function MessageList({
+    messages,
+    onVoice,
+    onConversations,
+    onProjects,
+    onCompanion,
+    onSettings,
+  }: Props) {
   const listRef = useRef<FlatList<MessageListItem>>(null);
   const shouldFollowEndRef = useRef(true);
   const { reducedMotion } = useAccessibility();
@@ -133,9 +135,16 @@ export function MessageList({
       onScroll={handleScroll}
       scrollEventThrottle={32}
       onContentSizeChange={handleContentSizeChange}
+      initialNumToRender={18}
+      maxToRenderPerBatch={12}
+      updateCellsBatchingPeriod={40}
+      windowSize={9}
+      showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
     />
   );
-}
+  },
+);
 
 const styles = StyleSheet.create({
   content: {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -62,13 +62,14 @@ type Props = {
   onSettings: () => void;
 };
 
-export function EmptyChatState({
-  onVoice,
-  onConversations,
-  onProjects,
-  onCompanion,
-  onSettings,
-}: Props) {
+export const EmptyChatState = memo(
+  function EmptyChatState({
+    onVoice,
+    onConversations,
+    onProjects,
+    onCompanion,
+    onSettings,
+  }: Props) {
   const { reducedMotion } =
     useAccessibility();
   const { colors } = useTheme();
@@ -278,7 +279,8 @@ export function EmptyChatState({
       </Text>
     </Animated.View>
   );
-}
+  },
+);
 
 const styles = StyleSheet.create({
   container: {

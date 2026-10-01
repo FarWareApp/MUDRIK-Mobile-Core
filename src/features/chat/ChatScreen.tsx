@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useMemo,
   useState,
 } from 'react';
@@ -142,32 +143,131 @@ export function ChatScreen({
       fileStore: attachmentFileStore,
     });
 
-  const openAttachmentSources = () => {
-    setQuickActionsOpen(false);
-    setAttachmentSourceOpen(true);
-  };
+  const {
+    attachments:
+      attachmentDraftAttachments,
+    takePhoto:
+      takeAttachmentPhoto,
+    pickMedia:
+      pickAttachmentMedia,
+    pickDocuments:
+      pickAttachmentDocuments,
+    reload:
+      reloadAttachmentDraft,
+  } = attachmentDraft;
 
-  const takePhoto = () => {
-    setAttachmentSourceOpen(false);
-    void attachmentDraft.takePhoto();
-  };
+  const closeQuickActions =
+    useCallback(() => {
+      setQuickActionsOpen(false);
+    }, []);
 
-  const pickMedia = () => {
-    setAttachmentSourceOpen(false);
-    void attachmentDraft.pickMedia();
-  };
+  const navigate =
+    useCallback(
+      (route: QuickRoute) => {
+        setQuickActionsOpen(false);
+        router.push(route);
+      },
+      [],
+    );
 
-  const pickFiles = () => {
-    setAttachmentSourceOpen(false);
-    void attachmentDraft.pickDocuments();
-  };
+  const openAttachmentSources =
+    useCallback(() => {
+      setQuickActionsOpen(false);
+      setAttachmentSourceOpen(true);
+    }, []);
 
-  const navigate = (
-    route: QuickRoute,
-  ) => {
-    setQuickActionsOpen(false);
-    router.push(route);
-  };
+  const takePhoto =
+    useCallback(() => {
+      setAttachmentSourceOpen(false);
+      void takeAttachmentPhoto();
+    }, [takeAttachmentPhoto]);
+
+  const pickMedia =
+    useCallback(() => {
+      setAttachmentSourceOpen(false);
+      void pickAttachmentMedia();
+    }, [pickAttachmentMedia]);
+
+  const pickFiles =
+    useCallback(() => {
+      setAttachmentSourceOpen(false);
+      void pickAttachmentDocuments();
+    }, [pickAttachmentDocuments]);
+
+  const handleNewConversation =
+    useCallback(() => {
+      setQuickActionsOpen(false);
+      void newConversation();
+    }, [newConversation]);
+
+  const handleRetryInitialization =
+    useCallback(() => {
+      void retryInitialization();
+    }, [retryInitialization]);
+
+  const handleVoice =
+    useCallback(() => {
+      setQuickActionsOpen(false);
+      router.push('/voice');
+    }, []);
+
+  const handleConversations =
+    useCallback(
+      () => navigate('/conversations'),
+      [navigate],
+    );
+
+  const handleProjects =
+    useCallback(
+      () => navigate('/projects'),
+      [navigate],
+    );
+
+  const handleCompanion =
+    useCallback(
+      () => navigate('/companion'),
+      [navigate],
+    );
+
+  const handleSettings =
+    useCallback(
+      () => navigate('/settings'),
+      [navigate],
+    );
+
+  const toggleQuickActions =
+    useCallback(() => {
+      setQuickActionsOpen(
+        (value) => !value,
+      );
+    }, []);
+
+  const dismissAttachmentSource =
+    useCallback(() => {
+      setAttachmentSourceOpen(false);
+    }, []);
+
+  const handleRetrySend =
+    useCallback(() => {
+      void retry();
+    }, [retry]);
+
+  const handleSend =
+    useCallback(
+      async (text: string) => {
+        await send(
+          text,
+          attachmentDraftAttachments,
+        );
+
+        await reloadAttachmentDraft();
+      },
+      [
+        attachmentDraftAttachments,
+        reloadAttachmentDraft,
+        send,
+      ],
+    );
 
   return (
     <SafeAreaView
@@ -187,40 +287,36 @@ export function ChatScreen({
         }
       >
         <ChatHeader
-          onNewConversation={() => {
-            setQuickActionsOpen(false);
-            void newConversation();
-          }}
+          onNewConversation={
+            handleNewConversation
+          }
         />
 
         {initializing ||
         initializationFailed ? (
           <ChatBootstrapState
             failed={initializationFailed}
-            onRetry={() => {
-              void retryInitialization();
-            }}
+            onRetry={
+              handleRetryInitialization
+            }
           />
         ) : (
           <>
             <View style={styles.content}>
               <MessageList
                 messages={messages}
-                onVoice={() => {
-                  setQuickActionsOpen(false);
-                  router.push('/voice');
-                }}
-                onConversations={() =>
-                  navigate('/conversations')
+                onVoice={handleVoice}
+                onConversations={
+                  handleConversations
                 }
-                onProjects={() =>
-                  navigate('/projects')
+                onProjects={
+                  handleProjects
                 }
-                onCompanion={() =>
-                  navigate('/companion')
+                onCompanion={
+                  handleCompanion
                 }
-                onSettings={() =>
-                  navigate('/settings')
+                onSettings={
+                  handleSettings
                 }
               />
 
@@ -230,34 +326,28 @@ export function ChatScreen({
 
               <QuickActionBackdrop
                 visible={quickActionsOpen}
-                onPress={() => {
-                  setQuickActionsOpen(false);
-                }}
+                onPress={closeQuickActions}
               />
 
               <QuickActionMenu
                 visible={quickActionsOpen}
-                onConversations={() =>
-                  navigate('/conversations')
+                onConversations={
+                  handleConversations
                 }
-                onProjects={() =>
-                  navigate('/projects')
+                onProjects={
+                  handleProjects
                 }
-                onCompanion={() =>
-                  navigate('/companion')
+                onCompanion={
+                  handleCompanion
                 }
-                onSettings={() =>
-                  navigate('/settings')
+                onSettings={
+                  handleSettings
                 }
               />
 
               <QuickActionButton
                 expanded={quickActionsOpen}
-                onPress={() => {
-                  setQuickActionsOpen(
-                    (value) => !value,
-                  );
-                }}
+                onPress={toggleQuickActions}
               />
             </View>
 
@@ -268,9 +358,7 @@ export function ChatScreen({
                     error.code,
                   ),
                 )}
-                onRetry={() => {
-                  void retry();
-                }}
+                onRetry={handleRetrySend}
                 onDismiss={dismissError}
               />
             )}
@@ -299,9 +387,9 @@ export function ChatScreen({
             <AttachmentSourceSheet
               visible={attachmentSourceOpen}
               disabled={attachmentDraft.busy}
-              onDismiss={() => {
-                setAttachmentSourceOpen(false);
-              }}
+              onDismiss={
+                dismissAttachmentSource
+              }
               onCamera={takePhoto}
               onMedia={pickMedia}
               onFiles={pickFiles}
@@ -311,14 +399,7 @@ export function ChatScreen({
               value={draft}
               sending={sending}
               onChangeText={setDraft}
-              onSend={async (text) => {
-                await send(
-                  text,
-                  attachmentDraft.attachments,
-                );
-
-                await attachmentDraft.reload();
-              }}
+              onSend={handleSend}
               onStop={stop}
               onAttachmentsPress={
                 openAttachmentSources
@@ -326,10 +407,9 @@ export function ChatScreen({
               attachmentCount={
                 attachmentDraft.attachments.length
               }
-              onVoicePress={() => {
-                setQuickActionsOpen(false);
-                router.push('/voice');
-              }}
+              onVoicePress={
+                handleVoice
+              }
             />
           </>
         )}
