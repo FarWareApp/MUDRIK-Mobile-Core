@@ -30,6 +30,7 @@ export type IntegrationAdapterInvocation =
     capability: IntegrationCapabilityId;
     value: IntegrationCommandValue;
     issuedAtMs: number;
+    expiresAtMs: number;
     grantsExecutionAuthority: false;
     grantsSensorAuthority: false;
     grantsApprovalAuthority: false;
@@ -48,6 +49,7 @@ const KEYS =
     'capability',
     'value',
     'issuedAtMs',
+    'expiresAtMs',
     'grantsExecutionAuthority',
     'grantsSensorAuthority',
     'grantsApprovalAuthority',
@@ -124,6 +126,9 @@ export function parseIntegrationAdapterInvocation(
       value,
     )
     || !safeInteger(record.issuedAtMs)
+    || !safeInteger(record.expiresAtMs)
+    || Number(record.expiresAtMs)
+      <= Number(record.issuedAtMs)
     || record.grantsExecutionAuthority
       !== false
     || record.grantsSensorAuthority
@@ -152,6 +157,8 @@ export function parseIntegrationAdapterInvocation(
     value,
     issuedAtMs:
       record.issuedAtMs as number,
+    expiresAtMs:
+      record.expiresAtMs as number,
     grantsExecutionAuthority: false,
     grantsSensorAuthority: false,
     grantsApprovalAuthority: false,

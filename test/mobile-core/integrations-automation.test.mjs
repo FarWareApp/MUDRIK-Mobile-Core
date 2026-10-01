@@ -77,6 +77,12 @@ const {
 } = loadTypeScriptModule(
   'src/core/integrations/integrationAudit.ts',
 );
+const {
+  resolveIntegrationAlias,
+  listIntegrationRoomMembers,
+} = loadTypeScriptModule(
+  'src/core/integrations/integrationAliasResolver.ts',
+);
 
 const NOW = 2_100_000_000;
 const ACCOUNT = 'acct_1111111111111111';
@@ -252,6 +258,8 @@ function approval(overrides = {}) {
     commandId: COMMAND,
     accountId: ACCOUNT,
     workspaceId: WORKSPACE,
+    policyId: POLICY,
+    policyRevision: 1,
     bindingId: BINDING,
     bindingRevision: 1,
     capability: 'access.unlock',
@@ -3022,6 +3030,568 @@ test(
     assert.equal(
       future.reason,
       'approval_invalid',
+    );
+  },
+);
+
+test(
+  'alias resolution is metadata-only and refuses ambiguous or revoked targets',
+  () => {
+    const exact =
+      resolveIntegrationAlias(
+        [
+          binding(),
+          bindingB({
+            alias: 'Lamp',
+            room: 'Kitchen',
+          }),
+        ],
+        {
+          accountId: ACCOUNT,
+          workspaceId: WORKSPACE,
+          alias: 'lamp',
+          room: 'living room',
+        },
+      );
+
+    assert.equal(
+      exact.status,
+      'resolved',
+    );
+    assert.equal(
+      exact.target.bindingId,
+      BINDING,
+    );
+    assert.equal(
+      exact.grantsAuthority,
+      false,
+    );
+
+    const ambiguous =
+      resolveIntegrationAlias(
+        [
+          binding(),
+          bindingB({
+            alias: 'Lamp',
+            room: 'Living Room',
+          }),
+        ],
+        {
+          accountId: ACCOUNT,
+          workspaceId: WORKSPACE,
+          alias: 'Lamp',
+          room: null,
+        },
+      );
+
+    assert.equal(
+      ambiguous.status,
+      'ambiguous',
+    );
+    assert.equal(
+      ambiguous.target,
+      null,
+    );
+
+    const revokedOnly =
+      resolveIntegrationAlias(
+        [
+          binding({
+            state: 'revoked',
+            revision: 2,
+            revokedAtMs: NOW,
+          }),
+        ],
+        {
+          accountId: ACCOUNT,
+          workspaceId: WORKSPACE,
+          alias: 'Lamp',
+          room: null,
+        },
+      );
+
+    assert.equal(
+      revokedOnly.status,
+      'not_found',
+    );
+  },
+);
+
+test(
+  'room projection returns exact active targets only and grants no authority',
+  () => {
+    const projection =
+      listIntegrationRoomMembers(
+        [
+          binding(),
+          bindingB({
+            room: 'Living Room',
+          }),
+          binding({
+            bindingId:
+              'ibinding_3333333333333333',
+            deviceId:
+              'idevice_3333333333333333',
+            externalDeviceRef:
+              'vendor-device-3333333333333333',
+            accountId:
+              'acct_2222222222222222',
+            alias: 'Other Account',
+          }),
+        ],
+        {
+          accountId: ACCOUNT,
+          workspaceId: WORKSPACE,
+          room: 'living room',
+        },
+      );
+
+    assert.equal(
+      projection.status,
+      'resolved',
+    );
+    assert.deepEqual(
+      projection.targets.map(
+        (target) => target.bindingId,
+      ),
+      [
+        BINDING,
+        BINDING_B,
+      ].sort(),
+    );
+    assert.equal(
+      projection.grantsAuthority,
+      false,
+    );
+    assert.equal(
+      projection.targets.every(
+        (target) =>
+          !Object.hasOwn(
+            target,
+            'capabilities',
+          ),
+      ),
+      true,
+    );
+  },
+);
+
+test(
+  'adapter invocation expires no later than adapter authorization window',
+  () => {
+    const registry =
+      readyRegistry();
+
+    const invocation =
+      registry.prepareAdapterInvocation(
+        command(),
+        null,
+        [grant()],
+        NOW,
+      );
+
+    assert.equal(
+      invocation.accepted,
+      true,
+      invocation.reason,
+    );
+    assert.ok(invocation.value);
+    assert.equal(
+      invocation.value.expiresAtMs,
+      NOW + 60_000,
+    );
+
+    const expiredResult =
+      registry.acceptAdapterResult(
+        {
+          protocolVersion: '1.0',
+          commandId: COMMAND,
+          bindingId: BINDING,
+          deviceId: DEVICE,
+          adapterId: ADAPTER,
+          integrationId: INTEGRATION,
+          status: 'succeeded',
+          reasonCode: 'ok',
+          resultRef:
+            'result_ref_9999999999999999',
+          completedAtMs:
+            invocation.value.expiresAtMs,
+          grantsExecutionAuthority: false,
+          grantsSensorAuthority: false,
+          grantsApprovalAuthority: false,
+          grantsCapabilityAuthority: false,
+        },
+        invocation.value.expiresAtMs,
+      );
+
+    assert.equal(
+      expiredResult.accepted,
+      false,
+    );
+    assert.equal(
+      expiredResult.reason,
+      'result_expired',
+    );
+  },
+);
+
+test(
+  'approved high-risk invocation cannot outlive its recorded approval',
+  () => {
+    const registry =
+      readyRegistry();
+    const unlock =
+      command({
+        capability: 'access.unlock',
+        value: null,
+        mode: 'approved',
+      });
+    const approvalValue =
+      approval({
+        expiresAtMs: NOW + 10_000,
+      });
+
+    assert.equal(
+      registry.recordApproval(
+        approvalValue,
+        NOW,
+      ).accepted,
+      true,
+    );
+
+    const invocation =
+      registry.prepareAdapterInvocation(
+        unlock,
+        approvalValue,
+        [
+          grant(
+            'home.access.control',
+            false,
+          ),
+        ],
+        NOW,
+      );
+
+    assert.equal(
+      invocation.accepted,
+      true,
+      invocation.reason,
+    );
+    assert.ok(invocation.value);
+    assert.equal(
+      invocation.value.expiresAtMs,
+      NOW + 10_000,
+    );
+  },
+);
+
+test(
+  'aliases resolve only to active exact bindings and ambiguity grants no authority',
+  () => {
+    const ambiguous =
+      resolveIntegrationAlias(
+        [
+          binding(),
+          bindingB({
+            alias: 'Lamp',
+            room: 'Bedroom',
+          }),
+        ],
+        {
+          accountId: ACCOUNT,
+          workspaceId: WORKSPACE,
+          alias: 'Lamp',
+          room: null,
+        },
+      );
+
+    assert.equal(
+      ambiguous.status,
+      'ambiguous',
+    );
+    assert.equal(
+      ambiguous.target,
+      null,
+    );
+    assert.equal(
+      ambiguous.grantsAuthority,
+      false,
+    );
+
+    const scoped =
+      resolveIntegrationAlias(
+        [
+          binding(),
+          bindingB({
+            alias: 'Lamp',
+            room: 'Bedroom',
+          }),
+        ],
+        {
+          accountId: ACCOUNT,
+          workspaceId: WORKSPACE,
+          alias: 'Lamp',
+          room: 'Living Room',
+        },
+      );
+
+    assert.equal(
+      scoped.status,
+      'resolved',
+    );
+    assert.equal(
+      scoped.target.deviceId,
+      DEVICE,
+    );
+    assert.equal(
+      scoped.grantsAuthority,
+      false,
+    );
+
+    const revokedIgnored =
+      resolveIntegrationAlias(
+        [
+          binding(),
+          bindingB({
+            alias: 'Lamp',
+            room: 'Bedroom',
+            state: 'revoked',
+            revokedAtMs: NOW - 1,
+          }),
+        ],
+        {
+          accountId: ACCOUNT,
+          workspaceId: WORKSPACE,
+          alias: 'Lamp',
+          room: null,
+        },
+      );
+
+    assert.equal(
+      revokedIgnored.status,
+      'resolved',
+    );
+    assert.equal(
+      revokedIgnored.target.deviceId,
+      DEVICE,
+    );
+
+    assert.equal(
+      parseIntegrationCommand(
+        command({
+          deviceId: 'Lamp',
+        }),
+      ),
+      null,
+    );
+  },
+);
+
+test(
+  'room projection returns bounded exact targets without command authority',
+  () => {
+    const projected =
+      listIntegrationRoomMembers(
+        [
+          binding(),
+          bindingB({
+            room: 'Living Room',
+          }),
+        ],
+        {
+          accountId: ACCOUNT,
+          workspaceId: WORKSPACE,
+          room: 'Living Room',
+        },
+      );
+
+    assert.equal(
+      projected.status,
+      'resolved',
+    );
+    assert.equal(
+      projected.targets.length,
+      2,
+    );
+    assert.equal(
+      projected.grantsAuthority,
+      false,
+    );
+    assert.deepEqual(
+      projected.targets
+        .map((target) => target.deviceId)
+        .sort(),
+      [DEVICE, DEVICE_B].sort(),
+    );
+  },
+);
+
+test(
+  'adapter invocation lifetime is bounded and expired invocation cannot be replayed',
+  () => {
+    const registry =
+      new IntegrationRegistry();
+
+    registry.setPolicy(
+      policy(),
+      NOW,
+    );
+    registry.registerAdapter(
+      adapter({
+        expiresAtMs:
+          NOW + 600_000,
+      }),
+      NOW,
+    );
+    registry.ingestDiscovery(
+      discovery({
+        expiresAtMs:
+          NOW + 300_000,
+      }),
+      NOW,
+    );
+    registry.admitBinding(
+      binding(),
+      DISCOVERY,
+      NOW,
+    );
+
+    const longGrant = {
+      ...grant(),
+      expiresAtMs:
+        NOW + 600_000,
+    };
+
+    const first =
+      registry.prepareAdapterInvocation(
+        command(),
+        null,
+        [longGrant],
+        NOW,
+      );
+
+    assert.equal(
+      first.accepted,
+      true,
+    );
+    assert.ok(first.value);
+    assert.equal(
+      first.value.expiresAtMs,
+      NOW + 120_000,
+    );
+
+    const expiredRetry =
+      registry.prepareAdapterInvocation(
+        command(),
+        null,
+        [longGrant],
+        NOW + 120_000,
+      );
+
+    assert.equal(
+      expiredRetry.accepted,
+      false,
+    );
+    assert.equal(
+      expiredRetry.reason,
+      'invocation_expired',
+    );
+  },
+);
+
+test(
+  'adapter result arriving after invocation lifetime is rejected',
+  () => {
+    const registry =
+      readyRegistry();
+
+    const invocation =
+      registry.prepareAdapterInvocation(
+        command(),
+        null,
+        [grant()],
+        NOW,
+      ).value;
+
+    assert.ok(invocation);
+
+    const late =
+      registry.acceptAdapterResult(
+        {
+          protocolVersion: '1.0',
+          commandId: COMMAND,
+          bindingId: BINDING,
+          deviceId: DEVICE,
+          adapterId: ADAPTER,
+          integrationId: INTEGRATION,
+          status: 'succeeded',
+          reasonCode: 'ok',
+          resultRef: null,
+          completedAtMs:
+            invocation.expiresAtMs + 1,
+          grantsExecutionAuthority: false,
+          grantsSensorAuthority: false,
+          grantsApprovalAuthority: false,
+          grantsCapabilityAuthority: false,
+        },
+        invocation.expiresAtMs + 1,
+      );
+
+    assert.equal(
+      late.accepted,
+      false,
+    );
+    assert.equal(
+      late.reason,
+      'result_expired',
+    );
+  },
+);
+
+test(
+  'approved invocation cannot outlive its recorded approval',
+  () => {
+    const registry =
+      readyRegistry();
+
+    const unlock =
+      command({
+        capability: 'access.unlock',
+        value: null,
+        mode: 'approved',
+      });
+    const approved =
+      approval();
+
+    assert.equal(
+      registry.recordApproval(
+        approved,
+        NOW,
+      ).accepted,
+      true,
+    );
+
+    const issued =
+      registry.prepareAdapterInvocation(
+        unlock,
+        approved,
+        [
+          grant(
+            'home.access.control',
+            false,
+          ),
+        ],
+        NOW,
+      );
+
+    assert.equal(
+      issued.accepted,
+      true,
+    );
+    assert.ok(issued.value);
+    assert.equal(
+      issued.value.expiresAtMs,
+      approved.expiresAtMs,
     );
   },
 );

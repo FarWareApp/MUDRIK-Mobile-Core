@@ -639,6 +639,14 @@ export class IntegrationRegistry {
       );
     }
 
+    if (current.state === 'revoked') {
+      return result(
+        false,
+        'binding_revoked',
+        current,
+      );
+    }
+
     if (
       parsed.revision
         !== current.revision + 1
@@ -848,6 +856,14 @@ export class IntegrationRegistry {
       );
     }
 
+    if (current.state === 'revoked') {
+      return result(
+        false,
+        'routine_revoked',
+        current,
+      );
+    }
+
     if (
       parsed.revision
         !== current.revision + 1
@@ -1005,6 +1021,14 @@ export class IntegrationRegistry {
       );
     }
 
+    if (current.state === 'revoked') {
+      return result(
+        false,
+        'automation_revoked',
+        current,
+      );
+    }
+
     if (
       parsed.revision
         !== current.revision + 1
@@ -1087,6 +1111,10 @@ export class IntegrationRegistry {
     if (
       !policy
       || !policy.enabled
+      || policy.policyId
+        !== parsed.policyId
+      || policy.revision
+        !== parsed.policyRevision
       || !policy.allowedCapabilities
         .includes(parsed.capability)
     ) {
@@ -1479,13 +1507,22 @@ export class IntegrationRegistry {
       return null;
     }
 
+    const policy =
+      this.policies.get(
+        workspaceKey(
+          binding.accountId,
+          binding.workspaceId,
+        ),
+      );
     const adapter =
       this.adapters.get(
         binding.adapterId,
       );
 
     if (
-      !adapter
+      !policy
+      || !policy.enabled
+      || !adapter
       || adapter.status === 'unavailable'
       || adapter.declaredAtMs
         > trustedNowMs
@@ -1582,6 +1619,16 @@ export class IntegrationRegistry {
       );
 
     if (current) {
+      if (
+        trustedNowMs >= current.expiresAtMs
+      ) {
+        return result(
+          false,
+          'invocation_expired',
+          current,
+        );
+      }
+
       const same =
         current.bindingId
           === binding.bindingId
@@ -1614,6 +1661,56 @@ export class IntegrationRegistry {
       );
     }
 
+    let invocationExpiresAtMs =
+      Math.min(
+        adapter.expiresAtMs,
+        trustedNowMs + 2 * 60 * 1000,
+      );
+
+    if (command.mode === 'approved') {
+      const parsedApproval =
+        parseIntegrationApproval(
+          approvalInput,
+        );
+
+      if (parsedApproval) {
+        invocationExpiresAtMs =
+          Math.min(
+            invocationExpiresAtMs,
+            parsedApproval.expiresAtMs,
+          );
+      }
+    }
+
+    if (
+      command.mode === 'automation'
+      && command.automationExecutionId
+        !== null
+    ) {
+      const execution =
+        this.automationExecutions.get(
+          command.automationExecutionId,
+        );
+
+      if (execution) {
+        invocationExpiresAtMs =
+          Math.min(
+            invocationExpiresAtMs,
+            execution.expiresAtMs,
+          );
+      }
+    }
+
+    if (
+      invocationExpiresAtMs
+        <= trustedNowMs
+    ) {
+      return result(
+        false,
+        'invocation_expired',
+      );
+    }
+
     const invocation =
       parseIntegrationAdapterInvocation({
         protocolVersion: '1.0',
@@ -1628,6 +1725,8 @@ export class IntegrationRegistry {
         capability: command.capability,
         value: command.value,
         issuedAtMs: trustedNowMs,
+        expiresAtMs:
+          invocationExpiresAtMs,
         grantsExecutionAuthority: false,
         grantsSensorAuthority: false,
         grantsApprovalAuthority: false,
@@ -1681,9 +1780,25 @@ export class IntegrationRegistry {
         parsed.commandId,
       );
 
+    if (!issued) {
+      return result(
+        false,
+        'result_binding_mismatch',
+      );
+    }
+
     if (
-      !issued
-      || parsed.bindingId
+      parsed.completedAtMs
+        >= issued.expiresAtMs
+    ) {
+      return result(
+        false,
+        'result_expired',
+      );
+    }
+
+    if (
+      parsed.bindingId
         !== issued.bindingId
       || parsed.deviceId
         !== issued.deviceId
