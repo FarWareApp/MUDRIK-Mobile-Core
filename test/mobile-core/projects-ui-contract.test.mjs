@@ -149,7 +149,10 @@ test(
     assert.match(item, /memo\(/);
     assert.match(item, /useCallback/);
     assert.match(item, /accessibilityState=\{\{ disabled \}\}/);
-    assert.match(item, /marginStart:\s*-spacing\.sm/);
+    assert.match(item, /backgroundColor:\s*colors\.surface/);
+    assert.match(item, /borderRadius:\s*radius\.xl/);
+    assert.match(item, /shadowRadius:\s*12/);
+    assert.doesNotMatch(item, /borderBottomWidth/);
     assert.doesNotMatch(item, /marginLeft:/);
     assert.match(action, /width:\s*44/);
     assert.match(action, /height:\s*44/);

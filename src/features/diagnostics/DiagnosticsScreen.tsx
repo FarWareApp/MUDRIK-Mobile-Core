@@ -1,4 +1,6 @@
-import React from 'react';
+import React, {
+  useState,
+} from 'react';
 import {
   Alert,
   ScrollView,
@@ -16,6 +18,11 @@ import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 import { ClearDiagnosticsButton } from './components/ClearDiagnosticsButton';
 import { CoreHealthCard } from './components/CoreHealthCard';
 import { DiagnosticEventList } from './components/DiagnosticEventList';
+import { DiagnosticsAdvancedNotice } from './components/DiagnosticsAdvancedNotice';
+import {
+  DiagnosticsModeTabs,
+  type DiagnosticsMode,
+} from './components/DiagnosticsModeTabs';
 import { DiagnosticsScreenHeader } from './components/DiagnosticsScreenHeader';
 import { DiagnosticsSectionHeader } from './components/DiagnosticsSectionHeader';
 import { StorageMaintenanceCard } from './components/StorageMaintenanceCard';
@@ -42,6 +49,12 @@ export function DiagnosticsScreen({
     repository,
     runAttachmentMaintenance,
   });
+  const [
+    mode,
+    setMode,
+  ] = useState<DiagnosticsMode>(
+    'overview',
+  );
   const errorKey = getDiagnosticsErrorTranslationKey(
     controller.errorCode,
   );
@@ -98,6 +111,11 @@ export function DiagnosticsScreen({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        <DiagnosticsModeTabs
+          value={mode}
+          onChange={setMode}
+        />
+
         <DiagnosticsSectionHeader
           title={t('coreHealthSection')}
         />
@@ -116,28 +134,34 @@ export function DiagnosticsScreen({
           }}
         />
 
-        <DiagnosticsSectionHeader
-          title={t('localDiagnosticsSection')}
-          actionLabel={t('refreshDiagnostics')}
-          actionText={t('refresh')}
-          disabled={controlsDisabled}
-          onAction={() => {
-            void controller.load();
-          }}
-        />
+        {mode === 'advanced' ? (
+          <>
+            <DiagnosticsAdvancedNotice />
 
-        <DiagnosticEventList
-          loading={controller.loading}
-          events={controller.events}
-        />
+            <DiagnosticsSectionHeader
+              title={t('localDiagnosticsSection')}
+              actionLabel={t('refreshDiagnostics')}
+              actionText={t('refresh')}
+              disabled={controlsDisabled}
+              onAction={() => {
+                void controller.load();
+              }}
+            />
 
-        <ClearDiagnosticsButton
-          disabled={
-            controlsDisabled ||
-            controller.events.length === 0
-          }
-          onPress={confirmClear}
-        />
+            <DiagnosticEventList
+              loading={controller.loading}
+              events={controller.events}
+            />
+
+            <ClearDiagnosticsButton
+              disabled={
+                controlsDisabled ||
+                controller.events.length === 0
+              }
+              onPress={confirmClear}
+            />
+          </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

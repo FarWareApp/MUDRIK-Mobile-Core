@@ -170,6 +170,9 @@ export const translations = {
     reset: 'إعادة ضبط',
 
     coreHealthSection: 'حالة النواة',
+    diagnosticsOverviewTab: 'نظرة عامة',
+    diagnosticsAdvancedTab: 'متقدم',
+    diagnosticsAdvancedDescription: 'يعرض السجلات التقنية المحلية وأدوات استكشاف الأخطاء المتقدمة.',
     storageMaintenanceSection: 'صيانة التخزين المحلي',
     localDiagnosticsSection: 'التشخيص المحلي',
     healthHealthy: 'سليم',
@@ -371,6 +374,9 @@ export const translations = {
     reset: 'Zurücksetzen',
 
     coreHealthSection: 'CORE-STATUS',
+    diagnosticsOverviewTab: 'Übersicht',
+    diagnosticsAdvancedTab: 'Erweitert',
+    diagnosticsAdvancedDescription: 'Zeigt lokale technische Protokolle und erweiterte Werkzeuge zur Fehleranalyse.',
     storageMaintenanceSection: 'LOKALE SPEICHERWARTUNG',
     localDiagnosticsSection: 'LOKALE DIAGNOSE',
     healthHealthy: 'Gesund',
@@ -572,6 +578,9 @@ export const translations = {
     reset: 'Reset',
 
     coreHealthSection: 'CORE HEALTH',
+    diagnosticsOverviewTab: 'Overview',
+    diagnosticsAdvancedTab: 'Advanced',
+    diagnosticsAdvancedDescription: 'Shows local technical logs and advanced troubleshooting controls.',
     storageMaintenanceSection: 'LOCAL STORAGE MAINTENANCE',
     localDiagnosticsSection: 'LOCAL DIAGNOSTICS',
     healthHealthy: 'Healthy',

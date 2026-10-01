@@ -34,6 +34,18 @@ const eventList = fs.readFileSync(
   'src/features/diagnostics/components/DiagnosticEventList.tsx',
   'utf8',
 );
+const modeTabs = fs.readFileSync(
+  'src/features/diagnostics/components/DiagnosticsModeTabs.tsx',
+  'utf8',
+);
+const advancedNotice = fs.readFileSync(
+  'src/features/diagnostics/components/DiagnosticsAdvancedNotice.tsx',
+  'utf8',
+);
+const translations = fs.readFileSync(
+  'src/core/localization/translations.ts',
+  'utf8',
+);
 const eventCard = fs.readFileSync(
   'src/features/diagnostics/components/DiagnosticEventCard.tsx',
   'utf8',
@@ -55,6 +67,11 @@ test(
     assert.match(screen, /controller\.busy \|\| controller\.loading/);
     assert.match(screen, /showsVerticalScrollIndicator=\{false\}/);
     assert.match(screen, /disabled=\{controlsDisabled\}/);
+    assert.match(screen, /useState<DiagnosticsMode>/);
+    assert.match(screen, /'overview'/);
+    assert.match(screen, /mode === 'advanced'/);
+    assert.match(screen, /DiagnosticsModeTabs/);
+    assert.match(screen, /DiagnosticsAdvancedNotice/);
     assert.doesNotMatch(screen, /function errorFor/);
   },
 );
@@ -138,5 +155,36 @@ test(
     assert.match(errorMapper, /diagnosticsLoadFailed/);
     assert.match(errorMapper, /diagnosticsClearFailed/);
     assert.match(errorMapper, /storageMaintenanceFailed/);
+  },
+);
+
+
+test(
+  'diagnostics defaults to a user-facing overview and gates raw logs behind an advanced tab',
+  () => {
+    assert.match(modeTabs, /accessibilityRole="tablist"/);
+    assert.match(modeTabs, /accessibilityRole="tab"/);
+    assert.match(modeTabs, /diagnosticsOverviewTab/);
+    assert.match(modeTabs, /diagnosticsAdvancedTab/);
+    assert.match(modeTabs, /minHeight:\s*44/);
+
+    assert.match(advancedNotice, /InsetSurfaceCard/);
+    assert.match(advancedNotice, /diagnosticsAdvancedDescription/);
+
+    for (const key of [
+      'diagnosticsOverviewTab',
+      'diagnosticsAdvancedTab',
+      'diagnosticsAdvancedDescription',
+    ]) {
+      const pattern = new RegExp(
+        '^\\s*' + key + ':\\s',
+        'gm',
+      );
+      assert.equal(
+        translations.match(pattern)?.length ?? 0,
+        3,
+        key + ' must exist in ar, de and en',
+      );
+    }
   },
 );

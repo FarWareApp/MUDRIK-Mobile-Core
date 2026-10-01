@@ -70,6 +70,7 @@ export function ProjectList({
 
 const styles = StyleSheet.create({
   content: {
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
   },
 });
