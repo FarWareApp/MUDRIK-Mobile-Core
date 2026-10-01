@@ -2,6 +2,9 @@ export const voiceTranslations = {
   ar: {
     voiceConversation: 'المحادثة الصوتية',
     voiceRecorderTitle: 'التسجيل الصوتي',
+    voiceStudioEyebrow: 'MUDRIK VOICE',
+    voicePrivateCapture: 'التقاط محلي',
+    voiceStudioCaption: 'تسجيل عالي الجودة مع إبقاء الالتقاط داخل الجهاز حتى تختار استخدامه.',
     voiceDuration: 'مدة التسجيل',
     voicePhaseIdle: 'جاهز للتسجيل',
     voicePhasePreparing: 'جارٍ تجهيز الميكروفون…',
@@ -30,6 +33,9 @@ export const voiceTranslations = {
   de: {
     voiceConversation: 'Sprachgespräch',
     voiceRecorderTitle: 'Sprachaufnahme',
+    voiceStudioEyebrow: 'MUDRIK VOICE',
+    voicePrivateCapture: 'Lokale Aufnahme',
+    voiceStudioCaption: 'Hochwertige Aufnahme, die lokal auf dem Gerät bleibt, bis du sie bewusst verwendest.',
     voiceDuration: 'Aufnahmedauer',
     voicePhaseIdle: 'Aufnahmebereit',
     voicePhasePreparing: 'Mikrofon wird vorbereitet…',
@@ -58,6 +64,9 @@ export const voiceTranslations = {
   en: {
     voiceConversation: 'Voice conversation',
     voiceRecorderTitle: 'Voice recording',
+    voiceStudioEyebrow: 'MUDRIK VOICE',
+    voicePrivateCapture: 'Local capture',
+    voiceStudioCaption: 'High-fidelity capture that stays local on the device until you choose to use it.',
     voiceDuration: 'Recording duration',
     voicePhaseIdle: 'Ready to record',
     voicePhasePreparing: 'Preparing microphone…',

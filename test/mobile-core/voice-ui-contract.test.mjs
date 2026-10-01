@@ -26,6 +26,10 @@ const recorderIndicator = fs.readFileSync(
   'src/features/voice/components/VoiceRecorderIndicator.tsx',
   'utf8',
 );
+const signalStage = fs.readFileSync(
+  'src/features/voice/components/VoiceSignalStage.tsx',
+  'utf8',
+);
 const controls = fs.readFileSync(
   'src/features/voice/components/VoiceRecorderControls.tsx',
   'utf8',
@@ -125,7 +129,9 @@ test(
       /importantForAccessibility="no-hide-descendants"/,
     );
 
-    assert.match(status, /VoiceRecorderIndicator/);
+    assert.match(status, /VoiceSignalStage/);
+    assert.match(status, /InsetSurfaceCard/);
+    assert.match(status, /48 kHz · AAC · 192 kbps/);
     assert.doesNotMatch(status, /●/u);
     assert.doesNotMatch(status, /#FFFFFF/);
     assert.match(status, /colors\.accentText/);
@@ -133,6 +139,10 @@ test(
       recorderIndicator,
       /importantForAccessibility="no-hide-descendants"/,
     );
+    assert.match(signalStage, /BAR_HEIGHTS/);
+    assert.match(signalStage, /phase === 'recording'/);
+    assert.match(signalStage, /VoiceRecorderIndicator/);
+    assert.doesNotMatch(signalStage, /Math\.random/);
   },
 );
 
@@ -179,6 +189,9 @@ test(
     for (const key of [
       'voiceConversation',
       'voiceRecorderTitle',
+      'voiceStudioEyebrow',
+      'voicePrivateCapture',
+      'voiceStudioCaption',
       'voiceDuration',
       'voicePhaseIdle',
       'voicePhasePreparing',

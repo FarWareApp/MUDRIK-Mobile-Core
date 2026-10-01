@@ -188,6 +188,10 @@ test(
     assert.match(listItem, /writingDirection:\s*'auto'/);
     assert.match(listItem, /typeScale\.body/);
     assert.match(listItem, /typeScale\.caption/);
+    assert.match(listItem, /backgroundColor:\s*colors\.surface/);
+    assert.match(listItem, /borderRadius:\s*radius\.xl/);
+    assert.match(listItem, /shadowRadius:\s*12/);
+    assert.doesNotMatch(listItem, /borderBottomWidth/);
     assert.doesNotMatch(listItem, /marginLeft:/);
   },
 );

@@ -14,6 +14,7 @@ import type {
 } from '../../../contracts/ConversationRepository';
 import { useLocale } from '../../../core/localization/LocaleProvider';
 import { useTheme } from '../../../design-system/theme/ThemeProvider';
+import { radius } from '../../../design-system/tokens/radius';
 import { spacing } from '../../../design-system/tokens/spacing';
 import { typeScale } from '../../../design-system/tokens/typography';
 
@@ -81,7 +82,9 @@ export const ConversationListItem = memo(
         style={[
           styles.container,
           {
-            borderBottomColor: colors.border,
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            shadowColor: colors.shadow,
             opacity: disabled ? 0.6 : 1,
           },
         ]}
@@ -178,24 +181,34 @@ export const ConversationListItem = memo(
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 76,
+    minHeight: 92,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: spacing.xs,
     marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.xl,
+    paddingHorizontal: spacing.sm,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    elevation: 2,
   },
   main: {
     flex: 1,
-    minHeight: 60,
+    minHeight: 74,
     justifyContent: 'center',
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    marginStart: -spacing.sm,
-    borderRadius: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
   },
   title: {
     ...typeScale.body,
-    fontWeight: '600',
+    fontWeight: '700',
     writingDirection: 'auto',
   },
   date: {
@@ -206,5 +219,6 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xxs,
   },
 });

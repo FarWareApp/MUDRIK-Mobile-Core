@@ -92,12 +92,14 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.huge,
   },
   controls: {
-    marginTop: spacing.xxl,
+    width: '100%',
+    maxWidth: 460,
+    marginTop: spacing.lg,
+    alignItems: 'center',
   },
 });

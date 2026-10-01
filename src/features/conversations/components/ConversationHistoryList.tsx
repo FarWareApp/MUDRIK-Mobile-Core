@@ -74,6 +74,7 @@ export function ConversationHistoryList({
 
 const styles = StyleSheet.create({
   content: {
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
   },
 });
