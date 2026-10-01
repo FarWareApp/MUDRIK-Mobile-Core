@@ -8,9 +8,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
-  View,
 } from 'react-native';
 
 import type {
@@ -30,6 +28,7 @@ import { typeScale } from '../../../design-system/tokens/typography';
 import { InlineErrorBanner } from '../../../shared/components/InlineErrorBanner';
 
 import { CompanionEditorHeader } from './CompanionEditorHeader';
+import { CompanionEditorSection } from './CompanionEditorSection';
 import { CompanionNumericStepper } from './CompanionNumericStepper';
 import { CompanionOptionGroup } from './CompanionOptionGroup';
 import { CompanionResetControl } from './CompanionResetControl';
@@ -140,120 +139,124 @@ export function CompanionProfileEditorModal({
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <CompanionToggleRow
-            title={t('companionEnabled')}
-            description={t('companionEnabledDescription')}
-            value={draft.enabled}
-            disabled={saving}
-            onChange={(enabled) =>
-              setDraft((current) => ({
-                ...current,
-                enabled,
-              }))
-            }
-          />
+          <CompanionEditorSection
+            title={t('companionEditorIdentityTitle')}
+            description={t('companionEditorIdentityDescription')}
+          >
+            <CompanionToggleRow
+              title={t('companionEnabled')}
+              description={t('companionEnabledDescription')}
+              value={draft.enabled}
+              disabled={saving}
+              onChange={(enabled) =>
+                setDraft((current) => ({
+                  ...current,
+                  enabled,
+                }))
+              }
+            />
 
-          <TextInput
-            accessibilityLabel={t('companionName')}
-            accessibilityState={{ disabled: saving }}
-            value={draft.displayName}
-            onChangeText={(displayName) =>
-              setDraft((current) => ({
-                ...current,
-                displayName,
-              }))
-            }
-            editable={!saving}
-            keyboardAppearance={mode}
-            placeholder={t('companionName')}
-            placeholderTextColor={colors.textSecondary}
-            maxLength={60}
-            returnKeyType="done"
-            style={[
-              styles.input,
-              {
-                color: colors.textPrimary,
-                borderColor: colors.border,
-                backgroundColor: colors.surfaceInput,
-              },
-            ]}
-          />
-
-          <CompanionOptionGroup
-            title={t('companionPresentation')}
-            value={draft.presentation}
-            options={presentationOptions}
-            disabled={saving}
-            onChange={(presentation) =>
-              setDraft((current) => ({
-                ...current,
-                presentation,
-              }))
-            }
-          />
-
-          <CompanionOptionGroup
-            title={t('companionVoicePreference')}
-            value={draft.voicePreference}
-            options={voiceOptions}
-            disabled={saving}
-            onChange={(voicePreference) =>
-              setDraft((current) => ({
-                ...current,
-                voicePreference,
-              }))
-            }
-          />
-
-          <CompanionOptionGroup
-            title={t('companionInteractionStyle')}
-            value={draft.interactionStyle}
-            options={interactionOptions}
-            disabled={saving}
-            onChange={(interactionStyle) =>
-              setDraft((current) => ({
-                ...current,
-                interactionStyle,
-              }))
-            }
-          />
-
-          <CompanionOptionGroup
-            title={t('companionPersonalityPreset')}
-            value={draft.personalityPreset}
-            options={personalityOptions}
-            disabled={saving}
-            onChange={(personalityPreset) =>
-              setDraft((current) => ({
-                ...current,
-                personalityPreset,
-              }))
-            }
-          />
-
-          <CompanionOptionGroup
-            title={t('companionPresenceLevel')}
-            value={draft.presenceLevel}
-            options={presenceOptions}
-            disabled={saving}
-            onChange={(presenceLevel) =>
-              setDraft((current) => ({
-                ...current,
-                presenceLevel,
-              }))
-            }
-          />
-
-          <View style={styles.group}>
-            <Text
+            <TextInput
+              accessibilityLabel={t('companionName')}
+              accessibilityState={{ disabled: saving }}
+              value={draft.displayName}
+              onChangeText={(displayName) =>
+                setDraft((current) => ({
+                  ...current,
+                  displayName,
+                }))
+              }
+              editable={!saving}
+              keyboardAppearance={mode}
+              placeholder={t('companionName')}
+              placeholderTextColor={colors.textSecondary}
+              maxLength={60}
+              returnKeyType="done"
               style={[
-                styles.groupTitle,
-                { color: colors.textSecondary },
+                styles.input,
+                {
+                  color: colors.textPrimary,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surfaceInput,
+                },
               ]}
-            >
-              {t('companionPersonalityDimensions')}
-            </Text>
+            />
 
+            <CompanionOptionGroup
+              title={t('companionPresentation')}
+              value={draft.presentation}
+              options={presentationOptions}
+              disabled={saving}
+              onChange={(presentation) =>
+                setDraft((current) => ({
+                  ...current,
+                  presentation,
+                }))
+              }
+            />
+
+            <CompanionOptionGroup
+              title={t('companionVoicePreference')}
+              value={draft.voicePreference}
+              options={voiceOptions}
+              disabled={saving}
+              onChange={(voicePreference) =>
+                setDraft((current) => ({
+                  ...current,
+                  voicePreference,
+                }))
+              }
+            />
+          </CompanionEditorSection>
+
+          <CompanionEditorSection
+            title={t('companionEditorBehaviorTitle')}
+            description={t('companionEditorBehaviorDescription')}
+          >
+            <CompanionOptionGroup
+              title={t('companionInteractionStyle')}
+              value={draft.interactionStyle}
+              options={interactionOptions}
+              disabled={saving}
+              onChange={(interactionStyle) =>
+                setDraft((current) => ({
+                  ...current,
+                  interactionStyle,
+                }))
+              }
+            />
+
+            <CompanionOptionGroup
+              title={t('companionPersonalityPreset')}
+              value={draft.personalityPreset}
+              options={personalityOptions}
+              disabled={saving}
+              onChange={(personalityPreset) =>
+                setDraft((current) => ({
+                  ...current,
+                  personalityPreset,
+                }))
+              }
+            />
+
+            <CompanionOptionGroup
+              title={t('companionPresenceLevel')}
+              value={draft.presenceLevel}
+              options={presenceOptions}
+              disabled={saving}
+              onChange={(presenceLevel) =>
+                setDraft((current) => ({
+                  ...current,
+                  presenceLevel,
+                }))
+              }
+            />
+          </CompanionEditorSection>
+
+          <CompanionEditorSection
+            title={t('companionEditorPersonalityTitle')}
+            description={t('companionEditorPersonalityDescription')}
+          >
             <CompanionNumericStepper
               label={t('companionDimensionWarmth')}
               value={draft.warmth}
@@ -333,9 +336,12 @@ export function CompanionProfileEditorModal({
                 }))
               }
             />
-          </View>
+          </CompanionEditorSection>
 
-          <View style={styles.group}>
+          <CompanionEditorSection
+            title={t('companionEditorVoiceTitle')}
+            description={t('companionEditorVoiceDescription')}
+          >
             <CompanionNumericStepper
               label={t('companionSpeakingRate')}
               value={draft.speakingRate}
@@ -351,9 +357,7 @@ export function CompanionProfileEditorModal({
                 }))
               }
             />
-          </View>
 
-          <View style={styles.group}>
             <CompanionToggleRow
               title={t('companionCaptions')}
               description={t('companionCaptionsDescription')}
@@ -366,7 +370,7 @@ export function CompanionProfileEditorModal({
                 }))
               }
             />
-          </View>
+          </CompanionEditorSection>
 
           <CompanionResetControl
             active={visible}
@@ -390,20 +394,11 @@ const styles = StyleSheet.create({
   input: {
     ...typeScale.input,
     minHeight: 48,
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.lg,
     textAlign: 'auto',
-    writingDirection: 'auto',
-  },
-  group: {
-    marginTop: spacing.xl,
-  },
-  groupTitle: {
-    ...typeScale.caption,
-    marginBottom: spacing.sm,
-    fontWeight: '700',
     writingDirection: 'auto',
   },
 });

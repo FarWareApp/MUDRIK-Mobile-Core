@@ -24,6 +24,22 @@ export const companionTranslations = {
       'إعادة محاولة تحميل الرفيق',
     companionStudioEyebrow:
       'MUDRIK COMPANION',
+    companionEditorIdentityTitle:
+      'الهوية والحضور',
+    companionEditorIdentityDescription:
+      'تحكم في اسم الرفيق وشكله وتفضيل الصوت وحالة تشغيله.',
+    companionEditorBehaviorTitle:
+      'أسلوب التفاعل',
+    companionEditorBehaviorDescription:
+      'حدد كيف يتفاعل الرفيق ومقدار حضوره ونمط شخصيته الأساسي.',
+    companionEditorPersonalityTitle:
+      'أبعاد الشخصية',
+    companionEditorPersonalityDescription:
+      'اضبط الدفء والمباشرة والفكاهة والمبادرة والإيجاز بدقة.',
+    companionEditorVoiceTitle:
+      'الصوت والعرض',
+    companionEditorVoiceDescription:
+      'اضبط سرعة الكلام والتسميات المرئية للجلسة.',
     companionPresenceTitle:
       'حضور الرفيق',
     companionPresenceActiveCaption:
@@ -72,6 +88,22 @@ export const companionTranslations = {
       'Begleiter erneut laden',
     companionStudioEyebrow:
       'MUDRIK COMPANION',
+    companionEditorIdentityTitle:
+      'Identität & Präsenz',
+    companionEditorIdentityDescription:
+      'Steuere Name, Darstellung, Stimmpräferenz und Aktivierungsstatus.',
+    companionEditorBehaviorTitle:
+      'Interaktionsstil',
+    companionEditorBehaviorDescription:
+      'Lege Interaktion, Präsenzniveau und grundlegende Persönlichkeit fest.',
+    companionEditorPersonalityTitle:
+      'Persönlichkeitsdimensionen',
+    companionEditorPersonalityDescription:
+      'Passe Wärme, Direktheit, Humor, Initiative und Ausführlichkeit präzise an.',
+    companionEditorVoiceTitle:
+      'Stimme & Darstellung',
+    companionEditorVoiceDescription:
+      'Passe Sprechtempo und sichtbare Sitzungsuntertitel an.',
     companionPresenceTitle:
       'Begleiter-Präsenz',
     companionPresenceActiveCaption:
@@ -120,6 +152,22 @@ export const companionTranslations = {
       'Retry loading companion',
     companionStudioEyebrow:
       'MUDRIK COMPANION',
+    companionEditorIdentityTitle:
+      'Identity & presence',
+    companionEditorIdentityDescription:
+      'Control the companion name, presentation, voice preference, and enabled state.',
+    companionEditorBehaviorTitle:
+      'Interaction style',
+    companionEditorBehaviorDescription:
+      'Choose how the companion interacts, how present it is, and its base personality.',
+    companionEditorPersonalityTitle:
+      'Personality dimensions',
+    companionEditorPersonalityDescription:
+      'Tune warmth, directness, humor, initiative, and verbosity precisely.',
+    companionEditorVoiceTitle:
+      'Voice & presentation',
+    companionEditorVoiceDescription:
+      'Tune speaking rate and visible session captions.',
     companionPresenceTitle:
       'Companion presence',
     companionPresenceActiveCaption:

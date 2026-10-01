@@ -26,6 +26,10 @@ const editorHeader = fs.readFileSync(
   'src/features/companion/components/CompanionEditorHeader.tsx',
   'utf8',
 );
+const editorSection = fs.readFileSync(
+  'src/features/companion/components/CompanionEditorSection.tsx',
+  'utf8',
+);
 const controls = fs.readFileSync(
   'src/features/companion/components/CompanionSessionControls.tsx',
   'utf8',
@@ -169,7 +173,51 @@ test(
     assert.match(editorHeader, /busy:\s*saving/);
     assert.match(editorHeader, /ActivityIndicator/);
     assert.match(editor, /CompanionResetControl/);
+    assert.match(editor, /CompanionEditorSection/);
     assert.match(screen, /onReset=\{\(\) =>/);
+  },
+);
+
+test(
+  'companion profile editor is organized as a persistent profile studio without dropping advanced controls',
+  () => {
+    assert.ok(
+      (editor.match(/<CompanionEditorSection/g) ?? []).length >= 4,
+    );
+    for (const key of [
+      'companionEditorIdentityTitle',
+      'companionEditorBehaviorTitle',
+      'companionEditorPersonalityTitle',
+      'companionEditorVoiceTitle',
+    ]) {
+      assert.match(editor, new RegExp(key));
+    }
+
+    for (const field of [
+      'draft.enabled',
+      'draft.displayName',
+      'draft.presentation',
+      'draft.voicePreference',
+      'draft.interactionStyle',
+      'draft.personalityPreset',
+      'draft.presenceLevel',
+      'draft.warmth',
+      'draft.directness',
+      'draft.humor',
+      'draft.initiative',
+      'draft.verbosity',
+      'draft.speakingRate',
+      'draft.showCaptions',
+    ]) {
+      assert.match(
+        editor,
+        new RegExp(field.replace('.', '\\.')),
+      );
+    }
+
+    assert.match(editorSection, /InsetSurfaceCard/);
+    assert.match(editorSection, /accessibilityRole="header"/);
+    assert.match(editorSection, /maxWidth:\s*560/);
   },
 );
 
@@ -317,6 +365,14 @@ test(
       'companionSessionFailed',
       'retryLoadingCompanion',
       'companionStudioEyebrow',
+      'companionEditorIdentityTitle',
+      'companionEditorIdentityDescription',
+      'companionEditorBehaviorTitle',
+      'companionEditorBehaviorDescription',
+      'companionEditorPersonalityTitle',
+      'companionEditorPersonalityDescription',
+      'companionEditorVoiceTitle',
+      'companionEditorVoiceDescription',
       'companionPresenceTitle',
       'companionPresenceActiveCaption',
       'companionPresenceIdleCaption',
