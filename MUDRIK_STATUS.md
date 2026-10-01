@@ -488,6 +488,35 @@ Detailed evidence:
 - `docs/validation/SECTION_18_AUTOMATED_EVIDENCE.md`
 - `docs/validation/SECTION_18_DEFECTS.md`
 
+### Section 19 — Smart-Home, External Integrations and Automation
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-INTEGRATION LAYER 4 DEFERRED`
+
+Accepted implementation candidate:
+
+`15193f2592d6210a9414c90dab9cc9a7f2574c68`
+
+Evidence:
+
+- Mobile Core Validation #785 / `36899671966`: SUCCESS;
+- CodeQL #681 / `36899671945`: SUCCESS;
+- Section 19 integrations/automation suite: **37/37 PASS**;
+- whole Mobile Core regressions: **958/958 PASS**;
+- Computer Agent regressions: **184/184 PASS**;
+- Control Plane regressions: **59/59 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency audit blocking gate: **0 Critical / 0 High / 5 reviewed Moderate**;
+- frozen install, TypeScript, ESLint and diff checks: PASS.
+
+Implemented boundaries include zero-authority vendor discovery, explicit discovery-to-admission binding, dedicated home read/access/security capabilities, versioned integration policy, exact command/value contracts, high-risk approval provenance, exact-target routines, cross-device revision binding, bounded automation permissions, short-lived automation executions, action-index replay protection, binding/policy/routine/automation revocation propagation, credential-free adapter invocations, issued-result provenance and content-minimized audit contracts.
+
+Detailed evidence:
+
+- `docs/architecture/MUDRIK_INTEGRATIONS_AUTOMATION.md`
+- `docs/validation/SECTION_19_INTEGRATIONS_AUTOMATION_GATE.md`
+- `docs/validation/SECTION_19_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_19_DEFECTS.md`
+
 ## UI/UX Detail Preservation Rule
 
 Authoritative detail ledger:
@@ -544,10 +573,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Establish Section 19 Smart-Home, External Integrations and Automation on top of the accepted capability, control-plane and intelligence boundaries.
-2. Preserve Sections 01–18 as open for their deferred Layer 4 obligations where applicable.
-3. Keep Sections 11/12 as the final local execution authority; integrations, automations, models, knowledge, memory and routing state must never manufacture tool authority.
-4. Build an adapter framework with capability discovery, device/room aliases, safe instant commands, routines/scenes, automation permissions, cross-device commands and explicit high-risk boundaries.
+1. Establish Section 20 Whole-System Integration, Security Certification and Production Release Gate across the accepted Mobile, Web, Control Plane, Computer Agent, Voice, Companion, Memory, Knowledge, Intelligence Router and Integrations boundaries.
+2. Preserve Sections 01–19 as open for all deferred Layer 4 obligations until their real-environment matrices are executed.
+3. Re-run the complete threat model at subsystem boundaries and verify that no composition path manufactures execution, sensor, approval, memory, disclosure or capability authority.
+4. Build whole-system E2E, recovery/rollback, upgrade, key-rotation, incident-response, privacy, reliability/load and final release evidence; no stable production tag before every mandatory gate passes.
 
 ## Development Rule
 

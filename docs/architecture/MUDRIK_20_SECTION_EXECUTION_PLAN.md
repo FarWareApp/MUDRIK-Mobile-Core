@@ -436,7 +436,7 @@ Scope:
 
 # Section 19 — Smart-Home, External Integrations and Automation
 
-**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-INTEGRATION LAYER 4 DEFERRED.**
 
 Scope:
 
