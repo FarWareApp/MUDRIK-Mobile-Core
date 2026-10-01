@@ -51,6 +51,13 @@ const {
 );
 
 const {
+  applyKnowledgeEmbeddings,
+  applyKnowledgeRankingPipeline,
+} = loadTypeScriptModule(
+  'src/core/knowledge/knowledgeEmbedding.ts',
+);
+
+const {
   createKnowledgeAuditEvent,
   parseKnowledgeAuditEvent,
 } = loadTypeScriptModule(
@@ -2047,6 +2054,714 @@ test(
     assert.ok(
       tinyProjection.value
         .totalBytes <= 512,
+    );
+  },
+);
+
+
+async function embeddingFixture() {
+  const value = registry();
+
+  const ingested =
+    await value.ingest({
+      source: source({
+        content:
+          (
+            'alpha api reference embedding candidate. '
+          ).repeat(50),
+      }),
+      trustedNowMs: NOW,
+    });
+
+  assert.equal(
+    ingested.accepted,
+    true,
+    ingested.reason,
+  );
+
+  const parsedQuery =
+    parseKnowledgeQuery(
+      query(),
+    );
+  const parsedPolicy =
+    parseKnowledgePolicy(
+      policy(),
+    );
+  const sourceRecord =
+    value.getSource(
+      SOURCE_A,
+    );
+
+  assert.ok(parsedQuery);
+  assert.ok(parsedPolicy);
+  assert.ok(sourceRecord);
+
+  const candidates =
+    rankKnowledgeCandidates({
+      query: parsedQuery,
+      policy: parsedPolicy,
+      sources: [sourceRecord],
+      chunksBySource:
+        new Map([
+          [
+            SOURCE_A,
+            value.getChunks(
+              SOURCE_A,
+            ),
+          ],
+        ]),
+      trustedNowMs: NOW,
+    });
+
+  assert.ok(
+    candidates.length >= 2,
+  );
+
+  return {
+    value,
+    parsedQuery,
+    candidates,
+  };
+}
+
+test(
+  'embedding provider absence failure and invalid candidate injection all fall back to lexical truth',
+  async () => {
+    const {
+      parsedQuery,
+      candidates,
+    } =
+      await embeddingFixture();
+
+    const unavailable =
+      await applyKnowledgeEmbeddings(
+        parsedQuery,
+        candidates,
+        null,
+      );
+
+    assert.equal(
+      unavailable.usedEmbeddings,
+      false,
+    );
+    assert.equal(
+      unavailable.reason,
+      'embedding_unavailable',
+    );
+    assert.deepEqual(
+      unavailable.candidates,
+      candidates,
+    );
+
+    const failed =
+      await applyKnowledgeEmbeddings(
+        parsedQuery,
+        candidates,
+        {
+          async rank() {
+            throw new Error(
+              'provider offline',
+            );
+          },
+        },
+      );
+
+    assert.equal(
+      failed.usedEmbeddings,
+      false,
+    );
+    assert.equal(
+      failed.reason,
+      'embedding_failed',
+    );
+    assert.deepEqual(
+      failed.candidates,
+      candidates,
+    );
+
+    const injected =
+      await applyKnowledgeEmbeddings(
+        parsedQuery,
+        candidates,
+        {
+          async rank() {
+            return [{
+              chunkId:
+                'knowledge_chunk_'
+                + 'f'.repeat(64),
+              adjustment: 100,
+            }];
+          },
+        },
+      );
+
+    assert.equal(
+      injected.usedEmbeddings,
+      false,
+    );
+    assert.equal(
+      injected.reason,
+      'embedding_invalid',
+    );
+    assert.deepEqual(
+      injected.candidates,
+      candidates,
+    );
+
+    const oversizedAdjustment =
+      await applyKnowledgeEmbeddings(
+        parsedQuery,
+        candidates,
+        {
+          async rank(input) {
+            return [{
+              chunkId:
+                input.candidates[0]
+                  .chunkId,
+              adjustment: 201,
+            }];
+          },
+        },
+      );
+
+    assert.equal(
+      oversizedAdjustment
+        .usedEmbeddings,
+      false,
+    );
+    assert.equal(
+      oversizedAdjustment.reason,
+      'embedding_invalid',
+    );
+  },
+);
+
+test(
+  'embedding and reranker pipeline may reorder bounded candidates but cannot rewrite source identity',
+  async () => {
+    const {
+      value,
+      parsedQuery,
+      candidates,
+    } =
+      await embeddingFixture();
+
+    const target =
+      candidates[1];
+    const sourceBefore =
+      value.getSource(
+        SOURCE_A,
+      );
+
+    const embedded =
+      await applyKnowledgeEmbeddings(
+        parsedQuery,
+        candidates,
+        {
+          async rank() {
+            return [{
+              chunkId:
+                target.chunk.chunkId,
+              adjustment: 200,
+            }];
+          },
+        },
+      );
+
+    assert.equal(
+      embedded.usedEmbeddings,
+      true,
+    );
+    assert.equal(
+      embedded.reason,
+      'embedding_ranked',
+    );
+    assert.equal(
+      embedded.candidates[0]
+        .chunk.chunkId,
+      target.chunk.chunkId,
+    );
+
+    const pipeline =
+      await applyKnowledgeRankingPipeline(
+        parsedQuery,
+        candidates,
+        {
+          embeddingRanker: {
+            async rank() {
+              return [{
+                chunkId:
+                  target.chunk.chunkId,
+                adjustment: 200,
+              }];
+            },
+          },
+          reranker: {
+            async rerank(input) {
+              return [{
+                chunkId:
+                  input.candidates[0]
+                    .chunkId,
+                adjustment: 50,
+              }];
+            },
+          },
+        },
+      );
+
+    assert.equal(
+      pipeline.embedding.used,
+      true,
+    );
+    assert.equal(
+      pipeline.reranker.used,
+      true,
+    );
+    assert.equal(
+      pipeline.candidates[0]
+        .source.sourceId,
+      SOURCE_A,
+    );
+    assert.equal(
+      pipeline.candidates[0]
+        .source.contentDigest,
+      sourceBefore.contentDigest,
+    );
+    assert.equal(
+      pipeline.candidates[0]
+        .source.revision,
+      sourceBefore.revision,
+    );
+    assert.equal(
+      value.getSource(
+        SOURCE_A,
+      ),
+      sourceBefore,
+    );
+  },
+);
+
+
+test(
+  'exact requested version filters retrieval without allowing stale version masquerade',
+  async () => {
+    const value = registry();
+
+    const ingested =
+      await value.ingest({
+        source: source({
+          version: 'v1.4.0',
+        }),
+        trustedNowMs: NOW,
+      });
+
+    assert.equal(
+      ingested.accepted,
+      true,
+      ingested.reason,
+    );
+
+    const matching =
+      value.retrieve(
+        query({
+          queryId:
+            'knowledge_query_5555555555555555',
+          requestedVersion:
+            'v1.4.0',
+          requireCurrent: true,
+        }),
+        NOW,
+      );
+
+    assert.equal(
+      matching.accepted,
+      true,
+      matching.reason,
+    );
+    assert.ok(
+      matching.value.entries.length
+        > 0,
+    );
+    assert.equal(
+      matching.value.entries[0]
+        .sourceVersion,
+      'v1.4.0',
+    );
+
+    const mismatch =
+      value.retrieve(
+        query({
+          queryId:
+            'knowledge_query_6666666666666666',
+          requestedVersion:
+            'v9.9.9',
+          requireCurrent: true,
+        }),
+        NOW,
+      );
+
+    assert.equal(
+      mismatch.accepted,
+      true,
+      mismatch.reason,
+    );
+    assert.equal(
+      mismatch.value.entries.length,
+      0,
+    );
+  },
+);
+
+test(
+  'source revocation invalidates index and every previously issued projection',
+  async () => {
+    const value = registry();
+
+    const ingested =
+      await value.ingest({
+        source: source(),
+        trustedNowMs: NOW,
+      });
+
+    assert.equal(
+      ingested.accepted,
+      true,
+      ingested.reason,
+    );
+
+    const before =
+      value.retrieve(
+        query({
+          queryId:
+            'knowledge_query_7777777777777777',
+        }),
+        NOW,
+      );
+
+    assert.ok(before.value);
+    assert.ok(
+      before.value.entries.length > 0,
+    );
+    assert.equal(
+      value.isCurrentProjection(
+        before.value,
+      ),
+      true,
+    );
+
+    const revoked =
+      value.retire({
+        accountId: ACCOUNT,
+        workspaceId: WORKSPACE,
+        sourceId: SOURCE_A,
+        expectedRevision: 1,
+        reason:
+          'source_revoked',
+        trustedNowMs: NOW + 50,
+      });
+
+    assert.equal(
+      revoked.accepted,
+      true,
+      revoked.reason,
+    );
+    assert.equal(
+      value.getSource(
+        SOURCE_A,
+      ).state,
+      'revoked',
+    );
+    assert.equal(
+      value.getChunks(
+        SOURCE_A,
+      ).length,
+      0,
+    );
+    assert.equal(
+      value.isCurrentProjection(
+        before.value,
+      ),
+      false,
+    );
+
+    const after =
+      value.retrieve(
+        query({
+          queryId:
+            'knowledge_query_8888888888888888',
+          requestedAtMs:
+            NOW + 51,
+        }),
+        NOW + 51,
+      );
+
+    assert.equal(
+      after.accepted,
+      true,
+      after.reason,
+    );
+    assert.equal(
+      after.value.entries.length,
+      0,
+    );
+  },
+);
+
+
+test(
+  'derived index rejects chunk provenance license freshness and version metadata drift',
+  async () => {
+    const value = registry();
+
+    const ingested =
+      await value.ingest({
+        source: source(),
+        trustedNowMs: NOW,
+      });
+
+    assert.equal(
+      ingested.accepted,
+      true,
+      ingested.reason,
+    );
+
+    const sourceRecord =
+      value.getSource(SOURCE_A);
+    const chunks =
+      value.getChunks(SOURCE_A);
+
+    assert.ok(sourceRecord);
+    assert.ok(chunks.length > 0);
+
+    const withFirstChunk =
+      (patch) => [
+        {
+          ...chunks[0],
+          ...patch,
+        },
+        ...chunks.slice(1),
+      ];
+
+    const mismatches = [
+      { official: false },
+      { version: 'v9.9.9' },
+      {
+        observedAtMs:
+          sourceRecord.observedAtMs + 1,
+      },
+      {
+        validUntilMs:
+          NOW + DAY,
+      },
+      {
+        provenanceRef:
+          'provenance:official:api',
+      },
+      {
+        licenseId:
+          'license_other_docs_v1',
+      },
+    ];
+
+    for (const patch of mismatches) {
+      assert.equal(
+        prepareKnowledgeIndex(
+          sourceRecord,
+          withFirstChunk(patch),
+        ),
+        null,
+      );
+    }
+  },
+);
+
+
+test(
+  'embedding provider switches preserve durable source and chunk truth',
+  async () => {
+    const {
+      value,
+      parsedQuery,
+      candidates,
+    } =
+      await embeddingFixture();
+
+    const sourceBefore =
+      value.getSource(SOURCE_A);
+    const chunksBefore =
+      value.getChunks(SOURCE_A);
+    const expectedIds =
+      candidates
+        .map(
+          (candidate) =>
+            candidate.chunk.chunkId,
+        )
+        .sort();
+
+    assert.ok(sourceBefore);
+
+    const providers = [
+      candidates[0],
+      candidates[candidates.length - 1],
+    ];
+
+    for (const target of providers) {
+      const ranked =
+        await applyKnowledgeRankingPipeline(
+          parsedQuery,
+          candidates,
+          {
+            embeddingRanker: {
+              async rank() {
+                return [{
+                  chunkId:
+                    target.chunk.chunkId,
+                  adjustment: 200,
+                }];
+              },
+            },
+          },
+        );
+
+      assert.equal(
+        ranked.embedding.used,
+        true,
+      );
+      assert.deepEqual(
+        ranked.candidates
+          .map(
+            (candidate) =>
+              candidate.chunk.chunkId,
+          )
+          .sort(),
+        expectedIds,
+      );
+      assert.deepEqual(
+        value.getSource(SOURCE_A),
+        sourceBefore,
+      );
+      assert.deepEqual(
+        value.getChunks(SOURCE_A),
+        chunksBefore,
+      );
+    }
+  },
+);
+
+
+test(
+  'source update racing retrieval exposes only a fully published old or new revision',
+  async () => {
+    const gated =
+      createGatedDigestProvider();
+    const value =
+      new KnowledgeRegistry({
+        digestProvider: gated,
+      });
+
+    assert.equal(
+      value.setPolicy(
+        policy(),
+      ).accepted,
+      true,
+    );
+
+    const initial =
+      await value.ingest({
+        source: source(),
+        trustedNowMs: NOW,
+      });
+
+    assert.equal(
+      initial.accepted,
+      true,
+      initial.reason,
+    );
+
+    gated.arm();
+
+    const pending =
+      value.ingest({
+        source: source({
+          revision: 2,
+          version: 'v2.0.0',
+          observedAtMs:
+            NOW + 50,
+          content:
+            (
+              'alpha api reference revision two. '
+            ).repeat(50),
+        }),
+        trustedNowMs:
+          NOW + 50,
+      });
+
+    await gated.waitUntilEntered();
+
+    const during =
+      value.retrieve(
+        query(),
+        NOW + 50,
+      );
+
+    assert.equal(
+      during.accepted,
+      true,
+      during.reason,
+    );
+    assert.ok(during.value);
+    assert.ok(
+      during.value.entries.length > 0,
+    );
+    assert.equal(
+      during.value.entries.every(
+        (entry) =>
+          entry.sourceRevision === 1,
+      ),
+      true,
+    );
+
+    gated.release();
+
+    const updated =
+      await pending;
+
+    assert.equal(
+      updated.accepted,
+      true,
+      updated.reason,
+    );
+
+    const after =
+      value.retrieve(
+        query({
+          queryId:
+            'knowledge_query_5555555555555555',
+        }),
+        NOW + 51,
+      );
+
+    assert.equal(
+      after.accepted,
+      true,
+      after.reason,
+    );
+    assert.ok(after.value);
+    assert.ok(
+      after.value.entries.length > 0,
+    );
+    assert.equal(
+      after.value.entries.every(
+        (entry) =>
+          entry.sourceRevision === 2,
+      ),
+      true,
+    );
+    assert.equal(
+      value.isCurrentProjection(
+        during.value,
+      ),
+      false,
     );
   },
 );

@@ -5,7 +5,6 @@ import {
 
 import {
   parseKnowledgeSourceRevision,
-  type KnowledgeSourceRevision,
 } from './knowledgeSource';
 
 import {
@@ -162,6 +161,18 @@ export function prepareKnowledgeIndex(
         !== source.revision
       || chunk.sourceDigest
         !== source.contentDigest
+      || chunk.official
+        !== source.official
+      || chunk.version
+        !== source.version
+      || chunk.observedAtMs
+        !== source.observedAtMs
+      || chunk.validUntilMs
+        !== source.validUntilMs
+      || chunk.provenanceRef
+        !== source.provenanceRef
+      || chunk.licenseId
+        !== source.license.licenseId
       || chunk.ordinal !== index
       || chunk.charStart
         !== previousEnd
