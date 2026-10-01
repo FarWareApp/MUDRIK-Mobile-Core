@@ -130,7 +130,7 @@ test(
     );
 
     assert.match(status, /VoiceSignalStage/);
-    assert.match(status, /InsetSurfaceCard/);
+    assert.match(status, /PremiumHeroSurface/);
     assert.match(status, /48 kHz · AAC · 192 kbps/);
     assert.doesNotMatch(status, /●/u);
     assert.doesNotMatch(status, /#FFFFFF/);

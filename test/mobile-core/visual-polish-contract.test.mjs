@@ -6,6 +6,14 @@ const insetCard = fs.readFileSync(
   'src/design-system/components/InsetSurfaceCard.tsx',
   'utf8',
 );
+const premiumHero = fs.readFileSync(
+  'src/design-system/components/PremiumHeroSurface.tsx',
+  'utf8',
+);
+const depthTokens = fs.readFileSync(
+  'src/design-system/tokens/depth.ts',
+  'utf8',
+);
 const settings = fs.readFileSync(
   'src/features/settings/SettingsScreen.tsx',
   'utf8',
@@ -38,6 +46,19 @@ const headers = [
 ]);
 
 test(
+  'premium hero surfaces provide shared brand depth without expensive platform-only effects',
+  () => {
+    assert.match(premiumHero, /AdaptiveGlassSurface/);
+    assert.match(premiumHero, /depth\.elevated/);
+    assert.match(premiumHero, /styles\.accentRail/);
+    assert.match(premiumHero, /styles\.auraOuter/);
+    assert.match(premiumHero, /pointerEvents="none"/);
+    assert.match(depthTokens, /floating:/);
+    assert.doesNotMatch(premiumHero, /Math\.random/);
+  },
+);
+
+test(
   'primary surfaces use shared inset-card hierarchy rather than flat settings rows',
   () => {
     assert.match(insetCard, /AdaptiveGlassSurface/);
@@ -66,6 +87,8 @@ test(
   'home empty state has a centered elevated hero and the quick action remains reduced-motion aware',
   () => {
     assert.match(emptyChat, /styles\.hero/);
+    assert.match(emptyChat, /PremiumHeroSurface/);
+    assert.match(emptyChat, /radius\.xxl/);
     assert.match(emptyChat, /alignItems:\s*'center'/);
     assert.match(emptyChat, /textAlign:\s*'center'/);
     assert.match(emptyChat, /logoHalo/);

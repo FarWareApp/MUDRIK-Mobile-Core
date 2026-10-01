@@ -13,8 +13,8 @@ import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
 import {
-  InsetSurfaceCard,
-} from '../../../design-system/components/InsetSurfaceCard';
+  PremiumHeroSurface,
+} from '../../../design-system/components/PremiumHeroSurface';
 import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
@@ -86,7 +86,7 @@ export function CompanionAvatar({
       : stageColor;
 
   return (
-    <InsetSurfaceCard
+    <PremiumHeroSurface
       style={styles.card}
     >
       <View style={styles.header}>
@@ -316,7 +316,7 @@ export function CompanionAvatar({
           )}
         </Text>
       </View>
-    </InsetSurfaceCard>
+    </PremiumHeroSurface>
   );
 }
 

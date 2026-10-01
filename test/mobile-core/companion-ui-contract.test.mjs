@@ -133,7 +133,7 @@ test(
     assert.match(avatar, /accessibilityLiveRegion="polite"/);
     assert.match(avatar, /typeScale\.title/);
     assert.match(avatar, /typeScale\.caption/);
-    assert.match(avatar, /InsetSurfaceCard/);
+    assert.match(avatar, /PremiumHeroSurface/);
     assert.match(avatar, /companionStudioEyebrow/);
     assert.match(avatar, /companionPresenceTitle/);
     assert.match(avatar, /phase === 'speaking'/);

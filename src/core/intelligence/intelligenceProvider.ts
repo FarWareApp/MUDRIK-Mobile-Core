@@ -8,12 +8,17 @@ import {
   safeInteger,
 } from './intelligenceSecurity';
 
+export const INTELLIGENCE_SERVICE_KINDS =
+  Object.freeze([
+    'general',
+    'coding',
+    'vision',
+    'stt',
+    'tts',
+  ] as const);
+
 export type IntelligenceServiceKind =
-  | 'general'
-  | 'coding'
-  | 'vision'
-  | 'stt'
-  | 'tts';
+  typeof INTELLIGENCE_SERVICE_KINDS[number];
 
 export type IntelligenceExecutionMode =
   | 'offline'
@@ -52,13 +57,9 @@ export type PublicIntelligenceProvider =
   >;
 
 const SERVICES =
-  new Set<IntelligenceServiceKind>([
-    'general',
-    'coding',
-    'vision',
-    'stt',
-    'tts',
-  ]);
+  new Set<IntelligenceServiceKind>(
+    INTELLIGENCE_SERVICE_KINDS,
+  );
 const MODES =
   new Set<IntelligenceExecutionMode>([
     'offline',

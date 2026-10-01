@@ -14,6 +14,10 @@ const emptyState = fs.readFileSync(
   'src/features/chat/components/EmptyChatState.tsx',
   'utf8',
 );
+const premiumHero = fs.readFileSync(
+  'src/design-system/components/PremiumHeroSurface.tsx',
+  'utf8',
+);
 const attachmentList = fs.readFileSync(
   'src/features/chat/components/MessageAttachmentList.tsx',
   'utf8',
@@ -66,10 +70,14 @@ test(
 );
 
 test(
-  'empty chat state consumes adaptive glass and shared design tokens',
+  'empty chat state consumes the shared premium glass hierarchy and design tokens',
   () => {
     assert.match(
       emptyState,
+      /PremiumHeroSurface/,
+    );
+    assert.match(
+      premiumHero,
       /AdaptiveGlassSurface/,
     );
     assert.match(
@@ -86,7 +94,7 @@ test(
     );
     assert.match(
       emptyState,
-      /typography\.title/,
+      /typography\.hero/,
     );
   },
 );

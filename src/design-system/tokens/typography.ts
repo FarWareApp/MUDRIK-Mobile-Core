@@ -1,4 +1,6 @@
 export const typography = {
+  display: 30,
+  hero: 26,
   title: 22,
   heading: 18,
   body: 16,
@@ -8,6 +10,14 @@ export const typography = {
 } as const;
 
 export const typeScale = {
+  display: {
+    fontSize: typography.display,
+    lineHeight: 38,
+  },
+  hero: {
+    fontSize: typography.hero,
+    lineHeight: 34,
+  },
   title: {
     fontSize: typography.title,
     lineHeight: 28,

@@ -15,8 +15,11 @@ import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
 import {
-  AdaptiveGlassSurface,
-} from '../../../design-system/components/AdaptiveGlassSurface';
+  BrandAura,
+} from '../../../design-system/components/BrandAura';
+import {
+  PremiumHeroSurface,
+} from '../../../design-system/components/PremiumHeroSurface';
 import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
@@ -82,28 +85,20 @@ export function EmptyChatState({
       }
       style={styles.container}
     >
-      <AdaptiveGlassSurface
-        fallbackColor={colors.surface}
-        tintColor={colors.surface}
-        style={[
-          styles.hero,
-          {
-            borderColor: colors.border,
-            shadowColor: colors.shadow,
-          },
-        ]}
+      <PremiumHeroSurface
+        style={styles.hero}
       >
         <View style={styles.heroTop}>
           <View
             importantForAccessibility="no-hide-descendants"
-            style={[
-              styles.logoHalo,
-              {
-                backgroundColor:
-                  colors.accentSoft,
-              },
-            ]}
+            style={styles.logoHalo}
           >
+            <View style={styles.logoAura}>
+              <BrandAura
+                size={84}
+                compact
+              />
+            </View>
             <View
               style={[
                 styles.logo,
@@ -200,7 +195,7 @@ export function EmptyChatState({
             {t('homeCommandReady')}
           </Text>
         </View>
-      </AdaptiveGlassSurface>
+      </PremiumHeroSurface>
 
       <View style={styles.commandGrid}>
         <HomeCommandTile
@@ -297,17 +292,8 @@ const styles = StyleSheet.create({
   },
   hero: {
     width: '100%',
-    borderRadius: radius.xl,
-    borderWidth:
-      StyleSheet.hairlineWidth,
+    borderRadius: radius.xxl,
     padding: spacing.xl,
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    elevation: 3,
   },
   heroTop: {
     flexDirection: 'row',
@@ -315,11 +301,13 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   logoHalo: {
-    width: 76,
-    height: 76,
-    borderRadius: radius.xl,
+    width: 84,
+    height: 84,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  logoAura: {
+    position: 'absolute',
   },
   logo: {
     width: 56,
@@ -347,8 +335,8 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: spacing.xs,
-    fontSize: typography.title,
-    lineHeight: 30,
+    fontSize: typography.hero,
+    lineHeight: 34,
     fontWeight: '800',
     writingDirection: 'auto',
   },

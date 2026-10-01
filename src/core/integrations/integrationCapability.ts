@@ -158,9 +158,14 @@ const DEFINITIONS:
     }),
   });
 
+export const INTEGRATION_CAPABILITIES =
+  Object.freeze(
+    Object.keys(DEFINITIONS) as IntegrationCapabilityId[],
+  );
+
 const CAPABILITIES =
   new Set<string>(
-    Object.keys(DEFINITIONS),
+    INTEGRATION_CAPABILITIES,
   );
 
 export function isIntegrationCapabilityId(

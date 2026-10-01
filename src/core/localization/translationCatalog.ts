@@ -7,6 +7,10 @@ import {
   chatTranslations,
 } from './chatTranslations';
 import {
+  CapabilityTranslationKey,
+  capabilityTranslations,
+} from './capabilityTranslations';
+import {
   CompanionTranslationKey,
   companionTranslations,
 } from './companionTranslations';
@@ -44,6 +48,7 @@ export type TranslationKey =
   | BaseTranslationKey
   | AttachmentTranslationKey
   | ChatTranslationKey
+  | CapabilityTranslationKey
   | CompanionTranslationKey
   | ConversationTranslationKey
   | PermissionTranslationKey
@@ -60,6 +65,7 @@ export const translationCatalog: Record<
     ...translations.ar,
     ...attachmentTranslations.ar,
     ...chatTranslations.ar,
+    ...capabilityTranslations.ar,
     ...companionTranslations.ar,
     ...conversationTranslations.ar,
     ...permissionTranslations.ar,
@@ -72,6 +78,7 @@ export const translationCatalog: Record<
     ...translations.de,
     ...attachmentTranslations.de,
     ...chatTranslations.de,
+    ...capabilityTranslations.de,
     ...companionTranslations.de,
     ...conversationTranslations.de,
     ...permissionTranslations.de,
@@ -84,6 +91,7 @@ export const translationCatalog: Record<
     ...translations.en,
     ...attachmentTranslations.en,
     ...chatTranslations.en,
+    ...capabilityTranslations.en,
     ...companionTranslations.en,
     ...conversationTranslations.en,
     ...permissionTranslations.en,

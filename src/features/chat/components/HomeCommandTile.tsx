@@ -80,6 +80,33 @@ export function HomeCommandTile({
         },
       ]}
     >
+      {primary ? (
+        <View
+          importantForAccessibility="no-hide-descendants"
+          pointerEvents="none"
+          style={styles.primaryDecoration}
+        >
+          <View
+            style={[
+              styles.primaryRingOuter,
+              {
+                borderColor:
+                  colors.accentText,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.primaryRingInner,
+              {
+                borderColor:
+                  colors.accentText,
+              },
+            ]}
+          />
+        </View>
+      ) : null}
+
       <View
         importantForAccessibility="no-hide-descendants"
         style={[
@@ -145,6 +172,30 @@ const styles = StyleSheet.create({
   primaryTile: {
     flexBasis: '100%',
     minHeight: 118,
+  },
+  primaryDecoration: {
+    position: 'absolute',
+    top: -42,
+    end: -30,
+    width: 168,
+    height: 168,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.18,
+  },
+  primaryRingOuter: {
+    position: 'absolute',
+    width: 168,
+    height: 168,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+  },
+  primaryRingInner: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderWidth: 1,
+    borderRadius: radius.pill,
   },
   icon: {
     width: 42,

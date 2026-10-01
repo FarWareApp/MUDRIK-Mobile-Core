@@ -169,6 +169,19 @@ export function SettingsScreen({
               }
             />
 
+            <SettingsSectionTitle
+              title={t('settingsCapabilitiesSection')}
+            />
+
+            <SettingsSectionCard>
+              <SettingsNavigationRow
+                title={t('settingsCapabilitiesTitle')}
+                description={t('settingsCapabilitiesDescription')}
+                accessibilityLabel={t('openCapabilities')}
+                onPress={() => router.push('/capabilities')}
+              />
+            </SettingsSectionCard>
+
             <SettingsSectionTitle title={t('settingsAppSection')} />
 
             <SettingsSectionCard>
