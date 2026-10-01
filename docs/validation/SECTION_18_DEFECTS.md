@@ -4,18 +4,18 @@
 
 Accepted implementation candidate:
 
-`5b0f912692f3c815695bf57cc0b87a4faf19dd6f`
+`8ec1c7be240e41df1791e44a65042a4df33327e7`
 
 Validation:
 
-- Section 18 intelligence-router suite: 26/26 PASS
-- whole Mobile Core: 918/918 PASS
+- Section 18 intelligence-router suite: 27/27 PASS
+- whole Mobile Core: 919/919 PASS
 - Computer Agent: 184/184 PASS
 - Control Plane: 59/59 PASS
 - Expo Doctor: 21/21 PASS
 - dependency audit blocking gate: 0 Critical / 0 High
-- Mobile Core Validation #780 / 36893366390: SUCCESS
-- CodeQL #676 / 36893366679: SUCCESS
+- Mobile Core Validation #782 / 36894185071: SUCCESS
+- CodeQL #678 / 36894185109: SUCCESS
 
 No known unresolved Blocker, Critical or High Section 18 defect remains in the automated/pre-device scope.
 

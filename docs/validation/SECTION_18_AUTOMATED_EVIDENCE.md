@@ -9,8 +9,13 @@ This evidence closes the deterministic and automated pre-device obligations for 
 ## Accepted Candidate
 
 - Branch: mudrik-core-v1
-- Accepted implementation commit: 5b0f912692f3c815695bf57cc0b87a4faf19dd6f
-- Accepted message: Build Section 18 intelligence router core
+- Accepted implementation commit: 8ec1c7be240e41df1791e44a65042a4df33327e7
+- Accepted message: Harden Section 18 trusted-time provider lifecycle
+
+Accepted implementation chain:
+
+- 5b0f912 — Build Section 18 intelligence router core
+- 8ec1c7b — Harden Section 18 trusted-time provider lifecycle
 
 ## Targeted Local Evidence
 
@@ -20,8 +25,8 @@ On the connected Pop!_OS development machine, the exact implementation candidate
 - dependency blocking audit: 0 Critical / 0 High / 5 reviewed Moderate
 - TypeScript: PASS
 - ESLint: PASS
-- Section 18 intelligence-router suite: 26/26 PASS
-- whole Mobile Core regressions: 918/918 PASS
+- Section 18 intelligence-router suite: 27/27 PASS
+- whole Mobile Core regressions: 919/919 PASS
 - Expo Doctor 1.20.4: 21/21 PASS
 - Computer Agent regressions: 184/184 PASS
 - Control Plane regressions: 59/59 PASS
@@ -32,9 +37,9 @@ On the connected Pop!_OS development machine, the exact implementation candidate
 ### Mobile Core Validation
 
 - Workflow: Mobile Core Validation
-- Run number: 780
-- Run ID: 36893366390
-- Head SHA: 5b0f912692f3c815695bf57cc0b87a4faf19dd6f
+- Run number: 782
+- Run ID: 36894185071
+- Head SHA: 8ec1c7be240e41df1791e44a65042a4df33327e7
 - Result: SUCCESS
 
 The hosted workflow executed frozen dependency installation, dependency reproducibility, Android build configuration, tracked sensitive-file gate, full Git-history secret scan, dependency High/Critical gate, reviewed advisory paths, lint, TypeScript, all Mobile Core security regressions, Expo Doctor, Computer Agent regressions and Control Plane regressions.
@@ -42,9 +47,9 @@ The hosted workflow executed frozen dependency installation, dependency reproduc
 ### CodeQL
 
 - Workflow: CodeQL Security Analysis
-- Run number: 676
-- Run ID: 36893366679
-- Head SHA: 5b0f912692f3c815695bf57cc0b87a4faf19dd6f
+- Run number: 678
+- Run ID: 36894185109
+- Head SHA: 8ec1c7be240e41df1791e44a65042a4df33327e7
 - Result: SUCCESS
 - JavaScript/TypeScript analysis: PASS
 
