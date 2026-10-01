@@ -141,3 +141,51 @@ test(
     );
   },
 );
+
+test(
+  'voice recorder reconciles microphone permission when the app returns to foreground',
+  () => {
+    assert.match(
+      controller,
+      /useLifecycle/,
+    );
+    assert.match(
+      controller,
+      /const \{\s*isForeground,\s*lastChangedAt,\s*\} = useLifecycle\(\)/,
+    );
+    assert.match(
+      controller,
+      /if \(!isForeground\) \{\s*return;/,
+    );
+    assert.match(
+      controller,
+      /await permissionService\.getStatus\(\)/,
+    );
+    assert.match(
+      controller,
+      /setPermission\(status\)/,
+    );
+    assert.match(
+      controller,
+      /current ===\s*'microphone-permission-denied'\s*\? null\s*:\s*current/,
+    );
+    assert.match(
+      controller,
+      /cancelled\s*\|\|\s*!mountedRef\.current/,
+    );
+  },
+);
+
+test(
+  'foreground permission reconciliation preserves unrelated recorder errors',
+  () => {
+    assert.doesNotMatch(
+      controller,
+      /if \(status === 'granted'\) \{\s*setErrorCode\(null\)/,
+    );
+    assert.match(
+      controller,
+      /setErrorCode\(\s*\(current\) =>[\s\S]*?'microphone-permission-denied'[\s\S]*?\? null[\s\S]*?: current/,
+    );
+  },
+);

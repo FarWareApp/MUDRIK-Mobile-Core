@@ -193,6 +193,8 @@ export function useAttachmentDraftController({
 
   const pickMedia =
     useCallback(async () => {
+      setError(null);
+
       try {
         const picked =
           await picker.pickMedia();
@@ -213,6 +215,8 @@ export function useAttachmentDraftController({
 
   const takePhoto =
     useCallback(async () => {
+      setError(null);
+
       try {
         const picked =
           await picker.takePhoto();
@@ -233,6 +237,8 @@ export function useAttachmentDraftController({
 
   const pickDocuments =
     useCallback(async () => {
+      setError(null);
+
       try {
         const picked =
           await picker.pickDocuments();

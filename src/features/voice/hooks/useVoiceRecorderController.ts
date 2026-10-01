@@ -11,6 +11,10 @@ import {
   useAudioRecorderState,
 } from 'expo-audio';
 
+import {
+  useLifecycle,
+} from '../../../core/lifecycle/LifecycleProvider';
+
 import { MicrophonePermissionService } from '../services/MicrophonePermissionService';
 import { VoiceAudioSessionService } from '../services/VoiceAudioSessionService';
 import type {
@@ -42,6 +46,11 @@ export function useVoiceRecorderController() {
     () => new VoiceAudioSessionService(),
     [],
   );
+
+  const {
+    isForeground,
+    lastChangedAt,
+  } = useLifecycle();
 
   const [phase, setPhase] = useState<VoiceRecorderPhase>('idle');
   const [permission, setPermission] =
@@ -98,6 +107,46 @@ export function useVoiceRecorderController() {
       void restorePlayback();
     };
   }, [recorder, restorePlayback]);
+
+  useEffect(() => {
+    if (!isForeground) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const status =
+        await permissionService.getStatus();
+
+      if (
+        cancelled
+        || !mountedRef.current
+      ) {
+        return;
+      }
+
+      setPermission(status);
+
+      if (status === 'granted') {
+        setErrorCode(
+          (current) =>
+            current ===
+            'microphone-permission-denied'
+              ? null
+              : current,
+        );
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isForeground,
+    lastChangedAt,
+    permissionService,
+  ]);
 
   const ensurePermission = useCallback(async () => {
     let status = await permissionService.getStatus();

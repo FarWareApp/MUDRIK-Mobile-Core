@@ -198,3 +198,53 @@ test(
     }
   },
 );
+
+test(
+  'attachment source retries clear stale picker errors before opening an external surface',
+  () => {
+    for (const [name, pickerCall] of [
+      ['pickMedia', 'picker.pickMedia()'],
+      ['takePhoto', 'picker.takePhoto()'],
+      ['pickDocuments', 'picker.pickDocuments()'],
+    ]) {
+      const start =
+        attachmentController.indexOf(
+          `const ${name} =`,
+        );
+      const nextHook =
+        attachmentController.indexOf(
+          '\n  const ',
+          start + 8,
+        );
+      const body =
+        attachmentController.slice(
+          start,
+          nextHook === -1
+            ? undefined
+            : nextHook,
+        );
+
+      assert.notEqual(
+        start,
+        -1,
+        `${name} must exist`,
+      );
+
+      const clear =
+        body.indexOf(
+          'setError(null);',
+        );
+      const open =
+        body.indexOf(pickerCall);
+
+      assert.ok(
+        clear >= 0,
+        `${name} must clear stale error state`,
+      );
+      assert.ok(
+        open > clear,
+        `${name} must clear stale error before opening picker`,
+      );
+    }
+  },
+);
