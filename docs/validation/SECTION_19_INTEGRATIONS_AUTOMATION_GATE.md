@@ -49,7 +49,11 @@ Authoritative architecture:
 17. Model output may propose, never approve or grant.
 18. Audit remains content/credential-minimized.
 19. Results grant zero execution/sensor/approval/capability authority.
-20. Sections 11/12 remain final local execution authority.
+20. Automation triggers produce short-lived exact-revision executions; commands must match an exact execution action index.
+21. Automation action replay under another command identity fails closed.
+22. Adapter invocations are credential-free and results are accepted only against an issued invocation.
+23. Result and trigger replay are idempotent only when the exact prior semantic identity matches.
+24. Sections 11/12 remain final local execution authority.
 
 ## Layer 1–3 Required Evidence
 

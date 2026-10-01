@@ -78,3 +78,48 @@ An automation binds a trigger to an exact approved routine or bounded action set
 ## Deferred Real-Environment Obligations
 
 Production closure requires real vendor adapters, real smart-home devices/services, credential vault/key lifecycle, network outages, device disappearance/replacement, rate limits, cloud/local hub behavior, high-risk approval UX, real routine recovery, automation scheduling durability, privacy review and independent security testing.
+
+## Capability and Execution Separation
+
+Section 19 extends the core capability vocabulary with:
+
+- `home.device.read` for bounded smart-home state reads;
+- `home.access.control` for lock/unlock/open access control;
+- `home.security.control` for alarm/security control.
+
+These remain subject to the existing Section 11/12 capability-grant machinery. Section 19 does not create a parallel execution authority.
+
+## Automation Execution Provenance
+
+An accepted automation trigger produces a short-lived `IntegrationAutomationExecution` bound to the exact policy revision, automation revision, routine revision, ordered action list and trigger event.
+
+Every automation command carries:
+
+- the exact execution ID;
+- the exact action index.
+
+The registry verifies that the command matches that action byte-for-byte at the semantic field level. A claimed action cannot be rebound to another command ID with different semantics. Duplicate retries of the same command remain idempotent; conflicting replays fail closed.
+
+Pausing/revoking the automation, changing policy/routine revision, revoking a binding or expiring the execution prevents later automation commands from being authorized.
+
+## Adapter Invocation and Result Boundary
+
+After command authorization the registry may issue a credential-free adapter invocation containing only the exact admitted target/action metadata.
+
+Provider/vendor credential references remain inside the internal registry adapter-binding boundary and are never copied into invocation, result, audit or public adapter projections.
+
+Adapter results are accepted only for a command ID with an issued invocation and must match its binding/device/adapter/integration identity. Result replay is idempotent; conflicting result replay fails closed.
+
+Audit contracts contain stable identifiers, capability IDs and reason codes only. Raw vendor payloads, credentials and private command/result bodies are not accepted by the audit schema.
+
+## Revocation and Replay Rules
+
+- binding revocation is available even when vendor discovery has disappeared;
+- stale binding revisions invalidate commands and routines;
+- policy revision invalidates stale routines/automations/commands;
+- routine and automation revisions are monotonic;
+- duplicate trigger events return the same short-lived execution;
+- conflicting trigger replay is rejected;
+- automation run rate limits are enforced per automation revision;
+- cross-device routines enumerate each exact binding/device/revision;
+- wildcard targets are structurally invalid.
