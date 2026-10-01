@@ -18,6 +18,18 @@ const sectionHeader = fs.readFileSync(
   'src/features/projects/components/ProjectSectionHeader.tsx',
   'utf8',
 );
+const workspaceOverview = fs.readFileSync(
+  'src/features/projects/components/ProjectWorkspaceOverview.tsx',
+  'utf8',
+);
+const workspaceSection = fs.readFileSync(
+  'src/features/projects/components/ProjectWorkspaceSection.tsx',
+  'utf8',
+);
+const projectTranslations = fs.readFileSync(
+  'src/core/localization/projectTranslations.ts',
+  'utf8',
+);
 const attachments = fs.readFileSync(
   'src/features/projects/components/ProjectAttachmentList.tsx',
   'utf8',
@@ -56,7 +68,8 @@ test(
   () => {
     assert.match(detail, /ProjectDetailHeader/);
     assert.match(detail, /ProjectDetailState/);
-    assert.match(detail, /ProjectSectionHeader/);
+    assert.match(detail, /ProjectWorkspaceOverview/);
+    assert.match(detail, /ProjectWorkspaceSection/);
     assert.match(detail, /ProjectAttachmentList/);
     assert.match(detail, /ProjectConversationList/);
     assert.match(detail, /ProjectEditorModal/);
@@ -143,5 +156,47 @@ test(
     assert.match(controller, /setError\('add-file-failed'\)/);
     assert.match(controller, /setError\('conversation-update-failed'\)/);
     assert.match(controller, /setConversations\(\(current\) =>/);
+  },
+);
+
+
+test(
+  'project detail presents a real workspace overview from project state',
+  () => {
+    assert.match(workspaceOverview, /ProjectRecord/);
+    assert.match(workspaceOverview, /attachmentCount/);
+    assert.match(workspaceOverview, /linkedConversationCount/);
+    assert.match(workspaceOverview, /formatProjectUpdatedAt/);
+    assert.match(workspaceOverview, /project\.updatedAt/);
+    assert.match(workspaceOverview, /project\.isArchived/);
+    assert.match(workspaceOverview, /InsetSurfaceCard/);
+    assert.doesNotMatch(workspaceOverview, /Math\.random/);
+
+    assert.match(workspaceSection, /ProjectSectionHeader/);
+    assert.match(workspaceSection, /InsetSurfaceCard/);
+  },
+);
+
+test(
+  'project workspace localization exists in every supported locale',
+  () => {
+    for (const key of [
+      'projectWorkspaceEyebrow',
+      'projectWorkspaceFiles',
+      'projectWorkspaceConversations',
+      'projectWorkspaceUpdated',
+      'projectWorkspaceActive',
+      'projectWorkspaceArchived',
+    ]) {
+      const pattern = new RegExp(
+        '^\\s*' + key + ':\\s',
+        'gm',
+      );
+      assert.equal(
+        projectTranslations.match(pattern)?.length ?? 0,
+        3,
+        key + ' must exist in ar, de and en',
+      );
+    }
   },
 );

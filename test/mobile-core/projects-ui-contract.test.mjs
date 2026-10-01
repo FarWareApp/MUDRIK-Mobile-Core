@@ -180,6 +180,12 @@ test(
   'project-specific errors and empty-search copy exist in all locales',
   () => {
     for (const key of [
+      'projectWorkspaceEyebrow',
+      'projectWorkspaceFiles',
+      'projectWorkspaceConversations',
+      'projectWorkspaceUpdated',
+      'projectWorkspaceActive',
+      'projectWorkspaceArchived',
       'projectNameRequired',
       'projectCreateFailed',
       'projectArchiveUpdateFailed',

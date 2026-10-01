@@ -3,7 +3,6 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
-  Text,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,7 +24,6 @@ import type {
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
 import { spacing } from '../../design-system/tokens/spacing';
-import { typeScale } from '../../design-system/tokens/typography';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
 import type {
@@ -40,7 +38,8 @@ import { ProjectConversationList } from './components/ProjectConversationList';
 import { ProjectDetailHeader } from './components/ProjectDetailHeader';
 import { ProjectDetailState } from './components/ProjectDetailState';
 import { ProjectEditorModal } from './components/ProjectEditorModal';
-import { ProjectSectionHeader } from './components/ProjectSectionHeader';
+import { ProjectWorkspaceOverview } from './components/ProjectWorkspaceOverview';
+import { ProjectWorkspaceSection } from './components/ProjectWorkspaceSection';
 import { getProjectDetailErrorTranslationKey } from './getProjectDetailErrorTranslationKey';
 import { useProjectDetailController } from './hooks/useProjectDetailController';
 
@@ -173,18 +172,17 @@ export function ProjectDetailScreen(
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        {project.description ? (
-          <Text
-            style={[
-              styles.description,
-              { color: colors.textSecondary },
-            ]}
-          >
-            {project.description}
-          </Text>
-        ) : null}
+        <ProjectWorkspaceOverview
+          project={project}
+          attachmentCount={
+            controller.attachments.length
+          }
+          linkedConversationCount={
+            controller.linkedConversationIds.length
+          }
+        />
 
-        <ProjectSectionHeader
+        <ProjectWorkspaceSection
           title={t('projectFiles')}
           actionLabel={t('addProjectFile')}
           actionText={t('add')}
@@ -195,28 +193,34 @@ export function ProjectDetailScreen(
           }
           disabled={controller.busy}
           onAction={openAddMenu}
-        />
+        >
+          <ProjectAttachmentList
+            attachments={controller.attachments}
+            disabled={controller.busy}
+            onRemove={(attachment) => {
+              void controller.removeAttachment(
+                attachment,
+              );
+            }}
+          />
+        </ProjectWorkspaceSection>
 
-        <ProjectAttachmentList
-          attachments={controller.attachments}
-          disabled={controller.busy}
-          onRemove={(attachment) => {
-            void controller.removeAttachment(attachment);
-          }}
-        />
-
-        <ProjectSectionHeader
+        <ProjectWorkspaceSection
           title={t('projectConversations')}
-        />
-
-        <ProjectConversationList
-          conversations={controller.conversations}
-          linkedIds={controller.linkedConversationIds}
-          disabled={controller.busy}
-          onToggle={(conversationId) => {
-            void controller.toggleConversation(conversationId);
-          }}
-        />
+        >
+          <ProjectConversationList
+            conversations={controller.conversations}
+            linkedIds={
+              controller.linkedConversationIds
+            }
+            disabled={controller.busy}
+            onToggle={(conversationId) => {
+              void controller.toggleConversation(
+                conversationId,
+              );
+            }}
+          />
+        </ProjectWorkspaceSection>
       </ScrollView>
 
       <ProjectEditorModal
@@ -255,10 +259,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: spacing.huge,
-  },
-  description: {
-    ...typeScale.secondary,
-    marginBottom: spacing.md,
-    writingDirection: 'auto',
   },
 });

@@ -1,5 +1,17 @@
 export const projectTranslations = {
   ar: {
+    projectWorkspaceEyebrow:
+      'MUDRIK WORKSPACE',
+    projectWorkspaceFiles:
+      'ملفات',
+    projectWorkspaceConversations:
+      'محادثات مرتبطة',
+    projectWorkspaceUpdated:
+      'آخر تحديث',
+    projectWorkspaceActive:
+      'نشط',
+    projectWorkspaceArchived:
+      'مؤرشف',
     projectNameRequired:
       'يجب إدخال اسم للمشروع.',
     projectCreateFailed:
@@ -28,6 +40,18 @@ export const projectTranslations = {
       'مؤرشفة',
   },
   de: {
+    projectWorkspaceEyebrow:
+      'MUDRIK WORKSPACE',
+    projectWorkspaceFiles:
+      'Dateien',
+    projectWorkspaceConversations:
+      'Verknüpfte Unterhaltungen',
+    projectWorkspaceUpdated:
+      'Zuletzt aktualisiert',
+    projectWorkspaceActive:
+      'Aktiv',
+    projectWorkspaceArchived:
+      'Archiviert',
     projectNameRequired:
       'Der Projektname darf nicht leer sein.',
     projectCreateFailed:
@@ -56,6 +80,18 @@ export const projectTranslations = {
       'Archiviert',
   },
   en: {
+    projectWorkspaceEyebrow:
+      'MUDRIK WORKSPACE',
+    projectWorkspaceFiles:
+      'Files',
+    projectWorkspaceConversations:
+      'Linked conversations',
+    projectWorkspaceUpdated:
+      'Last updated',
+    projectWorkspaceActive:
+      'Active',
+    projectWorkspaceArchived:
+      'Archived',
     projectNameRequired:
       'Project name cannot be empty.',
     projectCreateFailed:
