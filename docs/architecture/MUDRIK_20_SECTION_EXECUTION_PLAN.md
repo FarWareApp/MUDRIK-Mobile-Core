@@ -422,7 +422,7 @@ Scope:
 
 # Section 18 — Intelligence Router and Model/Provider Layer
 
-**Status: PRE-DEVICE IMPLEMENTATION — ACTIVE.**
+**Status: PRE-DEVICE COMPLETE — OPEN / REAL-PROVIDER LAYER 4 DEFERRED.**
 
 Scope:
 

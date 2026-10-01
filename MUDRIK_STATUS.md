@@ -459,6 +459,35 @@ Detailed evidence:
 - `docs/validation/SECTION_17_AUTOMATED_EVIDENCE.md`
 - `docs/validation/SECTION_17_DEFECTS.md`
 
+### Section 18 — Intelligence Router and Model/Provider Layer
+
+`PRE-DEVICE COMPLETE — OPEN / REAL-PROVIDER LAYER 4 DEFERRED`
+
+Accepted implementation candidate:
+
+`5b0f912692f3c815695bf57cc0b87a4faf19dd6f`
+
+Evidence:
+
+- Mobile Core Validation #780 / `36893366390`: SUCCESS;
+- CodeQL #676 / `36893366679`: SUCCESS;
+- Section 18 intelligence-router suite: **26/26 PASS**;
+- whole Mobile Core regressions: **918/918 PASS**;
+- Computer Agent regressions: **184/184 PASS**;
+- Control Plane regressions: **59/59 PASS**;
+- Expo Doctor: **21/21 PASS**;
+- dependency audit blocking gate: **0 Critical / 0 High / 5 reviewed Moderate**;
+- frozen install, TypeScript, ESLint and diff checks: PASS.
+
+Implemented boundaries include versioned account/workspace routing policy; provider-independent general/coding/vision/STT/TTS routing; explicit offline/online selection; trusted-time health state; deterministic health/quality/latency/cost routing; bounded fallback plans; request replay protection; registry-issued plan provenance; policy-revision invalidation; adapter-private credential resolution; failover without output mixing; STT buffered-input replay; generation/sequence-bound streaming attempts; secret-safe failure normalization; privacy-safe audit/result envelopes; and strict zero execution/sensor/approval/capability authority on provider/model outputs.
+
+Detailed evidence:
+
+- `docs/architecture/MUDRIK_INTELLIGENCE_ROUTER.md`
+- `docs/validation/SECTION_18_INTELLIGENCE_ROUTER_GATE.md`
+- `docs/validation/SECTION_18_AUTOMATED_EVIDENCE.md`
+- `docs/validation/SECTION_18_DEFECTS.md`
+
 ## UI/UX Detail Preservation Rule
 
 Authoritative detail ledger:
@@ -515,10 +544,10 @@ Section 20 cannot close until deferred Layer 4 obligations from Sections 01–19
 
 ## Next Work
 
-1. Establish Section 18 Intelligence Router and Model/Provider Layer on top of the accepted provider-independent Mobile, Agent, Memory and Knowledge boundaries.
-2. Preserve Sections 01–17 as open for their deferred Layer 4 obligations where applicable.
-3. Keep Sections 11/12 as the final local execution authority; models, knowledge, memory, surfaces and routing state must never manufacture tool authority.
-4. Add general/coding/vision/STT/TTS provider abstractions with health/latency/cost/quality-aware routing, bounded failover and isolated provider credentials.
+1. Establish Section 19 Smart-Home, External Integrations and Automation on top of the accepted capability, control-plane and intelligence boundaries.
+2. Preserve Sections 01–18 as open for their deferred Layer 4 obligations where applicable.
+3. Keep Sections 11/12 as the final local execution authority; integrations, automations, models, knowledge, memory and routing state must never manufacture tool authority.
+4. Build an adapter framework with capability discovery, device/room aliases, safe instant commands, routines/scenes, automation permissions, cross-device commands and explicit high-risk boundaries.
 
 ## Development Rule
 
