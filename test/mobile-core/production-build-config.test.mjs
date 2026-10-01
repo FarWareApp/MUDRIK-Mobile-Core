@@ -104,3 +104,21 @@ test(
     );
   },
 );
+
+test(
+  'runtime product identity uses MUDRIK while technical identifiers remain stable',
+  () => {
+    assert.equal(
+      app.expo?.name,
+      'MUDRIK',
+    );
+    assert.equal(
+      app.expo?.slug,
+      'MUDRIK-Mobile-Core',
+    );
+    assert.equal(
+      app.expo?.android?.package,
+      'com.farwareapp.mudrik',
+    );
+  },
+);
