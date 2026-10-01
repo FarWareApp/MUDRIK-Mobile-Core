@@ -713,7 +713,7 @@ test(
         routed.value,
         routed.value.primary.providerRef,
         routed.value.primary.modelRef,
-      );
+       NOW);
 
     assert.ok(binding);
     assert.equal(
@@ -728,7 +728,7 @@ test(
         ),
         routed.value.primary.providerRef,
         routed.value.primary.modelRef,
-      ),
+       NOW),
       null,
     );
 
@@ -838,7 +838,7 @@ test(
         plan,
         plan.primary.providerRef,
         plan.primary.modelRef,
-      ),
+       NOW),
       null,
     );
   },
@@ -860,7 +860,7 @@ test(
         plan,
         primary.providerRef,
         primary.modelRef,
-      ),
+       NOW),
     );
 
     const currentHealth =
@@ -885,7 +885,7 @@ test(
         plan,
         primary.providerRef,
         primary.modelRef,
-      ),
+       NOW),
       null,
     );
   },
@@ -925,7 +925,7 @@ test(
         attemptPhase: 'selected',
         explicitRestart: false,
         generationWillRotate: false,
-      });
+      }, NOW);
 
     assert.equal(
       beforeOutput.allowed,
@@ -943,7 +943,7 @@ test(
           'output_observed',
         explicitRestart: true,
         generationWillRotate: false,
-      });
+      }, NOW);
 
     assert.equal(
       mixed.allowed,
@@ -961,7 +961,7 @@ test(
           'output_observed',
         explicitRestart: true,
         generationWillRotate: true,
-      });
+      }, NOW);
 
     assert.equal(
       restarted.allowed,
@@ -1021,7 +1021,7 @@ test(
         plan.primary.providerRef,
         plan.primary.modelRef,
         3,
-      );
+       NOW);
 
     assert.ok(tracker);
 
@@ -1144,7 +1144,16 @@ test(
       registry.validateIssuedResult(
         plan,
         envelope,
+       NOW + 100),
+    );
+
+    assert.equal(
+      registry.validateIssuedResult(
+        plan,
+        envelope,
+        NOW,
       ),
+      null,
     );
 
     assert.equal(
@@ -1335,7 +1344,7 @@ test(
         plan,
         plan.primary.providerRef,
         plan.primary.modelRef,
-      ),
+       NOW),
       null,
     );
     assert.equal(
@@ -1344,7 +1353,7 @@ test(
         plan.primary.providerRef,
         plan.primary.modelRef,
         1,
-      ),
+       NOW),
       null,
     );
 
@@ -1483,7 +1492,7 @@ test(
         attemptPhase: 'selected',
         explicitRestart: false,
         generationWillRotate: false,
-      }).reason,
+      }, NOW).reason,
       'allowed_before_output',
     );
 
@@ -1493,7 +1502,7 @@ test(
         attemptPhase: 'output_observed',
         explicitRestart: false,
         generationWillRotate: false,
-      }).reason,
+      }, NOW).reason,
       'explicit_restart_required',
     );
 
@@ -1503,7 +1512,7 @@ test(
         attemptPhase: 'output_observed',
         explicitRestart: true,
         generationWillRotate: false,
-      }).reason,
+      }, NOW).reason,
       'output_mixing_forbidden',
     );
 
@@ -1513,7 +1522,7 @@ test(
         attemptPhase: 'output_observed',
         explicitRestart: true,
         generationWillRotate: true,
-      });
+      }, NOW);
 
     assert.equal(rotated.allowed, true);
     assert.equal(
@@ -1531,7 +1540,7 @@ test(
         attemptPhase: 'selected',
         explicitRestart: false,
         generationWillRotate: false,
-      }).reason,
+      }, NOW).reason,
       'plan_not_issued',
     );
 
@@ -1578,7 +1587,7 @@ test(
         explicitRestart: false,
         generationWillRotate: false,
         bufferedInputReplayAvailable: false,
-      });
+      }, NOW);
 
     assert.equal(
       decision.reason,
@@ -1971,7 +1980,7 @@ test(
         primary.providerRef,
         primary.modelRef,
         9,
-      );
+       NOW);
 
     assert.ok(tracker);
 
@@ -2034,8 +2043,74 @@ test(
         explicitRestart: false,
         generationWillRotate: false,
         bufferedInputReplayAvailable: true,
-      }).reason,
+      }, NOW).reason,
       'plan_not_issued',
+    );
+  },
+);
+
+test(
+  'stale provider health blocks later failover attempt and adapter binding',
+  () => {
+    const {
+      registry,
+      plan,
+    } = issuedRegistry();
+
+    const current =
+      plan.primary;
+    const next =
+      plan.fallbacks[0];
+    const staleNow =
+      NOW + 100_000;
+
+    const decision =
+      registry.evaluateIssuedFailover({
+        plan,
+        currentProviderRef:
+          current.providerRef,
+        currentModelRef:
+          current.modelRef,
+        nextProviderRef:
+          next.providerRef,
+        nextModelRef:
+          next.modelRef,
+        attemptPhase: 'selected',
+        failureCode: 'timeout',
+        retryable: true,
+        explicitRestart: false,
+        generationWillRotate: false,
+        bufferedInputReplayAvailable: true,
+      }, staleNow);
+
+    assert.equal(
+      decision.allowed,
+      false,
+    );
+    assert.equal(
+      decision.reason,
+      'next_provider_unhealthy',
+    );
+
+    assert.equal(
+      registry.createAttemptTracker(
+        plan,
+        next.providerRef,
+        next.modelRef,
+        10,
+        staleNow,
+      ),
+      null,
+    );
+
+    assert.equal(
+      registry.resolveAdapterBinding(
+        plan,
+        next.providerRef,
+        next.modelRef,
+        staleNow,
+      ),
+      null,
     );
   },
 );

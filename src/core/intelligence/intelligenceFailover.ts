@@ -37,6 +37,7 @@ export type IntelligenceFailoverDecision =
       | 'invalid_input'
       | 'same_provider'
       | 'plan_not_issued'
+      | 'next_provider_unhealthy'
       | 'candidate_not_in_plan'
       | 'attempt_closed'
       | 'failure_not_retryable'

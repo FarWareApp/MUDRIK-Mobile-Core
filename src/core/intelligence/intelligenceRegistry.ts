@@ -563,13 +563,56 @@ export class IntelligenceProviderRegistry {
   }
 
 
+  private providerHealthyForPlan(
+    plan: IntelligenceRoutePlan,
+    providerRef: string,
+    modelRef: string,
+    trustedNowMs: number,
+  ): boolean {
+    if (!safeInteger(trustedNowMs)) {
+      return false;
+    }
+
+    const request =
+      this.issuedRequests.get(
+        plan.requestId,
+      );
+    const latestHealth =
+      this.health.get(
+        key(providerRef, modelRef),
+      );
+
+    if (!request || !latestHealth) {
+      return false;
+    }
+
+    return (
+      latestHealth.status
+        !== 'unavailable'
+      && latestHealth.observedAtMs
+        <= trustedNowMs
+      && trustedNowMs
+        - latestHealth.observedAtMs
+        <= request.maxHealthAgeMs
+    );
+  }
+
   createAttemptTracker(
     plan: IntelligenceRoutePlan,
     providerRef: string,
     modelRef: string,
     generation: number,
+    trustedNowMs: number,
   ): IntelligenceAttemptTracker | null {
-    if (!this.isIssuedPlan(plan)) {
+    if (
+      !this.isIssuedPlan(plan)
+      || !this.providerHealthyForPlan(
+        plan,
+        providerRef,
+        modelRef,
+        trustedNowMs,
+      )
+    ) {
       return null;
     }
 
@@ -588,6 +631,7 @@ export class IntelligenceProviderRegistry {
 
   evaluateIssuedFailover(
     input: unknown,
+    trustedNowMs: number,
   ): IntelligenceFailoverDecision {
     if (
       typeof input !== 'object'
@@ -619,14 +663,45 @@ export class IntelligenceProviderRegistry {
       });
     }
 
-    return evaluateIntelligenceFailover(
-      input,
-    );
+    const decision =
+      evaluateIntelligenceFailover(
+        input,
+      );
+
+    if (!decision.allowed) {
+      return decision;
+    }
+
+    const record =
+      input as Record<string, unknown>;
+
+    if (
+      typeof record.nextProviderRef
+        !== 'string'
+      || typeof record.nextModelRef
+        !== 'string'
+      || !this.providerHealthyForPlan(
+        plan as IntelligenceRoutePlan,
+        record.nextProviderRef,
+        record.nextModelRef,
+        trustedNowMs,
+      )
+    ) {
+      return Object.freeze({
+        allowed: false,
+        requiresGenerationRotation:
+          decision.requiresGenerationRotation,
+        reason: 'next_provider_unhealthy',
+      });
+    }
+
+    return decision;
   }
 
   validateIssuedResult(
     plan: IntelligenceRoutePlan,
     input: unknown,
+    trustedNowMs: number,
   ): IntelligenceResultEnvelope | null {
     if (!this.isIssuedPlan(plan)) {
       return null;
@@ -644,6 +719,9 @@ export class IntelligenceProviderRegistry {
       || parsed.service !== plan.service
       || parsed.completedAtMs
         < plan.generatedAtMs
+      || !safeInteger(trustedNowMs)
+      || parsed.completedAtMs
+        > trustedNowMs
     ) {
       return null;
     }
@@ -670,6 +748,7 @@ export class IntelligenceProviderRegistry {
     plan: IntelligenceRoutePlan,
     providerRef: string,
     modelRef: string,
+    trustedNowMs: number,
   ): IntelligenceAdapterBinding | null {
     if (
       !this.isIssuedPlan(plan)
@@ -703,15 +782,13 @@ export class IntelligenceProviderRegistry {
       return null;
     }
 
-    const latestHealth =
-      this.health.get(
-        key(providerRef, modelRef),
-      );
-
     if (
-      !latestHealth
-      || latestHealth.status
-        === 'unavailable'
+      !this.providerHealthyForPlan(
+        plan,
+        providerRef,
+        modelRef,
+        trustedNowMs,
+      )
     ) {
       return null;
     }
