@@ -43,11 +43,15 @@ export function ResetSettingsButton({
       style={({ pressed }) => [
         styles.button,
         {
-          borderColor: colors.border,
+          borderColor: pressed
+            ? colors.error
+            : colors.border,
           backgroundColor: pressed
             ? colors.surfacePressed
-            : 'transparent',
+            : colors.surface,
           opacity: blocked ? 0.5 : 1,
+          shadowColor: colors.shadow,
+          shadowOpacity: blocked ? 0 : 0.06,
           transform: [
             {
               scale:
@@ -61,14 +65,14 @@ export function ResetSettingsButton({
     >
       {busy ? (
         <ActivityIndicator
-          color={colors.textPrimary}
+          color={colors.error}
           size="small"
         />
       ) : (
         <Text
           style={[
             styles.label,
-            { color: colors.textPrimary },
+            { color: colors.error },
           ]}
         >
           {t('resetSettings')}
@@ -81,19 +85,26 @@ export function ResetSettingsButton({
 const styles = StyleSheet.create({
   button: {
     alignSelf: 'center',
-    minWidth: 132,
-    minHeight: 44,
-    borderWidth: StyleSheet.hairlineWidth,
+    minWidth: 148,
+    minHeight: 46,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
-    marginTop: spacing.xxl,
+    marginTop: spacing.xxxl,
     marginBottom: spacing.huge,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 2,
   },
   label: {
     ...typeScale.secondary,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
     writingDirection: 'auto',
   },

@@ -35,9 +35,9 @@ const styles = StyleSheet.create({
     ...typeScale.caption,
     marginTop: spacing.xxl,
     marginBottom: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    fontWeight: '700',
-    letterSpacing: 0.35,
+    paddingHorizontal: spacing.xxl,
+    fontWeight: '800',
+    letterSpacing: 0.25,
     writingDirection: 'auto',
   },
 });

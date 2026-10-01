@@ -6,11 +6,17 @@ import {
 } from 'react-native';
 
 import {
+  useAccessibility,
+} from '../../../core/accessibility/AccessibilityProvider';
+import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
 import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
+import {
+  motion,
+} from '../../../design-system/tokens/motion';
 import {
   radius,
 } from '../../../design-system/tokens/radius';
@@ -27,6 +33,8 @@ export function QuickActionButton({
   expanded,
   onPress,
 }: Props) {
+  const { reducedMotion } =
+    useAccessibility();
   const { t, isRTL } = useLocale();
   const { colors } = useTheme();
 
@@ -49,13 +57,27 @@ export function QuickActionButton({
           ? styles.buttonRTL
           : styles.buttonLTR,
         {
-          backgroundColor:
-            colors.accent,
+          backgroundColor: expanded
+            ? colors.accent
+            : pressed
+              ? colors.surfacePressed
+              : colors.surface,
+          borderColor: expanded
+            ? colors.accent
+            : pressed
+              ? colors.accentSoft
+              : colors.border,
           shadowColor: colors.shadow,
-          opacity: pressed ? 0.9 : 1,
+          shadowOpacity: pressed
+            ? 0.12
+            : 0.18,
+          opacity: pressed ? 0.94 : 1,
           transform: [
             {
-              scale: pressed ? 0.96 : 1,
+              scale:
+                pressed && !reducedMotion
+                  ? motion.press.scale
+                  : 1,
             },
           ],
         },
@@ -65,7 +87,11 @@ export function QuickActionButton({
         importantForAccessibility="no"
         style={[
           styles.glyph,
-          { color: colors.accentText },
+          {
+            color: expanded
+              ? colors.accentText
+              : colors.accent,
+          },
         ]}
       >
         {expanded ? '×' : '+'}
@@ -78,18 +104,19 @@ const styles = StyleSheet.create({
   button: {
     position: 'absolute',
     bottom: spacing.xl,
-    width: 56,
-    height: 56,
+    width: 54,
+    height: 54,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
+    shadowRadius: 14,
     shadowOffset: {
       width: 0,
       height: 6,
     },
-    elevation: 7,
+    elevation: 6,
     zIndex: 50,
   },
   buttonLTR: {
@@ -99,8 +126,8 @@ const styles = StyleSheet.create({
     left: spacing.lg,
   },
   glyph: {
-    fontSize: 30,
-    lineHeight: 32,
-    fontWeight: '400',
+    fontSize: 29,
+    lineHeight: 31,
+    fontWeight: '500',
   },
 });

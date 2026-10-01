@@ -54,7 +54,15 @@ export function SettingOptionGroup<T extends string>({
         {label}
       </Text>
 
-      <View style={styles.options}>
+      <View
+        style={[
+          styles.options,
+          {
+            backgroundColor: colors.surfaceInput,
+            borderColor: colors.border,
+          },
+        ]}
+      >
         {options.map((option) => {
           const selected = option.value === value;
 
@@ -73,11 +81,25 @@ export function SettingOptionGroup<T extends string>({
                     ? colors.accent
                     : pressed
                       ? colors.surfacePressed
-                      : colors.surfaceElevated,
+                      : 'transparent',
                   borderColor: selected
                     ? colors.accent
-                    : colors.border,
+                    : 'transparent',
                   opacity: disabled ? 0.5 : 1,
+                  shadowColor: colors.shadow,
+                  shadowOpacity:
+                    selected && !disabled
+                      ? 0.14
+                      : 0,
+                  shadowRadius: 7,
+                  shadowOffset: {
+                    width: 0,
+                    height: 3,
+                  },
+                  elevation:
+                    selected && !disabled
+                      ? 2
+                      : 0,
                   transform: [
                     {
                       scale:
@@ -96,7 +118,9 @@ export function SettingOptionGroup<T extends string>({
                     color: selected
                       ? colors.accentText
                       : colors.textPrimary,
-                    fontWeight: selected ? '700' : '600',
+                    fontWeight: selected
+                      ? '700'
+                      : '600',
                   },
                 ]}
               >
@@ -112,28 +136,35 @@ export function SettingOptionGroup<T extends string>({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
   },
   label: {
     ...typeScale.secondary,
-    fontWeight: '600',
+    fontWeight: '700',
     writingDirection: 'auto',
   },
   options: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.xs,
+    borderWidth:
+      StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    padding: spacing.xs,
   },
   option: {
+    flexGrow: 1,
     minHeight: 44,
-    borderWidth: StyleSheet.hairlineWidth,
+    minWidth: 72,
+    borderWidth: 1,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
   optionText: {
     ...typeScale.secondary,

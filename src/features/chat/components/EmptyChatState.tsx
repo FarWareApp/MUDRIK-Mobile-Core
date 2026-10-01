@@ -2,6 +2,7 @@ import React from 'react';
 import {
   StyleSheet,
   Text,
+  View,
 } from 'react-native';
 import Animated, {
   FadeInUp,
@@ -36,7 +37,7 @@ export function EmptyChatState() {
   const { reducedMotion } =
     useAccessibility();
   const { colors } = useTheme();
-  const { isRTL, t } = useLocale();
+  const { t } = useLocale();
 
   return (
     <Animated.View
@@ -50,54 +51,94 @@ export function EmptyChatState() {
       style={styles.container}
     >
       <AdaptiveGlassSurface
+        fallbackColor={colors.surface}
+        tintColor={colors.surface}
         style={[
-          styles.logo,
+          styles.hero,
           {
             borderColor: colors.border,
             shadowColor: colors.shadow,
           },
         ]}
       >
-        <Text
-          importantForAccessibility="no"
+        <View
+          importantForAccessibility="no-hide-descendants"
           style={[
-            styles.logoText,
+            styles.logoHalo,
             {
-              color: colors.accent,
+              backgroundColor:
+                colors.accentSoft,
             },
           ]}
         >
-          M
+          <View
+            style={[
+              styles.logo,
+              {
+                backgroundColor:
+                  colors.surface,
+                borderColor:
+                  colors.border,
+              },
+            ]}
+          >
+            <Text
+              importantForAccessibility="no"
+              style={[
+                styles.logoText,
+                {
+                  color: colors.accent,
+                },
+              ]}
+            >
+              M
+            </Text>
+          </View>
+        </View>
+
+        <Text
+          style={[
+            styles.title,
+            {
+              color: colors.textPrimary,
+            },
+          ]}
+        >
+          {t('emptyChatTitle')}
         </Text>
+
+        <Text
+          style={[
+            styles.body,
+            {
+              color: colors.textSecondary,
+            },
+          ]}
+        >
+          {t('emptyChatBody')}
+        </Text>
+
+        <View
+          importantForAccessibility="no"
+          style={[
+            styles.accentLine,
+            {
+              backgroundColor:
+                colors.accentSoft,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.accentLineFill,
+              {
+                backgroundColor:
+                  colors.accent,
+              },
+            ]}
+          />
+        </View>
       </AdaptiveGlassSurface>
-
-      <Text
-        style={[
-          styles.title,
-          {
-            color: colors.textPrimary,
-            textAlign: isRTL
-              ? 'right'
-              : 'left',
-          },
-        ]}
-      >
-        {t('emptyChatTitle')}
-      </Text>
-
-      <Text
-        style={[
-          styles.body,
-          {
-            color: colors.textSecondary,
-            textAlign: isRTL
-              ? 'right'
-              : 'left',
-          },
-        ]}
-      >
-        {t('emptyChatBody')}
-      </Text>
     </Animated.View>
   );
 }
@@ -106,23 +147,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: spacing.huge,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.huge,
+  },
+  hero: {
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
+    alignItems: 'center',
+    borderRadius: radius.xl,
+    borderWidth:
+      StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.xxl,
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    elevation: 3,
+  },
+  logoHalo: {
+    width: 84,
+    height: 84,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
   },
   logo: {
-    width: 64,
-    height: 64,
+    width: 62,
+    height: 62,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    marginBottom: spacing.xl,
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 3,
+    borderWidth:
+      StyleSheet.hairlineWidth,
   },
   logoText: {
     fontSize: typography.title,
@@ -131,15 +193,30 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: typography.title,
-    lineHeight: 29,
+    lineHeight: 31,
     fontWeight: '800',
+    textAlign: 'center',
     writingDirection: 'auto',
   },
   body: {
     marginTop: spacing.sm,
-    maxWidth: 420,
+    maxWidth: 330,
     fontSize: typography.secondary,
     lineHeight: 21,
+    textAlign: 'center',
     writingDirection: 'auto',
+  },
+  accentLine: {
+    width: 70,
+    height: 5,
+    marginTop: spacing.xl,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  accentLineFill: {
+    width: 24,
+    height: 5,
+    alignSelf: 'center',
+    borderRadius: radius.pill,
   },
 });

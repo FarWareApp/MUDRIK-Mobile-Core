@@ -65,6 +65,18 @@ export function SettingToggleRow({
         disabled={disabled}
         value={value}
         onValueChange={onChange}
+        trackColor={{
+          false: colors.surfacePressed,
+          true: colors.accentSoft,
+        }}
+        thumbColor={
+          value
+            ? colors.accent
+            : colors.textSecondary
+        }
+        ios_backgroundColor={
+          colors.surfacePressed
+        }
       />
     </View>
   );
@@ -72,11 +84,12 @@ export function SettingToggleRow({
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 68,
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: spacing.xl,
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
   text: {

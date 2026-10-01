@@ -34,7 +34,10 @@ export function CompanionScreenHeader({
     <View
       style={[
         styles.container,
-        { borderBottomColor: colors.border },
+        {
+          borderBottomColor: colors.border,
+          backgroundColor: colors.background,
+        },
       ]}
     >
       <Pressable
@@ -46,7 +49,7 @@ export function CompanionScreenHeader({
           {
             backgroundColor: pressed
               ? colors.surfacePressed
-              : colors.surfaceElevated,
+              : colors.surface,
             borderColor: colors.border,
             transform: [
               {
@@ -86,7 +89,7 @@ export function CompanionScreenHeader({
           {
             backgroundColor: pressed
               ? colors.surfacePressed
-              : colors.surfaceElevated,
+              : colors.surface,
             borderColor: colors.border,
             opacity: disabled ? 0.44 : 1,
             transform: [
@@ -112,7 +115,7 @@ export function CompanionScreenHeader({
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 64,
+    minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -125,11 +128,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 2,
   },
   title: {
     ...typeScale.heading,
     flex: 1,
     textAlign: 'center',
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

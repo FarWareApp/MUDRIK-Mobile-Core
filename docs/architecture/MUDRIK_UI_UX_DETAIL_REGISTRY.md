@@ -196,15 +196,11 @@ Track all of the following independently:
 
 The attachment affordance must be represented as a clear **paperclip / attachment control (`📎` concept)**, not forgotten during later UI work.
 
-Status: `INTENDED`.
+Current implementation uses `ComposerPaperclipIcon` inside `ComposerAttachmentButton`, with a bounded attachment-count badge that mirrors correctly in RTL/LTR and remains within the 44 × 44 action target.
 
-### Current difference
+Status: `CURRENT / VERIFY`.
 
-Current `MessageComposer` renders a full-width plus glyph `＋` for attachments.
-
-Status of the icon itself: `MISSING` relative to intended paperclip presentation.
-
-This difference is deliberately recorded rather than silently changed during Section 04.
+The earlier full-width plus-glyph gap is closed. Future visual passes must preserve the paperclip primitive rather than silently reverting to a generic plus control.
 
 ### Attachment action surface
 
@@ -355,17 +351,20 @@ Status: `CURRENT`.
 
 ## 2.7 Message Timestamp
 
-`ChatMessage` already carries `createdAt`.
+`ChatMessage` carries `createdAt`, and the current message experience renders timing through dedicated primitives.
 
-Current `MessageBubble` does **not** render the timestamp.
+Current behavior:
 
-Required: visible message timing must not be forgotten.
+- `MessageTimestamp` renders locale-aware time for a single message or the last message in a same-role visual group;
+- `MessageDateSeparator` renders localized date separators when the local calendar day changes;
+- timestamp numerals use tabular figures and secondary contrast;
+- user-message timestamps retain readable contrast on the accent bubble.
 
-Status: `MISSING / INTENDED`.
+Status: `CURRENT / VERIFY`.
 
-Final timestamp design must define and verify:
+Physical/device validation must still verify:
 
-- whether time is always visible or appears contextually;
+- grouped-message timestamp visibility;
 - hour/minute format using locale preferences;
 - 12/24-hour behavior according to product/platform locale policy;
 - date separators for older messages;
@@ -832,16 +831,16 @@ As of this registry's creation:
 - composer exists: `CURRENT`;
 - composer geometry/styles exist: `CURRENT/VERIFY`;
 - attachment flow exists: `CURRENT/PARTIAL`;
-- attachment control currently renders `＋`: `CURRENT`, but desired paperclip presentation is `INTENDED/MISSING`;
+- attachment control uses a dedicated paperclip primitive with RTL-aware count badge: `CURRENT/VERIFY`;
 - image/video/file selection exists: `CURRENT/PARTIAL`;
 - attachment draft tray exists: `CURRENT/PARTIAL`;
 - message bubbles exist: `CURRENT/VERIFY`;
 - `createdAt` exists in `ChatMessage`: `CURRENT`;
-- timestamp rendering in bubble: `MISSING/INTENDED`;
+- grouped message timestamps and date separators render through dedicated components: `CURRENT/VERIFY`;
 - message attachments render: `CURRENT/PARTIAL`;
-- floating quick actions exist: `CURRENT/PARTIAL`;
+- floating quick actions exist and now use reduced-motion-aware shared motion: `CURRENT/VERIFY`;
 - keyboard avoidance exists: `CURRENT/VERIFY`;
-- full physical visual validation: `DEFERRED` under the recorded Layer 4 exception.
+- physical visual validation is now `IN PROGRESS` under Layer 4; the newly polished candidate still requires installation and device review before `VERIFIED`.
 
 ## Core Rule
 

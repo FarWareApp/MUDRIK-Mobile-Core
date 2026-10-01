@@ -44,11 +44,35 @@ export function ChatHeader({
         styles.header,
         isRTL && styles.headerRTL,
         {
+          backgroundColor:
+            colors.background,
           borderBottomColor:
             colors.border,
         },
       ]}
     >
+      <View
+        style={[
+          styles.brandMark,
+          {
+            backgroundColor:
+              colors.accentSoft,
+            borderColor: colors.border,
+          },
+        ]}
+        importantForAccessibility="no"
+      >
+        <View
+          style={[
+            styles.brandDot,
+            {
+              backgroundColor:
+                colors.accent,
+            },
+          ]}
+        />
+      </View>
+
       <View style={styles.titleGroup}>
         <Text
           numberOfLines={1}
@@ -93,10 +117,13 @@ export function ChatHeader({
           {
             backgroundColor: pressed
               ? colors.surfacePressed
-              : colors.surfaceElevated,
+              : colors.surface,
             borderColor: pressed
               ? colors.accentSoft
               : colors.border,
+            shadowColor: colors.shadow,
+            shadowOpacity:
+              pressed ? 0.04 : 0.08,
             transform: [
               {
                 scale: pressed
@@ -117,7 +144,7 @@ export function ChatHeader({
 
 const styles = StyleSheet.create({
   header: {
-    minHeight: 64,
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -130,6 +157,20 @@ const styles = StyleSheet.create({
   headerRTL: {
     flexDirection: 'row-reverse',
   },
+  brandMark: {
+    width: 12,
+    height: 38,
+    borderRadius: radius.pill,
+    borderWidth:
+      StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandDot: {
+    width: 4,
+    height: 18,
+    borderRadius: radius.pill,
+  },
   titleGroup: {
     flex: 1,
   },
@@ -137,9 +178,10 @@ const styles = StyleSheet.create({
     fontSize: typography.heading,
     lineHeight: 23,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
   subtitle: {
-    marginTop: 1,
+    marginTop: 2,
     fontSize: typography.caption,
     lineHeight: 16,
     fontWeight: '500',
@@ -148,8 +190,15 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 2,
   },
 });

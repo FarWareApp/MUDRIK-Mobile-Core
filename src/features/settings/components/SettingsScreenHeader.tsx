@@ -25,7 +25,10 @@ export function SettingsScreenHeader() {
     <View
       style={[
         styles.container,
-        { borderBottomColor: colors.border },
+        {
+          borderBottomColor: colors.border,
+          backgroundColor: colors.background,
+        },
       ]}
     >
       <Pressable
@@ -37,8 +40,12 @@ export function SettingsScreenHeader() {
           {
             backgroundColor: pressed
               ? colors.surfacePressed
-              : colors.surfaceElevated,
-            borderColor: colors.border,
+              : colors.surface,
+            borderColor: pressed
+              ? colors.accentSoft
+              : colors.border,
+            shadowColor: colors.shadow,
+            shadowOpacity: pressed ? 0.04 : 0.08,
             transform: [
               {
                 scale:
@@ -74,26 +81,34 @@ export function SettingsScreenHeader() {
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 64,
+    minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.lg,
   },
   backButton: {
     width: 44,
     height: 44,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 2,
   },
   title: {
     ...typeScale.heading,
     flex: 1,
     paddingHorizontal: spacing.sm,
     textAlign: 'center',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   spacer: {
     width: 44,

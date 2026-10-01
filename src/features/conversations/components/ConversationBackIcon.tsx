@@ -24,10 +24,16 @@ export function ConversationBackIcon({
     >
       <View
         style={[
-          styles.chevron,
-          {
-            borderColor: color,
-          },
+          styles.wing,
+          styles.upperWing,
+          { backgroundColor: color },
+        ]}
+      />
+      <View
+        style={[
+          styles.wing,
+          styles.lowerWing,
+          { backgroundColor: color },
         ]}
       />
     </View>
@@ -38,17 +44,23 @@ const styles = StyleSheet.create({
   container: {
     width: 18,
     height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   rtl: {
     transform: [{ scaleX: -1 }],
   },
-  chevron: {
+  wing: {
+    position: 'absolute',
+    left: 4,
     width: 10,
-    height: 10,
-    borderLeftWidth: 2,
-    borderBottomWidth: 2,
+    height: 2.2,
+    borderRadius: 2,
+  },
+  upperWing: {
+    top: 5,
+    transform: [{ rotate: '-45deg' }],
+  },
+  lowerWing: {
+    top: 11,
     transform: [{ rotate: '45deg' }],
   },
 });

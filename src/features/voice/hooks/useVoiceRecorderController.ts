@@ -6,7 +6,6 @@ import {
   useState,
 } from 'react';
 import {
-  RecordingPresets,
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
@@ -17,6 +16,9 @@ import {
 
 import { MicrophonePermissionService } from '../services/MicrophonePermissionService';
 import { VoiceAudioSessionService } from '../services/VoiceAudioSessionService';
+import {
+  MUDRIK_VOICE_RECORDING_OPTIONS,
+} from '../VoiceRecordingProfile';
 import type {
   MicrophonePermissionState,
   VoiceRecorderErrorCode,
@@ -24,17 +26,14 @@ import type {
   VoiceRecordingDraft,
 } from '../types';
 
-const recordingOptions = {
-  ...RecordingPresets.HIGH_QUALITY,
-  directory: 'document' as const,
-};
-
 type RecorderOperation =
   | 'start'
   | 'stop';
 
 export function useVoiceRecorderController() {
-  const recorder = useAudioRecorder(recordingOptions);
+  const recorder = useAudioRecorder(
+    MUDRIK_VOICE_RECORDING_OPTIONS,
+  );
   const recorderState = useAudioRecorderState(recorder, 200);
 
   const permissionService = useMemo(

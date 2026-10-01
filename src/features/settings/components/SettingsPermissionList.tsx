@@ -85,7 +85,6 @@ const styles = StyleSheet.create({
     minHeight: 88,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: spacing.lg,
     marginVertical: spacing.md,
   },
   loaderText: {

@@ -33,6 +33,7 @@ import { SettingsNavigationRow } from './components/SettingsNavigationRow';
 import { SettingsPermissionList } from './components/SettingsPermissionList';
 import { SettingsScreenHeader } from './components/SettingsScreenHeader';
 import { SettingsScreenState } from './components/SettingsScreenState';
+import { SettingsSectionCard } from './components/SettingsSectionCard';
 import { SettingsSectionTitle } from './components/SettingsSectionTitle';
 import { getSettingsErrorTranslationKey } from './getSettingsErrorTranslationKey';
 
@@ -161,110 +162,118 @@ export function SettingsScreen({
           >
             <SettingsSectionTitle title={t('settingsAppSection')} />
 
-            <SettingOptionGroup
-              label={t('theme')}
-              value={settings.settings.theme}
-              options={themeOptions}
-              disabled={mutableDisabled}
-              onChange={(value) => {
-                void settings.update('theme', value);
-              }}
-            />
+            <SettingsSectionCard>
+              <SettingOptionGroup
+                label={t('theme')}
+                value={settings.settings.theme}
+                options={themeOptions}
+                disabled={mutableDisabled}
+                onChange={(value) => {
+                  void settings.update('theme', value);
+                }}
+              />
 
-            <SettingOptionGroup
-              label={t('language')}
-              value={settings.settings.language}
-              options={languageOptions}
-              disabled={mutableDisabled}
-              onChange={(value) => {
-                void settings.update('language', value);
-              }}
-            />
+              <SettingOptionGroup
+                label={t('language')}
+                value={settings.settings.language}
+                options={languageOptions}
+                disabled={mutableDisabled}
+                onChange={(value) => {
+                  void settings.update('language', value);
+                }}
+              />
 
-            <SettingToggleRow
-              label={t('saveTextDrafts')}
-              description={t('saveTextDraftsDescription')}
-              value={settings.settings.saveDrafts}
-              disabled={mutableDisabled}
-              onChange={(value) => {
-                void settings.update('saveDrafts', value);
-              }}
-            />
+              <SettingToggleRow
+                label={t('saveTextDrafts')}
+                description={t('saveTextDraftsDescription')}
+                value={settings.settings.saveDrafts}
+                disabled={mutableDisabled}
+                onChange={(value) => {
+                  void settings.update('saveDrafts', value);
+                }}
+              />
 
-            <SettingToggleRow
-              label={t('autoPlayVoice')}
-              description={t('autoPlayVoiceDescription')}
-              value={settings.settings.autoPlayVoice}
-              disabled={mutableDisabled}
-              onChange={(value) => {
-                void settings.update('autoPlayVoice', value);
-              }}
-            />
+              <SettingToggleRow
+                label={t('autoPlayVoice')}
+                description={t('autoPlayVoiceDescription')}
+                value={settings.settings.autoPlayVoice}
+                disabled={mutableDisabled}
+                onChange={(value) => {
+                  void settings.update('autoPlayVoice', value);
+                }}
+              />
 
-            <SettingToggleRow
-              label={t('cellularUploads')}
-              description={t('cellularUploadsDescription')}
-              value={settings.settings.cellularUploads}
-              disabled={mutableDisabled}
-              onChange={(value) => {
-                void settings.update('cellularUploads', value);
-              }}
-            />
+              <SettingToggleRow
+                label={t('cellularUploads')}
+                description={t('cellularUploadsDescription')}
+                value={settings.settings.cellularUploads}
+                disabled={mutableDisabled}
+                onChange={(value) => {
+                  void settings.update('cellularUploads', value);
+                }}
+              />
+            </SettingsSectionCard>
 
             <SettingsSectionTitle title={t('settingsAccessibilitySection')} />
 
-            <SettingToggleRow
-              label={t('reducedMotion')}
-              value={settings.settings.reducedMotion}
-              disabled={mutableDisabled}
-              onChange={(value) => {
-                void settings.update('reducedMotion', value);
-              }}
-            />
+            <SettingsSectionCard>
+              <SettingToggleRow
+                label={t('reducedMotion')}
+                value={settings.settings.reducedMotion}
+                disabled={mutableDisabled}
+                onChange={(value) => {
+                  void settings.update('reducedMotion', value);
+                }}
+              />
 
-            <SettingToggleRow
-              label={t('haptics')}
-              value={settings.settings.hapticsEnabled}
-              disabled={mutableDisabled}
-              onChange={(value) => {
-                void settings.update('hapticsEnabled', value);
-              }}
-            />
+              <SettingToggleRow
+                label={t('haptics')}
+                value={settings.settings.hapticsEnabled}
+                disabled={mutableDisabled}
+                onChange={(value) => {
+                  void settings.update('hapticsEnabled', value);
+                }}
+              />
+            </SettingsSectionCard>
 
             <SettingsSectionTitle title={t('settingsPrivacyDiagnosticsSection')} />
 
-            <SettingToggleRow
-              label={t('diagnostics')}
-              description={t('diagnosticsDescription')}
-              value={settings.settings.diagnosticsEnabled}
-              disabled={mutableDisabled}
-              onChange={(value) => {
-                void settings.update('diagnosticsEnabled', value);
-              }}
-            />
+            <SettingsSectionCard>
+              <SettingToggleRow
+                label={t('diagnostics')}
+                description={t('diagnosticsDescription')}
+                value={settings.settings.diagnosticsEnabled}
+                disabled={mutableDisabled}
+                onChange={(value) => {
+                  void settings.update('diagnosticsEnabled', value);
+                }}
+              />
 
-            <SettingsNavigationRow
-              title={t('coreHealthDiagnostics')}
-              description={t('coreHealthDiagnosticsDescription')}
-              accessibilityLabel={t('openCoreHealthDiagnostics')}
-              onPress={() => router.push('/diagnostics')}
-            />
+              <SettingsNavigationRow
+                title={t('coreHealthDiagnostics')}
+                description={t('coreHealthDiagnosticsDescription')}
+                accessibilityLabel={t('openCoreHealthDiagnostics')}
+                onPress={() => router.push('/diagnostics')}
+              />
+            </SettingsSectionCard>
 
             <SettingsSectionTitle title={t('settingsPermissionsSection')} />
 
-            <SettingsPermissionList
-              loading={permissions.loading}
-              disabled={settings.busy}
-              requestingId={permissions.requestingId}
-              openingSettingsId={permissions.openingSettingsId}
-              permissions={permissions.permissions}
-              onRequest={(permissionId) => {
-                void permissions.request(permissionId);
-              }}
-              onOpenSettings={(permissionId) => {
-                void permissions.openSettings(permissionId);
-              }}
-            />
+            <SettingsSectionCard>
+              <SettingsPermissionList
+                loading={permissions.loading}
+                disabled={settings.busy}
+                requestingId={permissions.requestingId}
+                openingSettingsId={permissions.openingSettingsId}
+                permissions={permissions.permissions}
+                onRequest={(permissionId) => {
+                  void permissions.request(permissionId);
+                }}
+                onOpenSettings={(permissionId) => {
+                  void permissions.openSettings(permissionId);
+                }}
+              />
+            </SettingsSectionCard>
 
             <ResetSettingsButton
               disabled={mutableDisabled}
@@ -282,6 +291,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    paddingTop: spacing.sm,
     paddingBottom: spacing.huge,
   },
 });

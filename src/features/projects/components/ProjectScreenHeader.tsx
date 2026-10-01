@@ -32,7 +32,10 @@ export function ProjectScreenHeader({
     <View
       style={[
         styles.container,
-        { borderBottomColor: colors.border },
+        {
+          borderBottomColor: colors.border,
+          backgroundColor: colors.background,
+        },
       ]}
     >
       <Pressable
@@ -44,7 +47,7 @@ export function ProjectScreenHeader({
           {
             backgroundColor: pressed
               ? colors.surfacePressed
-              : colors.surfaceElevated,
+              : colors.surface,
             borderColor: colors.border,
             transform: [
               {
@@ -111,7 +114,7 @@ export function ProjectScreenHeader({
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 64,
+    minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -122,7 +125,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.sm,
     textAlign: 'center',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   circleButton: {
     width: 44,
@@ -131,6 +134,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 2,
   },
   primaryButton: {
     elevation: 4,
