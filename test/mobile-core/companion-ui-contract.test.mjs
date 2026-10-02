@@ -292,9 +292,15 @@ test(
 
     assert.match(caption, /typeScale\.secondary/);
     assert.match(caption, /writingDirection:\s*'auto'/);
+    assert.match(summary, /InsetSurfaceCard/);
+    assert.match(summary, /companionSessionProfileTitle/);
+    assert.match(summary, /companionInteractionStyle/);
+    assert.match(summary, /companionPresenceLevel/);
+    assert.match(summary, /companionVoicePreference/);
     assert.match(summary, /flexWrap:\s*'wrap'/);
     assert.match(summary, /typeScale\.caption/);
     assert.match(summary, /writingDirection:\s*'auto'/);
+    assert.doesNotMatch(summary, /Math\.random/);
     assert.doesNotMatch(summary, / · /);
   },
 );
@@ -393,6 +399,8 @@ test(
       'companionPresenceActiveCaption',
       'companionPresenceIdleCaption',
       'companionPresenceCapability',
+      'companionSessionProfileTitle',
+      'companionSessionProfileDescription',
       'companionPhaseIdle',
       'companionPhaseListening',
       'companionPhaseProcessing',

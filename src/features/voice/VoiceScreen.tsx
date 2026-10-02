@@ -14,6 +14,7 @@ import { VoiceRecorderControls } from './components/VoiceRecorderControls';
 import { VoiceRecorderStatus } from './components/VoiceRecorderStatus';
 import { VoiceRecordingDraftCard } from './components/VoiceRecordingDraftCard';
 import { VoiceScreenHeader } from './components/VoiceScreenHeader';
+import { VoiceSessionOverview } from './components/VoiceSessionOverview';
 import { useVoiceRecorderController } from './hooks/useVoiceRecorderController';
 
 export function VoiceScreen() {
@@ -75,6 +76,11 @@ export function VoiceScreen() {
             onDiscard={recorder.discard}
           />
         ) : null}
+
+        <VoiceSessionOverview
+          permission={recorder.permission}
+          hasDraft={recorder.draft !== null}
+        />
       </ScrollView>
     </FlagshipSafeAreaScreen>
   );

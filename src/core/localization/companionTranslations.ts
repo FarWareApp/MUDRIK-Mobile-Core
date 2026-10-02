@@ -48,6 +48,10 @@ export const companionTranslations = {
       'جاهز لبدء جلسة جديدة عند الطلب.',
     companionPresenceCapability:
       'الملف الشخصي والحضور المحلي جاهزان · الصوت والذكاء يبقيان ضمن صلاحيات الجلسة',
+    companionSessionProfileTitle:
+      'ملف الجلسة',
+    companionSessionProfileDescription:
+      'التفضيلات الفعلية المستخدمة في تفاعل الرفيق الآن.',
     companionPhaseIdle:
       'جاهز',
     companionPhaseListening:
@@ -112,6 +116,10 @@ export const companionTranslations = {
       'Bereit für eine neue Sitzung, sobald du sie startest.',
     companionPresenceCapability:
       'Profil und lokale Präsenz sind bereit · Stimme und Intelligenz bleiben sitzungsgebunden',
+    companionSessionProfileTitle:
+      'Sitzungsprofil',
+    companionSessionProfileDescription:
+      'Die tatsächlich verwendeten Einstellungen für die aktuelle Begleiter-Interaktion.',
     companionPhaseIdle:
       'Bereit',
     companionPhaseListening:
@@ -176,6 +184,10 @@ export const companionTranslations = {
       'Ready for a new session whenever you start one.',
     companionPresenceCapability:
       'Profile and local presence ready · voice and intelligence remain session-scoped',
+    companionSessionProfileTitle:
+      'Session profile',
+    companionSessionProfileDescription:
+      'The actual preferences used for the current companion interaction.',
     companionPhaseIdle:
       'Ready',
     companionPhaseListening:

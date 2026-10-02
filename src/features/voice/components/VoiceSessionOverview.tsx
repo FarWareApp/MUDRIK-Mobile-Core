@@ -5,11 +5,6 @@ import {
   View,
 } from 'react-native';
 
-import type {
-  CompanionInteractionStyle,
-  CompanionPresenceLevel,
-  CompanionVoicePreference,
-} from '../../../contracts/Companion';
 import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
@@ -31,22 +26,24 @@ import {
 import {
   typeScale,
 } from '../../../design-system/tokens/typography';
+import type {
+  MicrophonePermissionState,
+} from '../types';
 
 type Props = {
-  interactionStyle: CompanionInteractionStyle;
-  presenceLevel: CompanionPresenceLevel;
-  voicePreference: CompanionVoicePreference;
+  permission: MicrophonePermissionState;
+  hasDraft: boolean;
 };
 
-type PreferenceItem = {
+type StatusItem = {
   label: string;
   value: string;
+  tone: 'ready' | 'neutral' | 'warning';
 };
 
-export function CompanionPreferenceSummary({
-  interactionStyle,
-  presenceLevel,
-  voicePreference,
+export function VoiceSessionOverview({
+  permission,
+  hasDraft,
 }: Props) {
   const {
     colors,
@@ -56,83 +53,55 @@ export function CompanionPreferenceSummary({
   const palette =
     flagshipPalette[mode];
 
-  const interactionLabels = {
-    balanced:
-      t('companionStyleBalanced'),
-    warm:
-      t('companionStyleWarm'),
-    calm:
-      t('companionStyleCalm'),
-    direct:
-      t('companionStyleDirect'),
-  } satisfies Record<
-    CompanionInteractionStyle,
-    string
-  >;
+  const permissionValue =
+    permission === 'granted'
+      ? t('voicePermissionReady')
+      : permission === 'denied'
+        ? t('voicePermissionNeedsAccess')
+        : t('voicePermissionCheckOnStart');
 
-  const presenceLabels = {
-    silent:
-      t('companionPresenceSilent'),
-    normal:
-      t('companionPresenceNormal'),
-    helpful:
-      t('companionPresenceHelpful'),
-    active:
-      t('companionPresenceActive'),
-  } satisfies Record<
-    CompanionPresenceLevel,
-    string
-  >;
-
-  const voiceLabels = {
-    auto:
-      t('companionVoiceAuto'),
-    male:
-      t('companionVoiceMale'),
-    female:
-      t('companionVoiceFemale'),
-  } satisfies Record<
-    CompanionVoicePreference,
-    string
-  >;
-
-  const items:
-    readonly PreferenceItem[] = [
-      {
-        label:
-          t('companionInteractionStyle'),
-        value:
-          interactionLabels[
-            interactionStyle
-          ],
-      },
-      {
-        label:
-          t('companionPresenceLevel'),
-        value:
-          presenceLabels[
-            presenceLevel
-          ],
-      },
-      {
-        label:
-          t('companionVoicePreference'),
-        value:
-          voiceLabels[
-            voicePreference
-          ],
-      },
-    ];
+  const items: readonly StatusItem[] = [
+    {
+      label: t('voiceMicrophoneStatus'),
+      value: permissionValue,
+      tone:
+        permission === 'granted'
+          ? 'ready'
+          : permission === 'denied'
+            ? 'warning'
+            : 'neutral',
+    },
+    {
+      label: t('voicePrivacyStatus'),
+      value: t('voicePrivacyLocalValue'),
+      tone: 'ready',
+    },
+    {
+      label: t('voiceDraftStatus'),
+      value: hasDraft
+        ? t('voiceDraftLocalValue')
+        : t('voiceDraftEmptyValue'),
+      tone: hasDraft
+        ? 'ready'
+        : 'neutral',
+    },
+  ];
 
   return (
     <InsetSurfaceCard
-      style={styles.container}
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            colors.surface,
+        },
+      ]}
     >
-      <View style={styles.heading}>
+      <View style={styles.headingRow}>
         <View
           importantForAccessibility="no"
           style={[
-            styles.headingRail,
+            styles.headingMark,
             {
               backgroundColor:
                 colors.accent,
@@ -150,9 +119,7 @@ export function CompanionPreferenceSummary({
               },
             ]}
           >
-            {t(
-              'companionSessionProfileTitle',
-            )}
+            {t('voiceReadinessTitle')}
           </Text>
 
           <Text
@@ -165,7 +132,7 @@ export function CompanionPreferenceSummary({
             ]}
           >
             {t(
-              'companionSessionProfileDescription',
+              'voiceReadinessDescription',
             )}
           </Text>
         </View>
@@ -176,62 +143,76 @@ export function CompanionPreferenceSummary({
           ({
             label,
             value,
-          }) => (
-            <View
-              key={label}
-              style={[
-                styles.item,
-                {
-                  backgroundColor:
-                    colors.surfaceInput,
-                  borderColor:
-                    colors.border,
-                },
-              ]}
-            >
+            tone,
+          }) => {
+            const dotColor =
+              tone === 'ready'
+                ? colors.success
+                : tone === 'warning'
+                  ? colors.warning
+                  : colors.accent;
+
+            return (
               <View
-                importantForAccessibility="no"
+                key={label}
                 style={[
-                  styles.marker,
+                  styles.item,
                   {
                     backgroundColor:
-                      colors.accent,
-                  },
-                ]}
-              />
-
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color:
-                      colors.textSecondary,
+                      colors.surfaceInput,
+                    borderColor:
+                      colors.border,
                   },
                 ]}
               >
-                {label}
-              </Text>
+                <View
+                  style={styles.itemHeader}
+                >
+                  <View
+                    importantForAccessibility="no"
+                    style={[
+                      styles.statusDot,
+                      {
+                        backgroundColor:
+                          dotColor,
+                      },
+                    ]}
+                  />
 
-              <Text
-                style={[
-                  styles.value,
-                  {
-                    color:
-                      colors.textPrimary,
-                  },
-                ]}
-              >
-                {value}
-              </Text>
-            </View>
-          ),
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color:
+                          colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color:
+                        colors.textPrimary,
+                    },
+                  ]}
+                >
+                  {value}
+                </Text>
+              </View>
+            );
+          },
         )}
       </View>
 
       <View
         importantForAccessibility="no"
         style={[
-          styles.metalRail,
+          styles.lowerRail,
           {
             backgroundColor:
               palette.metal,
@@ -246,15 +227,15 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     maxWidth: 460,
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     padding: spacing.lg,
   },
-  heading: {
+  headingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
   },
-  headingRail: {
+  headingMark: {
     width: 4,
     height: 42,
     borderRadius: radius.pill,
@@ -282,32 +263,37 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: '30%',
     minWidth: 104,
-    minHeight: 104,
+    minHeight: 96,
     borderWidth:
       StyleSheet.hairlineWidth,
     borderRadius: radius.lg,
     padding: spacing.md,
   },
-  marker: {
-    width: 8,
-    height: 8,
+  itemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
     borderRadius: radius.pill,
   },
   label: {
     ...typeScale.caption,
-    marginTop: spacing.sm,
+    flex: 1,
     fontWeight: '700',
     writingDirection: 'auto',
   },
   value: {
     ...typeScale.secondary,
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
     fontWeight: '800',
     writingDirection: 'auto',
   },
-  metalRail: {
+  lowerRail: {
     alignSelf: 'flex-end',
-    width: 70,
+    width: 68,
     height: 1,
     marginTop: spacing.lg,
     opacity: 0.32,

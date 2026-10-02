@@ -34,6 +34,10 @@ const signalStage = fs.readFileSync(
   'src/features/voice/components/VoiceSignalStage.tsx',
   'utf8',
 );
+const sessionOverview = fs.readFileSync(
+  'src/features/voice/components/VoiceSessionOverview.tsx',
+  'utf8',
+);
 const controls = fs.readFileSync(
   'src/features/voice/components/VoiceRecorderControls.tsx',
   'utf8',
@@ -84,6 +88,7 @@ test(
       'VoiceRecorderStatus',
       'VoiceRecorderControls',
       'VoiceRecordingDraftCard',
+      'VoiceSessionOverview',
       'InlineErrorBanner',
     ]) {
       assert.match(screen, new RegExp(component));
@@ -198,6 +203,22 @@ test(
 );
 
 test(
+  'voice readiness panel is driven by real recorder permission and local draft state',
+  () => {
+    assert.match(screen, /permission=\{recorder\.permission\}/);
+    assert.match(screen, /hasDraft=\{recorder\.draft !== null\}/);
+    assert.match(sessionOverview, /MicrophonePermissionState/);
+    assert.match(sessionOverview, /permission === 'granted'/);
+    assert.match(sessionOverview, /permission === 'denied'/);
+    assert.match(sessionOverview, /hasDraft/);
+    assert.match(sessionOverview, /InsetSurfaceCard/);
+    assert.match(sessionOverview, /voicePrivacyLocalValue/);
+    assert.doesNotMatch(sessionOverview, /Math\.random/);
+    assert.doesNotMatch(sessionOverview, /setInterval\s*\(/);
+  },
+);
+
+test(
   'voice translations are feature scoped and merged into the app catalog',
   () => {
     assert.match(catalog, /voiceTranslations/);
@@ -212,6 +233,17 @@ test(
       'voicePrivateCapture',
       'voiceStudioCaption',
       'voiceDuration',
+      'voiceReadinessTitle',
+      'voiceReadinessDescription',
+      'voiceMicrophoneStatus',
+      'voicePermissionReady',
+      'voicePermissionNeedsAccess',
+      'voicePermissionCheckOnStart',
+      'voicePrivacyStatus',
+      'voicePrivacyLocalValue',
+      'voiceDraftStatus',
+      'voiceDraftLocalValue',
+      'voiceDraftEmptyValue',
       'voicePhaseIdle',
       'voicePhasePreparing',
       'voicePhaseRecording',
