@@ -80,7 +80,7 @@ test(
 
     assert.equal(
       state.getVersion(),
-      9,
+      10,
     );
     assert.equal(
       state.executed.length,
@@ -235,7 +235,7 @@ test(
 
     assert.equal(
       state.getVersion(),
-      9,
+      10,
     );
     assert.equal(
       state.executed.length,
