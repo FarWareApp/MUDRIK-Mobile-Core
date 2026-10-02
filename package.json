@@ -54,13 +54,14 @@
     "release:preflight": "node ./scripts/production-release-preflight.mjs",
     "validate:core": "npm run typecheck && npx expo-doctor",
     "benchmark:core": "node --test test/mobile-core/benchmark-*.test.mjs",
-    "competition:core": "node --test test/mobile-core/benchmark-*.test.mjs test/mobile-core/intelligence-deliberation*.test.mjs test/mobile-core/intelligence-execution-coordinator.test.mjs",
+    "competition:core": "node --test test/mobile-core/benchmark-*.test.mjs test/mobile-core/intelligence-deliberation*.test.mjs test/mobile-core/intelligence-execution-coordinator.test.mjs test/mobile-core/intelligence-performance-routing.test.mjs",
     "benchmark:report": "node ./scripts/benchmark-arena-report.mjs",
     "brain:core": "node --test test/mobile-core/brain-*.test.mjs",
     "agent:core": "node --test test/mobile-core/agent-*.test.mjs",
-    "internal:core": "npm run brain:core && npm run agent:core && npm run competition:core && npm run autonomy:core && npm run knowledge:core",
+    "internal:core": "npm run brain:core && npm run agent:core && npm run competition:core && npm run autonomy:core && npm run knowledge:core && npm run memory:core",
     "autonomy:core": "node --test test/mobile-core/tool-*.test.mjs test/mobile-core/goal-replanner.test.mjs test/mobile-core/goal-execution-replan-kernel.test.mjs test/mobile-core/goal-autonomy-decision.test.mjs test/mobile-core/goal-watchdog.test.mjs test/mobile-core/goal-checkpoint-resume.test.mjs test/mobile-core/goal-checkpoint-integrity.test.mjs test/mobile-core/result-verifier.test.mjs test/mobile-core/instruction-firewall.test.mjs test/mobile-core/runtime-integrity-attestation.test.mjs test/mobile-core/runtime-trust-gate.test.mjs test/mobile-core/goal-task-graph-scheduler.test.mjs test/mobile-core/verification-planner.test.mjs",
-    "knowledge:core": "node --test test/mobile-core/knowledge-engine.test.mjs test/mobile-core/knowledge-consensus.test.mjs test/mobile-core/knowledge-grounding-gate.test.mjs test/mobile-core/context-compiler.test.mjs"
+    "knowledge:core": "node --test test/mobile-core/knowledge-engine.test.mjs test/mobile-core/knowledge-consensus.test.mjs test/mobile-core/knowledge-grounding-gate.test.mjs test/mobile-core/context-compiler.test.mjs",
+    "memory:core": "node --test test/mobile-core/memory-contract.test.mjs test/mobile-core/memory-conflict-gate.test.mjs test/mobile-core/context-memory-conflict.test.mjs"
   },
   "private": true,
   "resolutions": {

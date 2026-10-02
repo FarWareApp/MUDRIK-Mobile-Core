@@ -3,6 +3,14 @@ import type {
 } from '../memory/memoryRetrieval';
 
 import type {
+  MemoryCompactionProjection,
+} from '../memory/memoryCompaction';
+
+import {
+  gateMemoryConflicts,
+} from '../memory/memoryConflictGate';
+
+import type {
   KnowledgeProjection,
 } from '../knowledge/knowledgeRetrieval';
 
@@ -494,6 +502,78 @@ export function contextFromMemoryProjection(
         }),
     ),
   );
+}
+
+export type ConflictSafeMemoryContext =
+  Readonly<{
+    accepted: boolean;
+    candidates: readonly ContextCandidate[];
+    conflictedMemoryIds: readonly string[];
+    conflictGroupCount: number;
+    requiresClarification: boolean;
+  }>;
+
+export function contextFromConflictSafeMemory(
+  projection: MemoryRetrievalProjection,
+  compaction: MemoryCompactionProjection,
+): ConflictSafeMemoryContext {
+  const gated =
+    gateMemoryConflicts(
+      projection,
+      compaction,
+    );
+
+  if (!gated.accepted) {
+    return Object.freeze({
+      accepted: false,
+      candidates: Object.freeze([]),
+      conflictedMemoryIds:
+        Object.freeze([]),
+      conflictGroupCount: 0,
+      requiresClarification: false,
+    });
+  }
+
+  const candidates =
+    gated.safeEntries.map(
+      (entry) =>
+        Object.freeze({
+          candidateRef:
+            'context_memory_' + entry.memoryId,
+          sourceKind: 'memory' as const,
+          authority: 'none' as const,
+          content: entry.content,
+          provenanceRef: entry.sourceRef,
+          observedAtMs: entry.updatedAtMs,
+          expiresAtMs: null,
+          relevanceScore:
+            Math.min(
+              1000,
+              entry.relevanceScore * 200,
+            ),
+          confidenceScore:
+            memoryConfidence(
+              entry.sourceType,
+            ),
+          tokenEstimate:
+            tokenEstimate(entry.content),
+          sensitivity: 'private' as const,
+          accountId: projection.accountId,
+          workspaceId: null,
+        }),
+    );
+
+  return Object.freeze({
+    accepted: true,
+    candidates:
+      Object.freeze(candidates),
+    conflictedMemoryIds:
+      gated.conflictedMemoryIds,
+    conflictGroupCount:
+      gated.conflictGroupCount,
+    requiresClarification:
+      gated.requiresClarification,
+  });
 }
 
 function knowledgeConfidence(
