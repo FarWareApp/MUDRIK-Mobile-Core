@@ -1,4 +1,6 @@
 import {
+  exactObject,
+  safeInteger,
   safeReasonCode,
   safeReference,
 } from '../brain/brainSecurity';
@@ -57,6 +59,29 @@ export type GoalExecutionTransition =
     state: GoalExecutionState;
   }>;
 
+const STATE_KEYS =
+  new Set([
+    'phase',
+    'currentStepOrdinal',
+    'completedStepIds',
+    'failedStepId',
+    'toolAttempts',
+    'repairCycles',
+    'verificationPasses',
+    'verificationFailures',
+    'lastFailureReason',
+    'finalResultRef',
+    'updatedAtMs',
+  ]);
+
+const RESUMABLE_PHASES =
+  new Set<GoalExecutionPhase>([
+    'ready',
+    'running',
+    'verifying',
+    'repairing',
+  ]);
+
 function freezeState(
   value: GoalExecutionState,
 ): GoalExecutionState {
@@ -90,6 +115,176 @@ function requiredVerificationPasses(
   return goal.verification === 'strict'
     ? 2
     : 1;
+}
+
+export function parseResumableGoalExecutionState(
+  goalInput: unknown,
+  planInput: unknown,
+  stateInput: unknown,
+  trustedNowMs: number,
+): GoalExecutionState | null {
+  const goal =
+    parseGoalExecutionSpec(goalInput);
+  const validation =
+    validateGoalExecutionPlan(
+      goalInput,
+      planInput,
+    );
+  const record =
+    exactObject(stateInput, STATE_KEYS);
+
+  if (
+    !goal
+    || !validation.accepted
+    || !validation.value
+    || !record
+    || typeof record.phase !== 'string'
+    || !RESUMABLE_PHASES.has(
+      record.phase as GoalExecutionPhase,
+    )
+    || !Array.isArray(record.completedStepIds)
+    || record.completedStepIds.length
+      > validation.value.steps.length
+    || !safeInteger(record.toolAttempts)
+    || Number(record.toolAttempts)
+      > goal.maxToolAttempts
+    || !safeInteger(record.repairCycles)
+    || Number(record.repairCycles)
+      > goal.maxRepairCycles
+    || !safeInteger(record.verificationPasses)
+    || !safeInteger(record.verificationFailures)
+    || Number(record.verificationFailures)
+      > Number(record.repairCycles)
+    || record.finalResultRef !== null
+    || !safeInteger(record.updatedAtMs)
+    || !safeInteger(trustedNowMs)
+    || Number(record.updatedAtMs)
+      < goal.createdAtMs
+    || Number(record.updatedAtMs)
+      > trustedNowMs
+    || (
+      goal.deadlineAtMs !== null
+      && trustedNowMs > goal.deadlineAtMs
+    )
+  ) {
+    return null;
+  }
+
+  const plan = validation.value;
+  const completed: string[] = [];
+  const seen = new Set<string>();
+
+  for (
+    let index = 0;
+    index < record.completedStepIds.length;
+    index += 1
+  ) {
+    const stepId =
+      record.completedStepIds[index];
+
+    if (
+      typeof stepId !== 'string'
+      || seen.has(stepId)
+      || plan.steps[index]?.stepId !== stepId
+    ) {
+      return null;
+    }
+
+    seen.add(stepId);
+    completed.push(stepId);
+  }
+
+  const phase =
+    record.phase as GoalExecutionPhase;
+  const completedVerificationCount =
+    plan.steps
+      .slice(0, completed.length)
+      .filter((step) => step.kind === 'verify')
+      .length;
+
+  if (
+    Number(record.verificationPasses)
+      !== completedVerificationCount
+  ) {
+    return null;
+  }
+
+  if (phase === 'ready') {
+    if (
+      record.currentStepOrdinal !== null
+      || completed.length !== 0
+      || record.failedStepId !== null
+      || record.lastFailureReason !== null
+      || Number(record.toolAttempts) !== 0
+      || Number(record.repairCycles) !== 0
+      || Number(record.verificationPasses) !== 0
+      || Number(record.verificationFailures) !== 0
+    ) {
+      return null;
+    }
+  } else {
+    if (
+      !safeInteger(record.currentStepOrdinal)
+      || Number(record.currentStepOrdinal)
+        !== completed.length + 1
+    ) {
+      return null;
+    }
+
+    const currentStep =
+      plan.steps[
+        Number(record.currentStepOrdinal) - 1
+      ];
+
+    if (!currentStep) {
+      return null;
+    }
+
+    if (
+      phase === 'verifying'
+        ? currentStep.kind !== 'verify'
+        : phase === 'running'
+          ? currentStep.kind === 'verify'
+          : false
+    ) {
+      return null;
+    }
+
+    if (phase === 'repairing') {
+      if (
+        record.failedStepId !== currentStep.stepId
+        || typeof record.lastFailureReason !== 'string'
+        || !safeReasonCode(record.lastFailureReason)
+        || Number(record.repairCycles) < 1
+      ) {
+        return null;
+      }
+    } else if (
+      record.failedStepId !== null
+      || record.lastFailureReason !== null
+    ) {
+      return null;
+    }
+  }
+
+  return freezeState({
+    phase,
+    currentStepOrdinal:
+      record.currentStepOrdinal as number | null,
+    completedStepIds: completed,
+    failedStepId:
+      record.failedStepId as string | null,
+    toolAttempts: record.toolAttempts as number,
+    repairCycles: record.repairCycles as number,
+    verificationPasses:
+      record.verificationPasses as number,
+    verificationFailures:
+      record.verificationFailures as number,
+    lastFailureReason:
+      record.lastFailureReason as string | null,
+    finalResultRef: null,
+    updatedAtMs: record.updatedAtMs as number,
+  });
 }
 
 export class GoalExecutionTracker {
@@ -147,6 +342,35 @@ export class GoalExecutionTracker {
     }
 
     return this.plan.steps[ordinal - 1] ?? null;
+  }
+
+  restoreCheckpointState(
+    stateInput: unknown,
+    trustedNowMs: number,
+  ): boolean {
+    if (
+      this.current.phase !== 'ready'
+      || this.current.completedStepIds.length !== 0
+      || this.current.updatedAtMs
+        !== this.goal.createdAtMs
+    ) {
+      return false;
+    }
+
+    const state =
+      parseResumableGoalExecutionState(
+        this.goal,
+        this.plan,
+        stateInput,
+        trustedNowMs,
+      );
+
+    if (!state) {
+      return false;
+    }
+
+    this.current = state;
+    return true;
   }
 
   applyValidatedReplan(

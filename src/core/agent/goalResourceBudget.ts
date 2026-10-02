@@ -36,6 +36,12 @@ export type GoalBudgetReservation =
     reservedAtMs: number;
   }>;
 
+export type GoalCommittedReservation =
+  Readonly<{
+    reservationId: string;
+    usage: GoalResourceUsage;
+  }>;
+
 export type GoalBudgetDecision =
   Readonly<{
     accepted: boolean;
@@ -497,6 +503,87 @@ export class GoalResourceBudgetLedger {
 
   getReservedUsage(): GoalResourceUsage {
     return this.reserved;
+  }
+
+  getCommittedReservations():
+    readonly GoalCommittedReservation[] {
+    return Object.freeze(
+      [...this.committedReservations.entries()]
+        .map(([reservationId, usage]) =>
+          Object.freeze({
+            reservationId,
+            usage: Object.freeze({ ...usage }),
+          }),
+        ),
+    );
+  }
+
+  restoreCommittedState(
+    committedUsage: GoalResourceUsage,
+    reservations:
+      readonly GoalCommittedReservation[],
+  ): boolean {
+    if (
+      !validUsage(committedUsage)
+      || committedUsage.concurrentOperations !== 0
+      || budgetReason(
+        this.policy,
+        committedUsage,
+      ) !== null
+      || !Array.isArray(reservations)
+      || reservations.length > 100_000
+      || this.reservations.size !== 0
+      || this.committedReservations.size !== 0
+      || !sameUsage(this.committed, ZERO_USAGE)
+      || !sameUsage(this.reserved, ZERO_USAGE)
+    ) {
+      return false;
+    }
+
+    const seen = new Set<string>();
+    let reconstructed: GoalResourceUsage =
+      ZERO_USAGE;
+
+    for (const item of reservations) {
+      if (
+        typeof item !== 'object'
+        || item === null
+        || !RESERVATION_ID.test(
+          item.reservationId,
+        )
+        || seen.has(item.reservationId)
+        || !validUsage(item.usage)
+        || item.usage.concurrentOperations !== 0
+      ) {
+        return false;
+      }
+
+      seen.add(item.reservationId);
+      reconstructed =
+        addUsage(
+          reconstructed,
+          item.usage,
+        );
+    }
+
+    if (!sameUsage(
+      reconstructed,
+      committedUsage,
+    )) {
+      return false;
+    }
+
+    this.committed =
+      Object.freeze({ ...committedUsage });
+
+    for (const item of reservations) {
+      this.committedReservations.set(
+        item.reservationId,
+        Object.freeze({ ...item.usage }),
+      );
+    }
+
+    return true;
   }
 
   canContinue(

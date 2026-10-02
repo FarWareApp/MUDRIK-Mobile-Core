@@ -119,3 +119,34 @@ The decision order is intentionally conservative:
 7. only verified or explicitly non-required results are accepted.
 
 This keeps model creativity out of the final authority decision.
+
+## Crash-safe long-horizon checkpoints
+
+Long-running goals can now emit resumable checkpoints only at quiescent
+boundaries. A checkpoint is refused while an execution lease/reservation is
+active or while rollback work is unresolved.
+
+The checkpoint captures the exact current plan, resumable lifecycle state,
+committed resource usage, committed reservation identities, accepted execution
+receipts, quiescent rollback states, per-step generation counters and the
+dynamic-replan generation.
+
+Checkpoint chains are monotonic: each checkpoint has a sequence and previous
+checkpoint reference. Restoration requires a trusted anchor containing the
+expected checkpoint identity and sequence. This prevents silently restoring a
+different or older checkpoint when the caller keeps the anchor in verified
+storage.
+
+Completed work is not replayed after restoration. Receipt, lease and committed
+reservation identities are reconstructed so a restarted process that
+accidentally reuses old identifiers fails closed rather than executing the same
+work twice.
+
+Checkpoint parsing rejects tampered budget totals, mutated completed prefixes,
+future timestamps, expired checkpoints, non-quiescent rollback state,
+cross-goal receipts and malformed generation state.
+
+The checkpoint object is intentionally not treated as self-authenticating.
+Persistent deployments should bind the trusted checkpoint anchor to MUDRIK's
+signed integrity ledger or platform secure storage so durable rollback attacks
+remain detectable across process and device restarts.

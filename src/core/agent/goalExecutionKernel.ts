@@ -51,6 +51,14 @@ import {
   type GoalReplanDecision,
 } from './goalReplanner';
 
+import {
+  GOAL_CHECKPOINT_ID,
+  parseGoalExecutionCheckpoint,
+  validateGoalCheckpointTrustAnchor,
+  type GoalExecutionCheckpoint,
+  type GoalCheckpointTrustAnchor,
+} from './goalCheckpoint';
+
 export interface GoalExecutionKernelIdFactory {
   nextLeaseId(): string;
   nextRollbackId(): string;
@@ -86,6 +94,31 @@ export type GoalKernelReplanResult =
     reason: string;
     decision: GoalReplanDecision | null;
     transition: GoalExecutionTransition | null;
+  }>;
+
+export type GoalCheckpointCreateResult =
+  Readonly<{
+    accepted: boolean;
+    reason:
+      | 'created'
+      | 'invalid_input'
+      | 'active_preparation'
+      | 'rollback_pending'
+      | 'budget_not_quiescent'
+      | 'state_not_resumable';
+    checkpoint: GoalExecutionCheckpoint | null;
+    anchor: GoalCheckpointTrustAnchor | null;
+  }>;
+
+export type GoalCheckpointRestoreResult =
+  Readonly<{
+    accepted: boolean;
+    reason:
+      | 'restored'
+      | 'kernel_not_pristine'
+      | 'checkpoint_invalid'
+      | 'anchor_mismatch'
+      | 'state_restore_failed';
   }>;
 
 type ActivePreparation =
@@ -165,18 +198,30 @@ function usageWithin(
   );
 }
 
+function usageIsZero(
+  usage: GoalResourceUsage,
+): boolean {
+  return (
+    usage.modelCalls === 0
+    && usage.providerCostMicros === 0
+    && usage.networkRequests === 0
+    && usage.outputBytes === 0
+    && usage.concurrentOperations === 0
+  );
+}
+
 export class GoalExecutionKernel {
   private readonly goal:
     GoalExecutionSpec;
   private plan:
     GoalExecutionPlan;
-  private readonly tracker:
+  private tracker:
     GoalExecutionTracker;
-  private readonly budget:
+  private budget:
     GoalResourceBudgetLedger;
-  private readonly receipts =
+  private receipts =
     new GoalExecutionReceiptRegistry();
-  private readonly rollbacks =
+  private rollbacks =
     new GoalRollbackRegistry();
 
   private active:
@@ -186,6 +231,8 @@ export class GoalExecutionKernel {
     new Map<string, number>();
 
   private replanGeneration = 0;
+  private lastCheckpointSequence = 0;
+  private lastCheckpointId: string | null = null;
 
   constructor(
     goalInput: unknown,
@@ -261,6 +308,308 @@ export class GoalExecutionKernel {
 
   getRollbackStates() {
     return this.rollbacks.getStates();
+  }
+
+  createCheckpoint(
+    checkpointId: string,
+    expiresAtMs: number,
+    trustedNowMs: number,
+  ): GoalCheckpointCreateResult {
+    if (
+      !GOAL_CHECKPOINT_ID.test(checkpointId)
+      || !Number.isSafeInteger(trustedNowMs)
+      || trustedNowMs < 0
+      || !Number.isSafeInteger(expiresAtMs)
+      || expiresAtMs <= trustedNowMs
+    ) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'invalid_input',
+        checkpoint: null,
+        anchor: null,
+      });
+    }
+
+    if (this.active) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'active_preparation',
+        checkpoint: null,
+        anchor: null,
+      });
+    }
+
+    if (!this.rollbacks.canFinalize()) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'rollback_pending',
+        checkpoint: null,
+        anchor: null,
+      });
+    }
+
+    if (!usageIsZero(
+      this.budget.getReservedUsage(),
+    )) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'budget_not_quiescent',
+        checkpoint: null,
+        anchor: null,
+      });
+    }
+
+    const sequence =
+      this.lastCheckpointSequence + 1;
+    const state = this.tracker.getState();
+    const lastGenerations =
+      this.plan.steps
+        .filter((step) =>
+          this.lastGeneration.has(step.stepId),
+        )
+        .map((step) =>
+          Object.freeze({
+            stepId: step.stepId,
+            generation:
+              this.lastGeneration.get(
+                step.stepId,
+              ) as number,
+          }),
+        );
+
+    const raw = {
+      protocolVersion: '1.0' as const,
+      checkpointId,
+      goalId: this.goal.goalId,
+      planId: this.plan.planId,
+      sequence,
+      previousCheckpointId:
+        this.lastCheckpointId,
+      replanGeneration:
+        this.replanGeneration,
+      executionState: state,
+      committedUsage:
+        this.budget.getCommittedUsage(),
+      committedReservations:
+        this.budget
+          .getCommittedReservations(),
+      receipts:
+        this.receipts.getReceipts(),
+      rollbacks:
+        this.rollbacks.getStates(),
+      lastGenerations,
+      createdAtMs: trustedNowMs,
+      expiresAtMs,
+      grantsExecutionAuthority:
+        false as const,
+      grantsSensorAuthority:
+        false as const,
+      grantsApprovalAuthority:
+        false as const,
+      grantsCapabilityAuthority:
+        false as const,
+    };
+
+    const checkpoint =
+      parseGoalExecutionCheckpoint(
+        raw,
+        this.goal,
+        this.plan,
+        trustedNowMs,
+      );
+
+    if (!checkpoint) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'state_not_resumable',
+        checkpoint: null,
+        anchor: null,
+      });
+    }
+
+    this.lastCheckpointSequence = sequence;
+    this.lastCheckpointId = checkpointId;
+
+    return Object.freeze({
+      accepted: true,
+      reason: 'created',
+      checkpoint,
+      anchor: Object.freeze({
+        checkpointId,
+        sequence,
+      }),
+    });
+  }
+
+  restoreCheckpoint(
+    checkpointInput: unknown,
+    trustedAnchor: GoalCheckpointTrustAnchor,
+    trustedNowMs: number,
+  ): GoalCheckpointRestoreResult {
+    const currentState =
+      this.tracker.getState();
+
+    if (
+      this.active
+      || currentState.phase !== 'ready'
+      || currentState.completedStepIds.length !== 0
+      || !usageIsZero(
+        this.budget.getCommittedUsage(),
+      )
+      || !usageIsZero(
+        this.budget.getReservedUsage(),
+      )
+      || this.receipts.getReceipts().length !== 0
+      || this.rollbacks.getStates().length !== 0
+      || this.lastGeneration.size !== 0
+      || this.replanGeneration !== 0
+      || this.lastCheckpointSequence !== 0
+      || this.lastCheckpointId !== null
+    ) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'kernel_not_pristine',
+      });
+    }
+
+    const checkpoint =
+      parseGoalExecutionCheckpoint(
+        checkpointInput,
+        this.goal,
+        this.plan,
+        trustedNowMs,
+      );
+
+    if (!checkpoint) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'checkpoint_invalid',
+      });
+    }
+
+    if (!validateGoalCheckpointTrustAnchor(
+      checkpoint,
+      trustedAnchor,
+    )) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'anchor_mismatch',
+      });
+    }
+
+    const expectedGeneration =
+      new Map<string, number>();
+
+    for (const receipt of checkpoint.receipts) {
+      if (receipt.planId !== this.plan.planId) {
+        continue;
+      }
+
+      const current =
+        expectedGeneration.get(
+          receipt.stepId,
+        );
+
+      if (
+        current === undefined
+        || receipt.generation > current
+      ) {
+        expectedGeneration.set(
+          receipt.stepId,
+          receipt.generation,
+        );
+      }
+    }
+
+    const providedGeneration =
+      new Map(
+        checkpoint.lastGenerations.map(
+          (item) => [
+            item.stepId,
+            item.generation,
+          ],
+        ),
+      );
+
+    if (
+      providedGeneration.size
+        !== expectedGeneration.size
+      || [...expectedGeneration.entries()]
+        .some(([stepId, generation]) =>
+          providedGeneration.get(stepId)
+            !== generation,
+        )
+    ) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'checkpoint_invalid',
+      });
+    }
+
+    const tracker =
+      new GoalExecutionTracker(
+        this.goal,
+        this.plan,
+      );
+    const budget =
+      new GoalResourceBudgetLedger(
+        this.policy.resourceBudget,
+        this.goal.createdAtMs,
+      );
+    const receipts =
+      new GoalExecutionReceiptRegistry();
+    const rollbacks =
+      new GoalRollbackRegistry();
+
+    const restored =
+      tracker.restoreCheckpointState(
+        checkpoint.executionState,
+        trustedNowMs,
+      )
+      && budget.restoreCommittedState(
+        checkpoint.committedUsage,
+        checkpoint.committedReservations,
+      )
+      && receipts.restore(
+        checkpoint.receipts,
+        trustedNowMs,
+      )
+      && rollbacks.restoreQuiescent(
+        checkpoint.rollbacks,
+        trustedNowMs,
+      );
+
+    if (!restored) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'state_restore_failed',
+      });
+    }
+
+    this.tracker = tracker;
+    this.budget = budget;
+    this.receipts = receipts;
+    this.rollbacks = rollbacks;
+    this.lastGeneration.clear();
+
+    for (const item of checkpoint.lastGenerations) {
+      this.lastGeneration.set(
+        item.stepId,
+        item.generation,
+      );
+    }
+
+    this.replanGeneration =
+      checkpoint.replanGeneration;
+    this.lastCheckpointSequence =
+      checkpoint.sequence;
+    this.lastCheckpointId =
+      checkpoint.checkpointId;
+
+    return Object.freeze({
+      accepted: true,
+      reason: 'restored',
+    });
   }
 
   start(
@@ -350,6 +699,19 @@ export class GoalExecutionKernel {
 
     this.plan = decision.nextPlan;
     this.replanGeneration += 1;
+
+    const currentStepIds =
+      new Set(
+        this.plan.steps.map(
+          (step) => step.stepId,
+        ),
+      );
+
+    for (const stepId of this.lastGeneration.keys()) {
+      if (!currentStepIds.has(stepId)) {
+        this.lastGeneration.delete(stepId);
+      }
+    }
 
     return Object.freeze({
       accepted: true,

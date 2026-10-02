@@ -292,4 +292,90 @@ export class GoalExecutionReceiptRegistry {
       reason: 'accepted',
     });
   }
+
+  getReceipts(): readonly GoalExecutionReceipt[] {
+    return Object.freeze(
+      [...this.byReceiptId.values()]
+        .map((receipt) => receipt),
+    );
+  }
+
+  restore(
+    inputs: readonly unknown[],
+    trustedNowMs: number,
+  ): boolean {
+    if (
+      !Array.isArray(inputs)
+      || inputs.length > 10_000
+      || !safeInteger(trustedNowMs)
+      || this.byReceiptId.size !== 0
+      || this.byLeaseId.size !== 0
+      || this.byAttempt.size !== 0
+    ) {
+      return false;
+    }
+
+    const parsed: GoalExecutionReceipt[] = [];
+    const receiptIds = new Set<string>();
+    const leaseIds = new Set<string>();
+    const attemptKeys = new Set<string>();
+
+    for (const input of inputs) {
+      const receipt =
+        parseGoalExecutionReceipt(input);
+
+      if (
+        !receipt
+        || receipt.completedAtMs > trustedNowMs
+        || receiptIds.has(receipt.receiptId)
+        || leaseIds.has(receipt.leaseId)
+      ) {
+        return false;
+      }
+
+      const attemptKey =
+        [
+          receipt.goalId,
+          receipt.planId,
+          receipt.stepId,
+          receipt.generation,
+          receipt.attempt,
+        ].join(':');
+
+      if (attemptKeys.has(attemptKey)) {
+        return false;
+      }
+
+      receiptIds.add(receipt.receiptId);
+      leaseIds.add(receipt.leaseId);
+      attemptKeys.add(attemptKey);
+      parsed.push(receipt);
+    }
+
+    for (const receipt of parsed) {
+      const attemptKey =
+        [
+          receipt.goalId,
+          receipt.planId,
+          receipt.stepId,
+          receipt.generation,
+          receipt.attempt,
+        ].join(':');
+
+      this.byReceiptId.set(
+        receipt.receiptId,
+        receipt,
+      );
+      this.byLeaseId.set(
+        receipt.leaseId,
+        receipt,
+      );
+      this.byAttempt.set(
+        attemptKey,
+        receipt,
+      );
+    }
+
+    return true;
+  }
 }

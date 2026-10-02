@@ -71,6 +71,16 @@ const REGISTRATION_KEYS =
     'grantsCapabilityAuthority',
   ]);
 
+const STATE_KEYS =
+  new Set([
+    'registration',
+    'status',
+    'reasonCode',
+    'attempt',
+    'evidenceRef',
+    'updatedAtMs',
+  ]);
+
 export function parseGoalRollbackRegistration(
   input: unknown,
 ): GoalRollbackRegistration | null {
@@ -173,6 +183,100 @@ function sameRegistration(
   right: GoalRollbackRegistration,
 ): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+export function parseGoalRollbackState(
+  input: unknown,
+): GoalRollbackState | null {
+  const record = exactObject(input, STATE_KEYS);
+
+  if (!record) {
+    return null;
+  }
+
+  const registration =
+    parseGoalRollbackRegistration(
+      record.registration,
+    );
+
+  if (
+    !registration
+    || typeof record.status !== 'string'
+    || ![
+      'armed',
+      'required',
+      'executing',
+      'failed',
+      'resolved',
+    ].includes(record.status)
+    || !safeInteger(record.attempt)
+    || Number(record.attempt) > 32
+    || (
+      record.reasonCode !== null
+      && !safeReasonCode(record.reasonCode)
+    )
+    || (
+      record.evidenceRef !== null
+      && !safeReference(record.evidenceRef, 240)
+    )
+    || !safeInteger(record.updatedAtMs)
+    || Number(record.updatedAtMs)
+      < registration.registeredAtMs
+  ) {
+    return null;
+  }
+
+  const status =
+    record.status as GoalRollbackStatus;
+  const reasonCode =
+    record.reasonCode as string | null;
+  const evidenceRef =
+    record.evidenceRef as string | null;
+  const attempt = record.attempt as number;
+
+  if (
+    status === 'armed'
+      ? (
+          reasonCode !== null
+          || attempt !== 0
+          || evidenceRef !== null
+          || record.updatedAtMs
+            !== registration.registeredAtMs
+        )
+      : status === 'required'
+        ? (
+            reasonCode === null
+            || evidenceRef !== null
+          )
+        : status === 'executing'
+          ? (
+              reasonCode === null
+              || attempt < 1
+              || evidenceRef !== null
+            )
+          : status === 'failed'
+            ? (
+                reasonCode === null
+                || attempt < 1
+                || evidenceRef !== null
+              )
+            : (
+                reasonCode === null
+                || attempt < 1
+                || evidenceRef === null
+              )
+  ) {
+    return null;
+  }
+
+  return frozenState(
+    registration,
+    status,
+    reasonCode,
+    attempt,
+    evidenceRef,
+    record.updatedAtMs as number,
+  );
 }
 
 export class GoalRollbackRegistry {
@@ -577,6 +681,64 @@ export class GoalRollbackRegistry {
     return Object.freeze(
       [...this.byId.values()],
     );
+  }
+
+  restoreQuiescent(
+    inputs: readonly unknown[],
+    trustedNowMs: number,
+  ): boolean {
+    if (
+      !Array.isArray(inputs)
+      || inputs.length > 10_000
+      || !safeInteger(trustedNowMs)
+      || this.byId.size !== 0
+      || this.bySourceLease.size !== 0
+    ) {
+      return false;
+    }
+
+    const parsed: GoalRollbackState[] = [];
+    const ids = new Set<string>();
+    const leases = new Set<string>();
+
+    for (const input of inputs) {
+      const state =
+        parseGoalRollbackState(input);
+
+      if (
+        !state
+        || !['armed', 'resolved']
+          .includes(state.status)
+        || state.updatedAtMs > trustedNowMs
+        || ids.has(
+          state.registration.rollbackId,
+        )
+        || leases.has(
+          state.registration.sourceLeaseId,
+        )
+      ) {
+        return false;
+      }
+
+      ids.add(state.registration.rollbackId);
+      leases.add(
+        state.registration.sourceLeaseId,
+      );
+      parsed.push(state);
+    }
+
+    for (const state of parsed) {
+      this.byId.set(
+        state.registration.rollbackId,
+        state,
+      );
+      this.bySourceLease.set(
+        state.registration.sourceLeaseId,
+        state.registration.rollbackId,
+      );
+    }
+
+    return true;
   }
 
   requireAllArmed(
