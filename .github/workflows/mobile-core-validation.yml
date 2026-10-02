@@ -258,6 +258,9 @@ jobs:
       - name: Mobile Core security regression tests
         run: node --test test/mobile-core/*.test.mjs
 
+      - name: Competition intelligence contract gate
+        run: yarn competition:core
+
       - name: Expo Doctor
         run: npx --yes expo-doctor@1.20.4
 

@@ -53,7 +53,9 @@
     "device:preflight": "node ./scripts/section01-device-preflight.mjs",
     "release:preflight": "node ./scripts/production-release-preflight.mjs",
     "validate:core": "npm run typecheck && npx expo-doctor",
-    "benchmark:core": "node --test test/mobile-core/benchmark-arena.test.mjs"
+    "benchmark:core": "node --test test/mobile-core/benchmark-*.test.mjs",
+    "competition:core": "node --test test/mobile-core/benchmark-*.test.mjs test/mobile-core/intelligence-deliberation*.test.mjs",
+    "benchmark:report": "node ./scripts/benchmark-arena-report.mjs"
   },
   "private": true,
   "resolutions": {

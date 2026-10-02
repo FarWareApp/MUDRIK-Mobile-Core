@@ -76,3 +76,30 @@ A future release dashboard should show:
 
 The benchmark harness must never expose provider credentials, hidden evaluator
 answers or security-sensitive payloads in public reports.
+
+## Operational report command
+
+The repository now includes an executable report builder:
+
+    npm run benchmark:report -- \
+      --manifest <run-manifest.json> \
+      --cases <cases.json> \
+      --observations <observations.json>
+
+Use --out <path> to create a new JSON report file. Existing output files are
+not overwritten.
+
+Input files are size-bounded, strictly parsed and cross-checked against the
+manifest. Unknown contenders, unknown cases, suite mismatches and duplicate
+case inventory fail closed.
+
+## Release regression gate
+
+The benchmark gate can enforce minimum case coverage, zero or bounded rejected
+cases, a minimum weighted score, a maximum overall regression and a maximum
+per-dimension regression.
+
+Correctness, completion, tool reliability, factuality and recovery are the
+default required dimensions for a mature release benchmark. The gate is kept
+separate from the benchmark scorer so a product team cannot silently turn a
+measurement into release authority.
