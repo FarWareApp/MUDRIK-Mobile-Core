@@ -339,3 +339,77 @@ test('chat handler forwards validated conversation history only to the server-se
     { role: 'assistant', text: 'old answer' },
   ]);
 });
+
+
+test(
+  'rate limiter blocks a session before provider routing',
+  async () => {
+    let invoked = false;
+    let checks = 0;
+
+    const response =
+      await createIntelligenceChatHandler({
+        gateway: {
+          async invokePlan() {
+            invoked = true;
+            return {
+              ok: true,
+            };
+          },
+        },
+        authenticateBearer:
+          async () => ({
+            sessionId:
+              'sess_1111111111111111',
+          }),
+        routeSelector:
+          async () => ({
+            candidates: [
+              {
+                providerRef:
+                  'provider_alpha_1111111111111111',
+                modelRef:
+                  'model_alpha_1111111111111111',
+              },
+            ],
+            maxOutputTokens: 1024,
+          }),
+        rateLimiter: {
+          check(
+            subject,
+            _now,
+            { cost },
+          ) {
+            checks += 1;
+            assert.equal(
+              subject,
+              'sess_1111111111111111',
+            );
+            assert.equal(cost, 1);
+
+            return {
+              allowed: false,
+              reason: 'rate_limited',
+              retryAfterMs: 2500,
+            };
+          },
+        },
+        clock: () => 9000,
+      })(
+        makeRequest(),
+      );
+
+    assert.equal(
+      response.status,
+      429,
+    );
+    assert.equal(
+      response.headers.get(
+        'retry-after',
+      ),
+      '3',
+    );
+    assert.equal(invoked, false);
+    assert.equal(checks, 1);
+  },
+);
