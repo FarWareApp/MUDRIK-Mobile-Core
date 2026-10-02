@@ -138,4 +138,7 @@ export const translationCatalog:
     it: buildBetaCatalog('it'),
     pt: buildBetaCatalog('pt'),
     ru: buildBetaCatalog('ru'),
+    nl: buildBetaCatalog('nl'),
+    pl: buildBetaCatalog('pl'),
+    uk: buildBetaCatalog('uk'),
   };

@@ -8,6 +8,9 @@ export const SUPPORTED_LOCALES = [
   'it',
   'pt',
   'ru',
+  'nl',
+  'pl',
+  'uk',
 ] as const;
 
 export type AppLocale =
@@ -84,6 +87,24 @@ export const localeRegistry:
     ru: {
       nativeLabel: 'Русский',
       intlTag: 'ru-RU',
+      direction: 'ltr',
+      maturity: 'beta',
+    },
+    nl: {
+      nativeLabel: 'Nederlands',
+      intlTag: 'nl-NL',
+      direction: 'ltr',
+      maturity: 'beta',
+    },
+    pl: {
+      nativeLabel: 'Polski',
+      intlTag: 'pl-PL',
+      direction: 'ltr',
+      maturity: 'beta',
+    },
+    uk: {
+      nativeLabel: 'Українська',
+      intlTag: 'uk-UA',
       direction: 'ltr',
       maturity: 'beta',
     },

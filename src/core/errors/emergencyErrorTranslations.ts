@@ -74,6 +74,27 @@ export const emergencyErrorTranslations = {
     retry: 'Повторить',
     retryAccessibility: 'Перезапустить интерфейс приложения',
   },
+  nl: {
+    title: 'Er is een fout opgetreden in de MUDRIK-interface',
+    body: 'De app-interface kan veilig opnieuw worden gestart.',
+    referenceLabel: 'Referentie',
+    retry: 'Opnieuw proberen',
+    retryAccessibility: 'App-interface opnieuw starten',
+  },
+  pl: {
+    title: 'W interfejsie MUDRIK wystąpił błąd',
+    body: 'Interfejs aplikacji można bezpiecznie uruchomić ponownie.',
+    referenceLabel: 'Identyfikator',
+    retry: 'Spróbuj ponownie',
+    retryAccessibility: 'Uruchom ponownie interfejs aplikacji',
+  },
+  uk: {
+    title: 'В інтерфейсі MUDRIK сталася помилка',
+    body: 'Інтерфейс застосунку можна безпечно перезапустити.',
+    referenceLabel: 'Ідентифікатор',
+    retry: 'Спробувати ще раз',
+    retryAccessibility: 'Перезапустити інтерфейс застосунку',
+  },
 } as const satisfies Record<
   AppLocale,
   EmergencyErrorCopy

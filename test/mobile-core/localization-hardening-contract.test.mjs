@@ -37,6 +37,7 @@ const betaOverlays = fs.readFileSync(
 
 const supportedLocales = [
   'ar', 'de', 'en', 'tr', 'fr', 'es', 'it', 'pt', 'ru',
+  'nl', 'pl', 'uk',
 ];
 
 test(
@@ -129,7 +130,9 @@ test(
     assert.ok(catalog.includes('...englishCatalog'));
     assert.ok(catalog.includes('...betaTranslationOverlays[locale]'));
 
-    for (const locale of ['tr', 'fr', 'es', 'it', 'pt', 'ru']) {
+    for (const locale of [
+      'tr', 'fr', 'es', 'it', 'pt', 'ru', 'nl', 'pl', 'uk',
+    ]) {
       assert.ok(
         catalog.includes(
           locale + ": buildBetaCatalog('" + locale + "')",
@@ -140,6 +143,75 @@ test(
         betaOverlays.includes(locale + ': {'),
         locale,
       );
+    }
+  },
+);
+
+test(
+  'every beta locale translates the critical product surfaces before it is selectable',
+  () => {
+    const betaLocales = supportedLocales.filter(
+      (locale) => !['ar', 'de', 'en'].includes(locale),
+    );
+    const requiredKeys = [
+      'newConversation',
+      'composerPlaceholder',
+      'voice',
+      'conversations',
+      'projects',
+      'companion',
+      'settings',
+      'emptyChatTitle',
+      'homeCommandBody',
+      'homeCommandReady',
+      'homeVoiceDescription',
+      'homeConversationsDescription',
+      'homeProjectsDescription',
+      'homeCompanionDescription',
+      'homeSettingsDescription',
+      'homePresencePrivacy',
+      'homePresenceLocal',
+      'homePresenceVoice',
+      'homePresenceLanguages',
+      'voiceConversation',
+      'voiceRecorderTitle',
+      'voicePrivateCapture',
+      'voiceRecord',
+      'voicePause',
+      'voiceResume',
+      'voiceStop',
+      'companionPresenceTitle',
+      'companionPhaseIdle',
+      'projectsEmptyTitle',
+      'language',
+      'languageSystem',
+      'theme',
+      'settingsStatusReady',
+      'diagnostics',
+      'settingsPermissionsSection',
+    ];
+
+    for (let index = 0; index < betaLocales.length; index += 1) {
+      const locale = betaLocales[index];
+      const start = betaOverlays.indexOf('  ' + locale + ': {');
+      const nextLocale = betaLocales[index + 1];
+      const end = nextLocale
+        ? betaOverlays.indexOf('  ' + nextLocale + ': {', start + 1)
+        : betaOverlays.indexOf('} satisfies Record<', start + 1);
+
+      assert.notEqual(start, -1, locale);
+      assert.ok(end > start, locale);
+
+      const block = betaOverlays.slice(start, end);
+
+      for (const key of requiredKeys) {
+        assert.ok(
+          block.includes(
+            '\n    ' + key + ':',
+          ),
+          locale + ':' + key,
+        );
+      }
     }
   },
 );

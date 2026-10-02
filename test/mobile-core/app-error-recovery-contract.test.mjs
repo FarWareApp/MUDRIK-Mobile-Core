@@ -26,6 +26,20 @@ const systemLocale = fs.readFileSync(
   'src/core/localization/resolveSystemLocale.ts',
   'utf8',
 );
+const localeRegistry = fs.readFileSync(
+  'src/core/localization/localeRegistry.ts',
+  'utf8',
+);
+
+const supportedLocaleList =
+  localeRegistry
+    .slice(
+      localeRegistry.indexOf('SUPPORTED_LOCALES = ['),
+      localeRegistry.indexOf('] as const;'),
+    )
+    .match(/'[a-z]{2}'/g)
+    ?.map((value) => value.slice(1, -1))
+  ?? [];
 
 test(
   'error boundary keeps recovery logic separate from emergency presentation',
@@ -98,7 +112,7 @@ test(
 
       assert.equal(
         catalogBody.match(pattern)?.length ?? 0,
-        9,
+        supportedLocaleList.length,
       );
     }
   },
