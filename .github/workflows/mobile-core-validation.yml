@@ -261,6 +261,9 @@ jobs:
       - name: Competition intelligence contract gate
         run: yarn competition:core
 
+      - name: Brain and agent internal contract gate
+        run: yarn internal:core
+
       - name: Expo Doctor
         run: npx --yes expo-doctor@1.20.4
 

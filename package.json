@@ -55,7 +55,10 @@
     "validate:core": "npm run typecheck && npx expo-doctor",
     "benchmark:core": "node --test test/mobile-core/benchmark-*.test.mjs",
     "competition:core": "node --test test/mobile-core/benchmark-*.test.mjs test/mobile-core/intelligence-deliberation*.test.mjs",
-    "benchmark:report": "node ./scripts/benchmark-arena-report.mjs"
+    "benchmark:report": "node ./scripts/benchmark-arena-report.mjs",
+    "brain:core": "node --test test/mobile-core/brain-*.test.mjs",
+    "agent:core": "node --test test/mobile-core/agent-*.test.mjs",
+    "internal:core": "npm run brain:core && npm run agent:core && npm run competition:core"
   },
   "private": true,
   "resolutions": {
