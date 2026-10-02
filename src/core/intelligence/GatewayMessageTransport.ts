@@ -90,10 +90,10 @@ function boundedHistory(
     return [];
   }
 
-  const selected: Array<{
+  const selected: {
     role: 'user' | 'assistant';
     text: string;
-  }> = [];
+  }[] = [];
   let characters = 0;
 
   for (
