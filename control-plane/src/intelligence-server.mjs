@@ -36,6 +36,9 @@ const PROVIDER_REF =
 const MODEL_REF =
   'model_general_1111111111111111';
 
+const FAST_MODEL_REF =
+  'model_fast_2222222222222222';
+
 function requiredEnv(
   env,
   name,
@@ -93,6 +96,12 @@ export function buildIntelligenceRuntime(
       'MUDRIK_OPENAI_MODEL',
     );
 
+  const openAiFastModel =
+    requiredEnv(
+      env,
+      'MUDRIK_OPENAI_FAST_MODEL',
+    );
+
   const accessToken =
     requiredEnv(
       env,
@@ -120,24 +129,46 @@ export function buildIntelligenceRuntime(
       sessionSecret,
     );
 
-  const adapter =
+  const adapterOptions = {
+    providerRef: PROVIDER_REF,
+    credentialRef:
+      'secret_ref_openai_primary',
+    credentialResolver:
+      async () => openAiApiKey,
+    fetchImpl,
+    instructions:
+      'You are MUDRIK. Follow the user language. Be accurate, concise when possible, and do not claim actions that were not actually completed.',
+  };
+
+  const primaryAdapter =
     new OpenAIResponsesAdapter({
-      providerRef: PROVIDER_REF,
+      ...adapterOptions,
       modelRef: MODEL_REF,
       apiModel: openAiModel,
-      credentialRef:
-        'secret_ref_openai_primary',
-      credentialResolver:
-        async () => openAiApiKey,
-      fetchImpl,
-      instructions:
-        'You are MUDRIK. Follow the user language. Be accurate, concise when possible, and do not claim actions that were not actually completed.',
     });
 
+  const fastAdapter =
+    openAiFastModel === openAiModel
+      ? null
+      : new OpenAIResponsesAdapter({
+          ...adapterOptions,
+          modelRef:
+            FAST_MODEL_REF,
+          apiModel:
+            openAiFastModel,
+        });
+
   const gateway =
-    new IntelligenceProviderGateway([
-      adapter,
-    ]);
+    new IntelligenceProviderGateway(
+      fastAdapter
+        ? [
+            primaryAdapter,
+            fastAdapter,
+          ]
+        : [
+            primaryAdapter,
+          ],
+    );
 
   const chatHandler =
     createIntelligenceChatHandler({
@@ -149,14 +180,38 @@ export function buildIntelligenceRuntime(
             Date.now(),
           ),
       routeSelector:
-        async () =>
+        async ({
+          inputTextLength,
+        }) =>
           Object.freeze({
-            providerRef:
-              PROVIDER_REF,
-            modelRef:
-              MODEL_REF,
+            candidates:
+              fastAdapter
+                ? Object.freeze([
+                    Object.freeze({
+                      providerRef:
+                        PROVIDER_REF,
+                      modelRef:
+                        MODEL_REF,
+                    }),
+                    Object.freeze({
+                      providerRef:
+                        PROVIDER_REF,
+                      modelRef:
+                        FAST_MODEL_REF,
+                    }),
+                  ])
+                : Object.freeze([
+                    Object.freeze({
+                      providerRef:
+                        PROVIDER_REF,
+                      modelRef:
+                        MODEL_REF,
+                    }),
+                  ]),
             maxOutputTokens:
-              4096,
+              inputTextLength > 40_000
+                ? 8192
+                : 4096,
           }),
     });
 
@@ -171,6 +226,10 @@ export function buildIntelligenceRuntime(
     sessionHandler,
     providerRef: PROVIDER_REF,
     modelRef: MODEL_REF,
+    fastModelRef:
+      fastAdapter
+        ? FAST_MODEL_REF
+        : null,
   });
 }
 
