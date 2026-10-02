@@ -14,6 +14,10 @@ import type {
 } from './intelligenceFailover';
 
 import type {
+  IntelligenceCircuitBreakerRegistry,
+} from './intelligenceCircuitBreaker';
+
+import type {
   IntelligenceProviderRegistry,
   IntelligenceAdapterBinding,
 } from './intelligenceRegistry';
@@ -186,6 +190,8 @@ export class IntelligenceExecutionCoordinator {
       IntelligenceAdapterResolver,
     private readonly clock:
       () => number = () => Date.now(),
+    private readonly circuitBreaker:
+      IntelligenceCircuitBreakerRegistry | null = null,
   ) {}
 
   execute(
@@ -331,6 +337,66 @@ export class IntelligenceExecutionCoordinator {
             });
           }
 
+          const circuitAdmission =
+            this.circuitBreaker?.admit(
+              candidate.providerRef,
+              candidate.modelRef,
+              now,
+            ) ?? null;
+
+          if (
+            circuitAdmission
+            && !circuitAdmission.allowed
+          ) {
+            lastFailure =
+              'provider_unavailable';
+
+            const next =
+              routeCandidates[index + 1];
+
+            if (!next) {
+              break;
+            }
+
+            const decision =
+              this.registry
+                .evaluateIssuedFailover(
+                  {
+                    plan,
+                    currentProviderRef:
+                      candidate.providerRef,
+                    currentModelRef:
+                      candidate.modelRef,
+                    nextProviderRef:
+                      next.providerRef,
+                    nextModelRef:
+                      next.modelRef,
+                    attemptPhase: 'selected',
+                    failureCode:
+                      lastFailure,
+                    retryable: true,
+                    explicitRestart: false,
+                    generationWillRotate: false,
+                    bufferedInputReplayAvailable:
+                      input.bufferedInputReplayAvailable,
+                  },
+                  now,
+                );
+
+            if (!decision.allowed) {
+              break;
+            }
+
+            continue;
+          }
+
+          this.circuitBreaker
+            ?.recordAttemptStarted(
+              candidate.providerRef,
+              candidate.modelRef,
+              now,
+            );
+
           attempts += 1;
 
           const binding =
@@ -345,6 +411,13 @@ export class IntelligenceExecutionCoordinator {
           if (!binding) {
             lastFailure =
               'provider_unavailable';
+            this.circuitBreaker
+              ?.recordFailure(
+                candidate.providerRef,
+                candidate.modelRef,
+                lastFailure,
+                now,
+              );
 
             const next =
               routeCandidates[index + 1];
@@ -467,6 +540,13 @@ export class IntelligenceExecutionCoordinator {
           if (!invocation) {
             lastFailure =
               'invalid_response';
+            this.circuitBreaker
+              ?.recordFailure(
+                candidate.providerRef,
+                candidate.modelRef,
+                lastFailure,
+                now,
+              );
             break;
           }
 
@@ -483,6 +563,13 @@ export class IntelligenceExecutionCoordinator {
           if (!tracker) {
             lastFailure =
               'provider_unavailable';
+            this.circuitBreaker
+              ?.recordFailure(
+                candidate.providerRef,
+                candidate.modelRef,
+                lastFailure,
+                now,
+              );
             break;
           }
 
@@ -743,6 +830,16 @@ export class IntelligenceExecutionCoordinator {
           if (
             resolution.kind === 'success'
           ) {
+            this.circuitBreaker
+              ?.recordSuccess(
+                candidate.providerRef,
+                candidate.modelRef,
+                Math.max(
+                  now,
+                  resolution.completedAtMs,
+                ),
+              );
+
             return outcome({
               status: 'succeeded',
               plan,
@@ -761,6 +858,13 @@ export class IntelligenceExecutionCoordinator {
 
           lastFailure =
             resolution.failure.code;
+          this.circuitBreaker
+            ?.recordFailure(
+              candidate.providerRef,
+              candidate.modelRef,
+              lastFailure,
+              Math.max(now, this.clock()),
+            );
 
           const next =
             routeCandidates[index + 1];

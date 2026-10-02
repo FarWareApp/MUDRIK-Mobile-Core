@@ -17,6 +17,12 @@ const {
   'src/core/intelligence/intelligenceExecutionCoordinator.ts',
 );
 
+const {
+  IntelligenceCircuitBreakerRegistry,
+} = loadTypeScriptModule(
+  'src/core/intelligence/intelligenceCircuitBreaker.ts',
+);
+
 const NOW = 3_000_000_000;
 const ACCOUNT = 'acct_1111111111111111';
 const WORKSPACE =
@@ -678,5 +684,102 @@ test('attempt budget prevents unbounded provider retries', async () => {
   assert.equal(
     result.failureCode,
     'timeout',
+  );
+});
+
+test('open provider circuit is skipped before spending an attempt', async () => {
+  const { registry, plan } =
+    setupRegistry();
+
+  const breaker =
+    new IntelligenceCircuitBreakerRegistry({
+      failureThreshold: 1,
+      failureWindowMs: 60_000,
+      cooldownMs: 30_000,
+      halfOpenMaxAttempts: 1,
+      halfOpenSuccessesToClose: 1,
+    });
+
+  breaker.recordFailure(
+    PROVIDER_A,
+    MODEL_A,
+    'timeout',
+    NOW,
+  );
+
+  const coordinator =
+    new IntelligenceExecutionCoordinator(
+      registry,
+      resolver([
+        successAdapter(PROVIDER_A, MODEL_A),
+        successAdapter(PROVIDER_B, MODEL_B),
+      ]),
+      () => NOW,
+      breaker,
+    );
+
+  const result =
+    await coordinator
+      .execute(
+        executionInput(plan),
+      )
+      .result;
+
+  assert.equal(result.status, 'succeeded');
+  assert.equal(result.providerRef, PROVIDER_B);
+  assert.equal(result.attempts, 1);
+});
+
+test('coordinator failures feed the provider circuit breaker', async () => {
+  const { registry, plan } =
+    setupRegistry();
+
+  const breaker =
+    new IntelligenceCircuitBreakerRegistry({
+      failureThreshold: 1,
+      failureWindowMs: 60_000,
+      cooldownMs: 30_000,
+      halfOpenMaxAttempts: 1,
+      halfOpenSuccessesToClose: 1,
+    });
+
+  const coordinator =
+    new IntelligenceExecutionCoordinator(
+      registry,
+
+      resolver([
+        successAdapter(
+          PROVIDER_A,
+          MODEL_A,
+          {
+            fail: {
+              code: 'timeout',
+              retryable: true,
+              providerSafeMessage: null,
+            },
+          },
+        ),
+      ]),
+      () => NOW,
+      breaker,
+    );
+
+  const result =
+    await coordinator
+      .execute(
+        executionInput(
+          plan,
+          { maxAttempts: 1 },
+        ),
+      )
+      .result;
+
+  assert.equal(result.status, 'failed');
+  assert.equal(
+    breaker.getSnapshot(
+      PROVIDER_A,
+      MODEL_A,
+    )?.state,
+    'open',
   );
 });
