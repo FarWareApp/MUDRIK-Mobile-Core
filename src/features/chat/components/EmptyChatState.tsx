@@ -39,6 +39,9 @@ import {
   HomeCommandTile,
 } from './HomeCommandTile';
 import {
+  HomePresenceDeck,
+} from './HomePresenceDeck';
+import {
   HomeVoiceIcon,
 } from './HomeVoiceIcon';
 import {
@@ -198,6 +201,8 @@ export const EmptyChatState = memo(
           </Text>
         </View>
       </PremiumHeroSurface>
+
+      <HomePresenceDeck />
 
       <View style={styles.commandGrid}>
         <HomeCommandTile

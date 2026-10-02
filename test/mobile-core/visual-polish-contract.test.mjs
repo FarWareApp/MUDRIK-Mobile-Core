@@ -414,3 +414,39 @@ test(
     }
   },
 );
+
+test(
+  'home presence deck exposes only real local-first product facts',
+  () => {
+    const deck = fs.readFileSync(
+      'src/features/chat/components/HomePresenceDeck.tsx',
+      'utf8',
+    );
+    const emptyState = fs.readFileSync(
+      'src/features/chat/components/EmptyChatState.tsx',
+      'utf8',
+    );
+    const voiceProfile = fs.readFileSync(
+      'src/features/voice/VoiceRecordingProfile.ts',
+      'utf8',
+    );
+
+    assert.match(emptyState, /HomePresenceDeck/);
+    assert.match(deck, /MUDRIK_VOICE_SAMPLE_RATE/);
+    assert.match(deck, /AR · DE · EN/);
+    assert.match(deck, /flagshipPalette/);
+    assert.match(deck, /LinearGradient/);
+    assert.match(deck, /homePresenceLocal/);
+    assert.match(deck, /homePresenceVoice/);
+    assert.match(deck, /homePresenceLanguages/);
+    assert.match(
+      voiceProfile,
+      /MUDRIK_VOICE_SAMPLE_RATE\s*=\s*48_000/,
+    );
+
+    assert.doesNotMatch(
+      deck,
+      /Math\.random|92%|127|fake|mock/i,
+    );
+  },
+);

@@ -77,15 +77,19 @@ test(
 );
 
 test(
-  'composer surface uses adaptive glass with explicit stable fallback colors',
+  'composer surface uses flagship glass hierarchy with focused depth',
   () => {
     assert.match(composerSurface, /AdaptiveGlassSurface/);
-    assert.match(composerSurface, /surfaceInput/);
-    assert.match(composerSurface, /fallbackColor=\{surfaceColor\}/);
-    assert.match(composerSurface, /tintColor=\{surfaceColor\}/);
-    assert.match(composerSurface, /focusedSurface/);
-    assert.match(composerSurface, /shadowColor/);
-    assert.match(composerSurface, /elevation:/);
+    assert.match(composerSurface, /LinearGradient/);
+    assert.match(composerSurface, /flagshipPalette/);
+    assert.match(composerSurface, /palette\.heroStrong/);
+    assert.match(composerSurface, /palette\.card/);
+    assert.match(composerSurface, /depth\.elevated/);
+    assert.match(composerSurface, /depth\.subtle/);
+    assert.match(composerSurface, /fallbackColor="transparent"/);
+    assert.match(composerSurface, /tintColor="transparent"/);
+    assert.match(composerSurface, /focusRail/);
+    assert.match(composerSurface, /cornerPlate/);
     assert.doesNotMatch(textInput, /borderWidth:/);
     assert.doesNotMatch(textInput, /backgroundColor:/);
 
@@ -152,13 +156,18 @@ test(
 );
 
 test(
-  'composer action targets stay at least 44 by 44 and use motion tokens',
+  'composer action targets exceed minimum touch size and use flagship motion-aware depth',
   () => {
-    assert.match(actionButton, /width:\s*44/);
-    assert.match(actionButton, /height:\s*44/);
-    assert.match(actionButton, /surfacePressed/);
+    assert.match(actionButton, /width:\s*46/);
+    assert.match(actionButton, /height:\s*46/);
+    assert.match(actionButton, /LinearGradient/);
+    assert.match(actionButton, /flagshipPalette/);
+    assert.match(actionButton, /depth\.elevated/);
+    assert.match(actionButton, /depth\.subtle/);
+    assert.match(actionButton, /useAccessibility/);
+    assert.match(actionButton, /reducedMotion/);
     assert.match(actionButton, /motion\.press\.scale/);
-    assert.match(actionButton, /shadowOpacity/);
+    assert.match(actionButton, /metalTick/);
     assert.doesNotMatch(actionButton, /\?\s*0\.95/);
   },
 );

@@ -4,11 +4,30 @@ import React, {
 import {
   Pressable,
   StyleSheet,
+  View,
 } from 'react-native';
+import {
+  LinearGradient,
+} from 'expo-linear-gradient';
 
-import { useTheme } from '../../../../design-system/theme/ThemeProvider';
-import { motion } from '../../../../design-system/tokens/motion';
-import { radius } from '../../../../design-system/tokens/radius';
+import {
+  useAccessibility,
+} from '../../../../core/accessibility/AccessibilityProvider';
+import {
+  useTheme,
+} from '../../../../design-system/theme/ThemeProvider';
+import {
+  depth,
+} from '../../../../design-system/tokens/depth';
+import {
+  flagshipPalette,
+} from '../../../../design-system/tokens/flagship';
+import {
+  motion,
+} from '../../../../design-system/tokens/motion';
+import {
+  radius,
+} from '../../../../design-system/tokens/radius';
 
 type Props = PropsWithChildren<{
   accessibilityLabel: string;
@@ -24,57 +43,48 @@ export function ComposerActionButton({
   emphasized = false,
   onPress,
 }: Props) {
-  const { colors } = useTheme();
-  const unavailable = disabled || !onPress;
+  const {
+    colors,
+    mode,
+  } = useTheme();
+  const { reducedMotion } =
+    useAccessibility();
+  const palette =
+    flagshipPalette[mode];
+  const unavailable =
+    disabled || !onPress;
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled: unavailable }}
+      accessibilityLabel={
+        accessibilityLabel
+      }
+      accessibilityState={{
+        disabled: unavailable,
+      }}
       disabled={unavailable}
       hitSlop={4}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        emphasized
+          ? depth.elevated
+          : depth.subtle,
         {
-          backgroundColor: emphasized
-            ? colors.accent
-            : pressed
-              ? colors.surfacePressed
-              : colors.surfaceElevated,
-          borderColor: emphasized
-            ? 'transparent'
-            : pressed
-              ? colors.accentSoft
-              : colors.border,
+          shadowColor:
+            colors.shadow,
           opacity: unavailable
             ? 0.4
             : pressed
-              ? 0.88
+              ? 0.9
               : 1,
-          shadowColor: colors.shadow,
-          shadowOpacity:
-            emphasized && !unavailable
-              ? pressed
-                ? 0.14
-                : 0.2
-              : 0,
-          shadowRadius: pressed ? 5 : 7,
-          shadowOffset: {
-            width: 0,
-            height: pressed ? 2 : 3,
-          },
-          elevation:
-            emphasized && !unavailable
-              ? pressed
-                ? 2
-                : 3
-              : 0,
           transform: [
             {
               scale:
-                pressed && !unavailable
+                pressed
+                && !unavailable
+                && !reducedMotion
                   ? motion.press.scale
                   : 1,
             },
@@ -82,20 +92,105 @@ export function ComposerActionButton({
         },
       ]}
     >
-      {children}
+      {({ pressed }) => (
+        <LinearGradient
+          colors={
+            emphasized
+              ? pressed
+                ? palette
+                    .primaryActionPressed
+                : palette
+                    .primaryAction
+              : pressed
+                ? palette
+                    .secondaryAction
+                : palette.card
+          }
+          start={{
+            x: 0.04,
+            y: 0,
+          }}
+          end={{
+            x: 0.96,
+            y: 1,
+          }}
+          style={[
+            styles.surface,
+            {
+              borderColor:
+                emphasized
+                  ? palette.glow
+                  : palette.hairline,
+            },
+          ]}
+        >
+          <View
+            importantForAccessibility="no"
+            pointerEvents="none"
+            style={[
+              styles.highlight,
+              {
+                backgroundColor:
+                  emphasized
+                    ? 'rgba(255,255,255,0.14)'
+                    : palette.shine,
+              },
+            ]}
+          />
+
+          <View
+            importantForAccessibility="no"
+            pointerEvents="none"
+            style={[
+              styles.metalTick,
+              {
+                backgroundColor:
+                  emphasized
+                    ? palette
+                        .primaryActionText
+                    : palette.metal,
+              },
+            ]}
+          />
+
+          {children}
+        </LinearGradient>
+      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    width: 44,
-    height: 44,
+    width: 46,
+    height: 46,
+    borderRadius: radius.pill,
+    flexShrink: 0,
+  },
+  surface: {
+    flex: 1,
+    overflow: 'hidden',
     borderWidth:
       StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
+  },
+  highlight: {
+    position: 'absolute',
+    top: 0,
+    start: 9,
+    end: 9,
+    height: 1,
+    opacity: 0.78,
+  },
+  metalTick: {
+    position: 'absolute',
+    top: 7,
+    end: 7,
+    width: 8,
+    height: 2,
+    borderRadius: radius.pill,
+    opacity: 0.38,
   },
 });
