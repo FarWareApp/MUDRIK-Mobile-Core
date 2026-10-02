@@ -59,6 +59,12 @@ import {
   type GoalCheckpointTrustAnchor,
 } from './goalCheckpoint';
 
+import {
+  evaluateGoalWatchdog,
+  type GoalWatchdogDecision,
+  type GoalWatchdogPolicy,
+} from './goalWatchdog';
+
 export interface GoalExecutionKernelIdFactory {
   nextLeaseId(): string;
   nextRollbackId(): string;
@@ -308,6 +314,42 @@ export class GoalExecutionKernel {
 
   getRollbackStates() {
     return this.rollbacks.getStates();
+  }
+
+  assessLiveness(
+    watchdogPolicy: GoalWatchdogPolicy,
+    runtimeTrusted: boolean,
+    lastCheckpointAtMs: number | null,
+    trustedNowMs: number,
+  ): GoalWatchdogDecision {
+    return evaluateGoalWatchdog(
+      this.goal,
+      {
+        goalId: this.goal.goalId,
+        planId: this.plan.planId,
+        state: this.tracker.getState(),
+        activePreparation:
+          this.active !== null,
+        activeSideEffect:
+          this.active?.step.sideEffect
+          ?? false,
+        activeLeaseExpiresAtMs:
+          this.active?.lease.expiresAtMs
+          ?? null,
+        openRollbackCount:
+          this.rollbacks
+            .getOpenRollbacks()
+            .length,
+        budgetHealthy:
+          this.budget.canContinue(
+            trustedNowMs,
+          ),
+        runtimeTrusted,
+        lastCheckpointAtMs,
+        observedAtMs: trustedNowMs,
+      },
+      watchdogPolicy,
+    );
   }
 
   createCheckpoint(
