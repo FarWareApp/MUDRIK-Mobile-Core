@@ -1,4 +1,6 @@
-import type { AppLocale } from '../localization/translations';
+import type {
+  AppLocale,
+} from '../localization/AppLocale';
 
 type EmergencyErrorCopy = {
   title: string;
@@ -30,4 +32,49 @@ export const emergencyErrorTranslations = {
     retry: 'Retry',
     retryAccessibility: 'Restart application interface',
   },
-} as const satisfies Record<AppLocale, EmergencyErrorCopy>;
+  tr: {
+    title: 'MUDRIK arayüzünde bir hata oluştu',
+    body: 'Uygulama arayüzü güvenli bir şekilde yeniden başlatılabilir.',
+    referenceLabel: 'Referans',
+    retry: 'Tekrar dene',
+    retryAccessibility: 'Uygulama arayüzünü yeniden başlat',
+  },
+  fr: {
+    title: 'Une erreur est survenue dans l’interface MUDRIK',
+    body: 'L’interface de l’application peut être redémarrée en toute sécurité.',
+    referenceLabel: 'Référence',
+    retry: 'Réessayer',
+    retryAccessibility: 'Redémarrer l’interface de l’application',
+  },
+  es: {
+    title: 'Se produjo un error en la interfaz de MUDRIK',
+    body: 'La interfaz de la aplicación puede reiniciarse de forma segura.',
+    referenceLabel: 'Referencia',
+    retry: 'Reintentar',
+    retryAccessibility: 'Reiniciar la interfaz de la aplicación',
+  },
+  it: {
+    title: 'Si è verificato un errore nell’interfaccia MUDRIK',
+    body: 'L’interfaccia dell’app può essere riavviata in modo sicuro.',
+    referenceLabel: 'Riferimento',
+    retry: 'Riprova',
+    retryAccessibility: 'Riavvia l’interfaccia dell’app',
+  },
+  pt: {
+    title: 'Ocorreu um erro na interface do MUDRIK',
+    body: 'A interface da aplicação pode ser reiniciada com segurança.',
+    referenceLabel: 'Referência',
+    retry: 'Tentar novamente',
+    retryAccessibility: 'Reiniciar a interface da aplicação',
+  },
+  ru: {
+    title: 'В интерфейсе MUDRIK произошла ошибка',
+    body: 'Интерфейс приложения можно безопасно перезапустить.',
+    referenceLabel: 'Ссылка',
+    retry: 'Повторить',
+    retryAccessibility: 'Перезапустить интерфейс приложения',
+  },
+} as const satisfies Record<
+  AppLocale,
+  EmergencyErrorCopy
+>;

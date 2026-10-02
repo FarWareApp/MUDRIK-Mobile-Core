@@ -145,10 +145,15 @@ test(
       assert.match(
         translationCatalog,
         new RegExp(
-          `${locale}: \\{[\\s\\S]*?\\.\\.\\.settingsTranslations\\.${locale}`,
+          '\\.\\.\\.settingsTranslations\\.' + locale,
         ),
       );
     }
+
+    assert.match(
+      translationCatalog,
+      /function buildBetaCatalog/,
+    );
   },
 );
 

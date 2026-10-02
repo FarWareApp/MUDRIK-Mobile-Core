@@ -324,8 +324,10 @@ test(
   'conversation timestamps use locale aware deterministic formatting',
   () => {
     assert.match(updatedAtFormatter, /Intl\.DateTimeFormat/);
-    assert.match(updatedAtFormatter, /de-DE/);
-    assert.match(updatedAtFormatter, /en-US/);
+    assert.match(
+      updatedAtFormatter,
+      /getLocaleDefinition\(locale\)\.intlTag/,
+    );
     assert.match(updatedAtFormatter, /Number\.isSafeInteger/);
   },
 );
@@ -357,10 +359,19 @@ test(
       assert.match(
         translationCatalog,
         new RegExp(
-          `${locale}: \\{[\\s\\S]*?\\.\\.\\.conversationTranslations\\.${locale}`,
+          '\\.\\.\\.conversationTranslations\\.' + locale,
         ),
       );
     }
+
+    assert.match(
+      translationCatalog,
+      /function buildBetaCatalog/,
+    );
+    assert.match(
+      translationCatalog,
+      /\.\.\.englishCatalog/,
+    );
   },
 );
 

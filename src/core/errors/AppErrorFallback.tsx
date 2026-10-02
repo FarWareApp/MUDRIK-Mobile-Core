@@ -7,6 +7,9 @@ import {
   View,
 } from 'react-native';
 
+import {
+  isRtlLocale,
+} from '../localization/AppLocale';
 import { resolveSystemLocale } from '../localization/resolveSystemLocale';
 import {
   darkColors,
@@ -29,7 +32,7 @@ export function AppErrorFallback({
 }: Props) {
   const systemScheme = useColorScheme();
   const locale = resolveSystemLocale();
-  const isRTL = locale === 'ar';
+  const isRTL = isRtlLocale(locale);
   const colors = systemScheme === 'light'
     ? lightColors
     : darkColors;

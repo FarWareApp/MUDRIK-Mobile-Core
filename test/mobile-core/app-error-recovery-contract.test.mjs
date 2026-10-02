@@ -66,7 +66,7 @@ test(
 );
 
 test(
-  'emergency copy is complete for Arabic German and English',
+  'emergency copy is complete for every supported locale',
   () => {
     const catalogStart = emergencyTranslations.indexOf(
       'export const emergencyErrorTranslations = {',
@@ -98,7 +98,7 @@ test(
 
       assert.equal(
         catalogBody.match(pattern)?.length ?? 0,
-        3,
+        9,
       );
     }
   },

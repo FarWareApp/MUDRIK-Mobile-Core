@@ -1,4 +1,6 @@
-export type AppLocale = 'ar' | 'de' | 'en';
+export type {
+  AppLocale,
+} from './AppLocale';
 
 export const translations = {
   ar: {

@@ -1,27 +1,23 @@
-import {
+import type {
   AppLocale,
-} from '../../../core/localization/translations';
-
-const localeTags:
-  Record<AppLocale, string> = {
-    ar: 'ar',
-    de: 'de-DE',
-    en: 'en-US',
-  };
+} from '../../../core/localization/AppLocale';
+import {
+  getLocaleDefinition,
+} from '../../../core/localization/AppLocale';
 
 export function formatConversationUpdatedAt(
   updatedAt: number,
   locale: AppLocale,
 ): string {
   if (
-    !Number.isSafeInteger(updatedAt) ||
-    updatedAt < 0
+    !Number.isSafeInteger(updatedAt)
+    || updatedAt < 0
   ) {
     return '';
   }
 
   return new Intl.DateTimeFormat(
-    localeTags[locale],
+    getLocaleDefinition(locale).intlTag,
     {
       year: 'numeric',
       month: 'short',

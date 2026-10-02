@@ -184,9 +184,14 @@ test(
       assert.match(
         translationCatalog,
         new RegExp(
-          `${locale}: \\{[\\s\\S]*?\\.\\.\\.permissionTranslations\\.${locale}`,
+          '\\.\\.\\.permissionTranslations\\.' + locale,
         ),
       );
     }
+
+    assert.match(
+      translationCatalog,
+      /function buildBetaCatalog/,
+    );
   },
 );

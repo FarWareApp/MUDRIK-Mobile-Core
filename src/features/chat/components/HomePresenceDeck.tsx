@@ -9,6 +9,9 @@ import {
 } from 'expo-linear-gradient';
 
 import {
+  SUPPORTED_LOCALES,
+} from '../../../core/localization/AppLocale';
+import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
 import {
@@ -178,7 +181,9 @@ export function HomePresenceDeck() {
         eyebrow={
           t('homePresenceLanguages')
         }
-        value="AR · DE · EN"
+        value={String(
+          SUPPORTED_LOCALES.length,
+        )}
       />
     </LinearGradient>
   );

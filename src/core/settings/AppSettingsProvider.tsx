@@ -16,6 +16,9 @@ import {
 import {
   SettingsRepository,
 } from '../../contracts/SettingsRepository';
+import {
+  isAppLocale,
+} from '../localization/AppLocale';
 
 export type AppSettingsErrorCode =
   | 'load'
@@ -70,9 +73,18 @@ export function AppSettingsProvider({
     try {
       const stored = await repository.getAll();
 
+      const storedLanguage =
+        stored.language;
+      const language =
+        storedLanguage === 'system'
+        || isAppLocale(storedLanguage)
+          ? storedLanguage
+          : DEFAULT_APP_SETTINGS.language;
+
       setSettings({
         ...DEFAULT_APP_SETTINGS,
         ...stored,
+        language,
       });
       setError(null);
     } catch {

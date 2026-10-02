@@ -488,7 +488,9 @@ test(
 
     assert.match(emptyState, /HomePresenceDeck/);
     assert.match(deck, /MUDRIK_VOICE_SAMPLE_RATE/);
-    assert.match(deck, /AR · DE · EN/);
+    assert.match(deck, /SUPPORTED_LOCALES/);
+    assert.match(deck, /SUPPORTED_LOCALES\.length/);
+    assert.doesNotMatch(deck, /AR · DE · EN/);
     assert.match(deck, /flagshipPalette/);
     assert.match(deck, /LinearGradient/);
     assert.match(deck, /homePresenceLocal/);

@@ -16,6 +16,9 @@ import type {
   AppLocale,
 } from './AppLocale';
 import {
+  isRtlLocale,
+} from './AppLocale';
+import {
   TranslationKey,
   translationCatalog,
 } from './translationCatalog';
@@ -73,7 +76,7 @@ export function LocaleProvider({
     () => ({
       locale,
       preference: settings.language,
-      isRTL: locale === 'ar',
+      isRTL: isRtlLocale(locale),
       setLocale,
       useSystemLocale,
       t: (key: TranslationKey) =>

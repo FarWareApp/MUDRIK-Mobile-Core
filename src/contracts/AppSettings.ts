@@ -1,3 +1,7 @@
+import type {
+  AppLocale,
+} from '../core/localization/AppLocale';
+
 export type ThemePreference =
   | 'system'
   | 'light'
@@ -5,9 +9,7 @@ export type ThemePreference =
 
 export type LanguagePreference =
   | 'system'
-  | 'ar'
-  | 'de'
-  | 'en';
+  | AppLocale;
 
 export type AppSettings = {
   theme: ThemePreference;

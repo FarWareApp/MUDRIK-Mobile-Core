@@ -17,6 +17,9 @@ import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
 import {
+  localeRegistry,
+} from '../../../core/localization/AppLocale';
+import {
   PremiumHeroSurface,
 } from '../../../design-system/components/PremiumHeroSurface';
 import {
@@ -117,11 +120,8 @@ export function SettingsSystemOverview({
         : `${grantedCount}/${permissions.length}`;
 
   const languageLabel =
-    locale === 'ar'
-      ? 'العربية'
-      : locale === 'de'
-        ? 'Deutsch'
-        : 'English';
+    localeRegistry[locale]
+      .nativeLabel;
 
   const themeLabel =
     mode === 'dark'

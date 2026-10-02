@@ -70,9 +70,14 @@ test(
       assert.match(
         translationCatalog,
         new RegExp(
-          `${locale}: \\{[\\s\\S]*?\\.\\.\\.runtimeTranslations\\.${locale}`,
+          '\\.\\.\\.runtimeTranslations\\.' + locale,
         ),
       );
     }
+
+    assert.match(
+      translationCatalog,
+      /function buildBetaCatalog/,
+    );
   },
 );

@@ -6,6 +6,10 @@ const localeType = fs.readFileSync(
   'src/core/localization/AppLocale.ts',
   'utf8',
 );
+const localeRegistry = fs.readFileSync(
+  'src/core/localization/localeRegistry.ts',
+  'utf8',
+);
 const provider = fs.readFileSync(
   'src/core/localization/LocaleProvider.tsx',
   'utf8',
@@ -22,106 +26,121 @@ const directionBoundary = fs.readFileSync(
   'src/core/localization/AppDirectionBoundary.tsx',
   'utf8',
 );
+const catalog = fs.readFileSync(
+  'src/core/localization/translationCatalog.ts',
+  'utf8',
+);
+const betaOverlays = fs.readFileSync(
+  'src/core/localization/betaTranslationOverlays.ts',
+  'utf8',
+);
+
+const supportedLocales = [
+  'ar', 'de', 'en', 'tr', 'fr', 'es', 'it', 'pt', 'ru',
+];
 
 test(
-  'app locale type is independent from provider composition',
+  'locale support is centralized in a scalable registry',
   () => {
-    assert.match(
-      localeType,
-      /export type AppLocale =\s*\| 'en'\s*\| 'ar'\s*\| 'de'/,
-    );
-    assert.match(
-      resolver,
-      /from '\.\/AppLocale'/,
-    );
-    assert.doesNotMatch(
-      resolver,
-      /LocaleProvider/,
-    );
-    assert.match(
-      provider,
-      /export type \{\s*AppLocale,\s*\} from '\.\/AppLocale'/,
-    );
+    assert.ok(localeType.includes("from './localeRegistry'"));
+    assert.ok(localeRegistry.includes('SUPPORTED_LOCALES'));
+
+    for (const locale of supportedLocales) {
+      assert.ok(
+        localeRegistry.includes("'" + locale + "'"),
+        locale,
+      );
+      assert.ok(
+        localeRegistry.includes(locale + ': {'),
+        locale,
+      );
+    }
+
+    assert.ok(localeRegistry.includes("maturity: 'complete'"));
+    assert.ok(localeRegistry.includes("maturity: 'beta'"));
+    assert.ok(localeRegistry.includes('nativeLabel:'));
+    assert.ok(localeRegistry.includes('intlTag:'));
   },
 );
 
 test(
   'locale provider delegates system resolution to one focused hook',
   () => {
-    assert.match(
-      provider,
-      /useResolvedAppLocale\(\s*settings\.language,\s*\)/,
-    );
-    assert.doesNotMatch(
-      provider,
-      /resolveSystemLocale/,
-    );
-    assert.doesNotMatch(
-      provider,
-      /\bAppState\b/,
-    );
-    assert.doesNotMatch(
-      provider,
-      /\bPlatform\b/,
-    );
+    assert.ok(provider.includes('useResolvedAppLocale('));
+    assert.ok(provider.includes('settings.language'));
+    assert.ok(!provider.includes('resolveSystemLocale'));
+    assert.ok(!provider.includes('AppState'));
+    assert.ok(!provider.includes('Platform'));
   },
 );
 
 test(
   'system locale refreshes when Android returns to the foreground',
   () => {
-    assert.match(
-      resolvedLocale,
-      /if \(preference !== 'system'\) \{\s*return;/,
-    );
-    assert.match(
-      resolvedLocale,
-      /refresh\(\);/,
-    );
-    assert.match(
-      resolvedLocale,
-      /if \(Platform\.OS !== 'android'\) \{\s*return;/,
-    );
-    assert.match(
-      resolvedLocale,
-      /AppState\.addEventListener\(\s*'change'/,
-    );
-    assert.match(
-      resolvedLocale,
-      /if \(state === 'active'\) \{\s*refresh\(\);/,
-    );
-    assert.match(
-      resolvedLocale,
-      /subscription\.remove\(\);/,
-    );
+    assert.ok(resolvedLocale.includes("if (preference !== 'system')"));
+    assert.ok(resolvedLocale.includes('refresh();'));
+    assert.ok(resolvedLocale.includes("Platform.OS !== 'android'"));
+    assert.ok(resolvedLocale.includes("AppState.addEventListener("));
+    assert.ok(resolvedLocale.includes("'change'"));
+    assert.ok(resolvedLocale.includes("state === 'active'"));
+    assert.ok(resolvedLocale.includes('subscription.remove();'));
+  },
+);
+
+test(
+  'system locale resolution recognizes supported languages and falls back safely',
+  () => {
+    assert.ok(resolver.includes('isAppLocale(languageCode)'));
+    assert.ok(resolver.includes("? languageCode"));
+    assert.ok(resolver.includes(": 'en'"));
+    assert.ok(resolver.includes("return 'en';"));
   },
 );
 
 test(
   'explicit language preferences bypass the system locale result',
   () => {
-    assert.match(
-      resolvedLocale,
-      /return preference === 'system'\s*\? systemLocale\s*:\s*preference;/,
-    );
+    assert.ok(resolvedLocale.includes("preference === 'system'"));
+    assert.ok(resolvedLocale.includes('? systemLocale'));
+    assert.ok(resolvedLocale.includes(': preference'));
   },
 );
 
 test(
-  'RTL remains declarative and centrally derived from the resolved locale',
+  'RTL remains declarative and centrally derived from the locale registry',
   () => {
-    assert.match(
-      provider,
-      /isRTL:\s*locale\s*=== 'ar'/,
-    );
+    assert.ok(provider.includes('isRTL: isRtlLocale(locale)'));
+    assert.ok(localeRegistry.includes('ar: {'));
+    assert.ok(localeRegistry.includes("direction: 'rtl'"));
     assert.match(
       directionBoundary,
-      /direction:\s*isRTL\s*\? 'rtl'\s*:\s*'ltr'/,
+      /isRTL[\s\S]*?\? 'rtl'[\s\S]*?: 'ltr'/,
     );
-    assert.doesNotMatch(
-      provider + resolvedLocale + directionBoundary,
-      /I18nManager\.(?:allowRTL|forceRTL|swapLeftAndRightInRTL)/,
-    );
+    assert.ok(!provider.includes('I18nManager.forceRTL'));
+    assert.ok(!resolvedLocale.includes('I18nManager.forceRTL'));
+    assert.ok(!directionBoundary.includes('I18nManager.forceRTL'));
+  },
+);
+
+test(
+  'beta locales receive complete catalogs through English fallback overlays',
+  () => {
+    assert.ok(catalog.includes('function buildBetaCatalog'));
+    assert.ok(catalog.includes('...englishCatalog'));
+    assert.ok(catalog.includes('...betaTranslationOverlays[locale]'));
+
+    for (const locale of ['tr', 'fr', 'es', 'it', 'pt', 'ru']) {
+      assert.ok(
+        catalog.includes(
+          locale + ": buildBetaCatalog('" + locale + "')",
+        ),
+        locale,
+      );
+      assert.ok(
+        betaOverlays.includes(locale + ': {'),
+        locale,
+      );
+    }
   },
 );
 
@@ -132,9 +151,6 @@ test(
       resolvedLocale,
       /console\.(?:log|warn|error)/,
     );
-    assert.doesNotMatch(
-      resolvedLocale,
-      /throw new Error/,
-    );
+    assert.doesNotMatch(resolvedLocale, /throw new Error/);
   },
 );

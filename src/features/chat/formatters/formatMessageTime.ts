@@ -1,12 +1,9 @@
 import type {
   AppLocale,
-} from '../../../core/localization/translations';
-
-const LOCALE_TAGS: Readonly<Record<AppLocale, string>> = {
-  ar: 'ar',
-  de: 'de-DE',
-  en: 'en-US',
-};
+} from '../../../core/localization/AppLocale';
+import {
+  getLocaleDefinition,
+} from '../../../core/localization/AppLocale';
 
 export function formatMessageTime(
   timestamp: number,
@@ -26,7 +23,7 @@ export function formatMessageTime(
   }
 
   return new Intl.DateTimeFormat(
-    LOCALE_TAGS[locale],
+    getLocaleDefinition(locale).intlTag,
     {
       hour: '2-digit',
       minute: '2-digit',

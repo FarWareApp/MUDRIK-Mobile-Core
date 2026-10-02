@@ -16,6 +16,10 @@ import type {
 import type {
   PermissionSettingsService,
 } from '../../contracts/PermissionSettingsService';
+import {
+  SUPPORTED_LOCALES,
+  localeRegistry,
+} from '../../core/localization/AppLocale';
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useAppSettings } from '../../core/settings/AppSettingsProvider';
 import { FlagshipSafeAreaScreen } from '../../design-system/components/FlagshipSafeAreaScreen';
@@ -70,10 +74,26 @@ export function SettingsScreen({
     value: LanguagePreference;
     label: string;
   }[] = [
-    { value: 'system', label: t('languageSystem') },
-    { value: 'ar', label: 'العربية' },
-    { value: 'de', label: 'Deutsch' },
-    { value: 'en', label: 'English' },
+    {
+      value: 'system',
+      label: t('languageSystem'),
+    },
+    ...SUPPORTED_LOCALES.map(
+      (value) => {
+        const definition =
+          localeRegistry[value];
+
+        return {
+          value,
+          label:
+            definition.maturity
+            === 'beta'
+              ? definition.nativeLabel
+                + ' · Beta'
+              : definition.nativeLabel,
+        };
+      },
+    ),
   ];
 
   const mutableDisabled =

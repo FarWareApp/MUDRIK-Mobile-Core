@@ -3,6 +3,9 @@ import {
   attachmentTranslations,
 } from './attachmentTranslations';
 import {
+  betaTranslationOverlays,
+} from './betaTranslationOverlays';
+import {
   ChatTranslationKey,
   chatTranslations,
 } from './chatTranslations';
@@ -18,6 +21,9 @@ import {
   ConversationTranslationKey,
   conversationTranslations,
 } from './conversationTranslations';
+import type {
+  AppLocale,
+} from './AppLocale';
 import {
   PermissionTranslationKey,
   permissionTranslations,
@@ -35,7 +41,6 @@ import {
   settingsTranslations,
 } from './settingsTranslations';
 import {
-  AppLocale,
   TranslationKey as BaseTranslationKey,
   translations,
 } from './translations';
@@ -57,37 +62,11 @@ export type TranslationKey =
   | SettingsTranslationKey
   | VoiceTranslationKey;
 
-export const translationCatalog: Record<
-  AppLocale,
-  Record<TranslationKey, string>
-> = {
-  ar: {
-    ...translations.ar,
-    ...attachmentTranslations.ar,
-    ...chatTranslations.ar,
-    ...capabilityTranslations.ar,
-    ...companionTranslations.ar,
-    ...conversationTranslations.ar,
-    ...permissionTranslations.ar,
-    ...projectTranslations.ar,
-    ...runtimeTranslations.ar,
-    ...settingsTranslations.ar,
-    ...voiceTranslations.ar,
-  },
-  de: {
-    ...translations.de,
-    ...attachmentTranslations.de,
-    ...chatTranslations.de,
-    ...capabilityTranslations.de,
-    ...companionTranslations.de,
-    ...conversationTranslations.de,
-    ...permissionTranslations.de,
-    ...projectTranslations.de,
-    ...runtimeTranslations.de,
-    ...settingsTranslations.de,
-    ...voiceTranslations.de,
-  },
-  en: {
+type TranslationCatalog =
+  Record<TranslationKey, string>;
+
+const englishCatalog:
+  TranslationCatalog = {
     ...translations.en,
     ...attachmentTranslations.en,
     ...chatTranslations.en,
@@ -99,5 +78,64 @@ export const translationCatalog: Record<
     ...runtimeTranslations.en,
     ...settingsTranslations.en,
     ...voiceTranslations.en,
-  },
-};
+  };
+
+const arabicCatalog:
+  TranslationCatalog = {
+    ...translations.ar,
+    ...attachmentTranslations.ar,
+    ...chatTranslations.ar,
+    ...capabilityTranslations.ar,
+    ...companionTranslations.ar,
+    ...conversationTranslations.ar,
+    ...permissionTranslations.ar,
+    ...projectTranslations.ar,
+    ...runtimeTranslations.ar,
+    ...settingsTranslations.ar,
+    ...voiceTranslations.ar,
+  };
+
+const germanCatalog:
+  TranslationCatalog = {
+    ...translations.de,
+    ...attachmentTranslations.de,
+    ...chatTranslations.de,
+    ...capabilityTranslations.de,
+    ...companionTranslations.de,
+    ...conversationTranslations.de,
+    ...permissionTranslations.de,
+    ...projectTranslations.de,
+    ...runtimeTranslations.de,
+    ...settingsTranslations.de,
+    ...voiceTranslations.de,
+  };
+
+type BetaLocale = Exclude<
+  AppLocale,
+  'ar' | 'de' | 'en'
+>;
+
+function buildBetaCatalog(
+  locale: BetaLocale,
+): TranslationCatalog {
+  return {
+    ...englishCatalog,
+    ...betaTranslationOverlays[locale],
+  };
+}
+
+export const translationCatalog:
+  Readonly<Record<
+    AppLocale,
+    TranslationCatalog
+  >> = {
+    ar: arabicCatalog,
+    de: germanCatalog,
+    en: englishCatalog,
+    tr: buildBetaCatalog('tr'),
+    fr: buildBetaCatalog('fr'),
+    es: buildBetaCatalog('es'),
+    it: buildBetaCatalog('it'),
+    pt: buildBetaCatalog('pt'),
+    ru: buildBetaCatalog('ru'),
+  };

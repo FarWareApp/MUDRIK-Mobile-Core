@@ -3,6 +3,9 @@ import { getLocales } from 'expo-localization';
 import type {
   AppLocale,
 } from './AppLocale';
+import {
+  isAppLocale,
+} from './AppLocale';
 
 export function resolveSystemLocale():
   AppLocale {
@@ -15,21 +18,9 @@ export function resolveSystemLocale():
         ?.languageCode
         ?.toLowerCase();
 
-    if (
-      languageCode
-      === 'ar'
-    ) {
-      return 'ar';
-    }
-
-    if (
-      languageCode
-      === 'de'
-    ) {
-      return 'de';
-    }
-
-    return 'en';
+    return isAppLocale(languageCode)
+      ? languageCode
+      : 'en';
   } catch {
     return 'en';
   }
