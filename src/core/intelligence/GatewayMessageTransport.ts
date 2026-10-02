@@ -1,5 +1,6 @@
 import type {
   MessageTransport,
+  MessageTransportContextEvidence,
   MessageTransportInput,
   MessageTransportOutput,
   MessageTransportProgress,
@@ -138,6 +139,101 @@ function boundedHistory(
       (item) => Object.freeze(item),
     ),
   );
+}
+
+const CONTEXT_REF =
+  /^[A-Za-z0-9][A-Za-z0-9._:@/+\-]{2,239}$/;
+
+const CONTEXT_SOURCES =
+  new Set([
+    'memory',
+    'knowledge',
+    'project_state',
+    'tool_evidence',
+  ]);
+
+function boundedContextEvidence(
+  input:
+    MessageTransportInput[
+      'contextEvidence'
+    ],
+): readonly MessageTransportContextEvidence[] {
+  if (!input || input.length === 0) {
+    return [];
+  }
+
+  if (
+    !Array.isArray(input)
+    || input.length > 24
+  ) {
+    throw new
+      GatewayTransportProtocolError(
+        'Invalid context evidence',
+      );
+  }
+
+  let totalCharacters = 0;
+  const output:
+    MessageTransportContextEvidence[] = [];
+
+  for (const item of input) {
+    if (
+      !item
+      || !CONTEXT_SOURCES.has(
+        item.sourceKind,
+      )
+      || typeof item.content
+        !== 'string'
+      || item.content.length < 1
+      || item.content.length > 16_000
+      || typeof item.provenanceRef
+        !== 'string'
+      || !CONTEXT_REF.test(
+        item.provenanceRef,
+      )
+      || !Number.isSafeInteger(
+        item.observedAtMs,
+      )
+      || item.observedAtMs < 0
+      || !Number.isSafeInteger(
+        item.confidenceScore,
+      )
+      || item.confidenceScore < 0
+      || item.confidenceScore > 1000
+    ) {
+      throw new
+        GatewayTransportProtocolError(
+          'Invalid context evidence',
+        );
+    }
+
+    totalCharacters +=
+      item.content.length;
+
+    if (totalCharacters > 48_000) {
+      throw new
+        GatewayTransportProtocolError(
+          'Context evidence budget exceeded',
+        );
+    }
+
+    output.push(
+      Object.freeze({
+        sourceKind:
+          item.sourceKind,
+        content:
+          item.content,
+        provenanceRef:
+          item.provenanceRef,
+        observedAtMs:
+          item.observedAtMs,
+        confidenceScore:
+          item.confidenceScore,
+      }),
+    );
+  }
+
+  return Object.freeze(output);
 }
 
 function parseSseBlock(
@@ -308,6 +404,11 @@ implements MessageTransport {
                       history:
                         boundedHistory(
                           input.history,
+                        ),
+                      contextEvidence:
+                        boundedContextEvidence(
+                          input
+                            .contextEvidence,
                         ),
                       streaming: true,
                     }),

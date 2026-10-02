@@ -19,6 +19,18 @@ export type MessageTransportHistoryItem = {
   text: string;
 };
 
+export type MessageTransportContextEvidence = {
+  sourceKind:
+    | 'memory'
+    | 'knowledge'
+    | 'project_state'
+    | 'tool_evidence';
+  content: string;
+  provenanceRef: string;
+  observedAtMs: number;
+  confidenceScore: number;
+};
+
 export type MessageTransportInput = {
   id: string;
   conversationId: string;
@@ -28,6 +40,8 @@ export type MessageTransportInput = {
     readonly MessageTransportAttachment[];
   history?:
     readonly MessageTransportHistoryItem[];
+  contextEvidence?:
+    readonly MessageTransportContextEvidence[];
   createdAt: number;
 };
 
