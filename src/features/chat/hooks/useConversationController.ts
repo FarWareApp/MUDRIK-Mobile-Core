@@ -18,6 +18,7 @@ import {
 } from '../../../contracts/MessageRepository';
 import {
   MessageTransport,
+  MessageTransportProgress,
   MessageTransportTask,
 } from '../../../contracts/MessageTransport';
 import { TransportCancelledError } from '../../../contracts/TransportCancelledError';
@@ -468,8 +469,78 @@ export function useConversationController({
 
         activeTaskRef.current = task;
 
+        const streamingMessageId =
+          'stream-' + userMessage.id;
+        let streamedText = '';
+        let lastStreamSequence = -1;
+
+        const unsubscribe =
+          task.subscribe?.(
+            (
+              progress:
+                MessageTransportProgress,
+            ) => {
+              if (
+                progress.conversationId
+                  !== conversationId
+                || progress.sequence
+                  <= lastStreamSequence
+                || !progress.delta
+              ) {
+                return;
+              }
+
+              lastStreamSequence =
+                progress.sequence;
+              streamedText += progress.delta;
+
+              setMessages((current) => {
+                const nextMessage: ChatMessage = {
+                  id: streamingMessageId,
+                  role: 'assistant',
+                  text: streamedText,
+                  createdAt:
+                    progress.createdAt,
+                };
+
+                const index =
+                  current.findIndex(
+                    (message) =>
+                      message.id
+                        === streamingMessageId,
+                  );
+
+                if (index < 0) {
+                  return [
+                    ...current,
+                    nextMessage,
+                  ];
+                }
+
+                const next = [...current];
+                next[index] = nextMessage;
+                return next;
+              });
+            },
+          ) ?? (() => {});
+
+        const removeStreamingMessage =
+          () => {
+            setMessages(
+              (current) =>
+                current.filter(
+                  (message) =>
+                    message.id
+                      !== streamingMessageId,
+                ),
+            );
+          };
+
         try {
           const output = await task.result;
+
+          unsubscribe();
+          removeStreamingMessage();
 
           const assistantMessage: ChatMessage = {
             id: output.id,
@@ -503,6 +574,9 @@ export function useConversationController({
             'message-send-complete',
           );
         } catch (caught) {
+          unsubscribe();
+          removeStreamingMessage();
+
           if (
             caught instanceof
             TransportCancelledError
@@ -533,6 +607,8 @@ export function useConversationController({
             'error',
           );
         } finally {
+          unsubscribe();
+
           if (
             activeTaskRef.current === task
           ) {
