@@ -760,3 +760,58 @@ test('authorization denial blocks runner before execution', async () => {
     'authorization_denied',
   );
 });
+
+test('throwing or malformed authorization authority fails closed', async () => {
+  for (const authorization of [
+    {
+      authorize() {
+        throw new Error('authority_down');
+      },
+    },
+    {
+      authorize() {
+        return {
+          allowed: true,
+          reason: 'allowed',
+        };
+      },
+    },
+  ]) {
+    const queue = queueWithWork();
+    let called = false;
+
+    const coordinator =
+      runtime({
+        queue,
+        runner: {
+          async run() {
+            called = true;
+            return success();
+          },
+        },
+        collector: {
+          async collect() {
+            return [evidence()];
+          },
+        },
+        authorization,
+      });
+
+    const result =
+      await coordinator.runNext(
+        goal(),
+        plan(),
+        WORKER,
+      );
+
+    assert.equal(called, false);
+    assert.equal(
+      result.status,
+      'dead_letter',
+    );
+    assert.equal(
+      result.reason,
+      'authorization_invalid',
+    );
+  }
+});

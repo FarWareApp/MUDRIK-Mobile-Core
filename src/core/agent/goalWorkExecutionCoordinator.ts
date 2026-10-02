@@ -19,6 +19,7 @@ import {
 } from './goalWorkQueue';
 
 import type {
+  GoalWorkAuthorizationDecision,
   GoalWorkExecutionAuthorizationAuthority,
 } from './goalWorkAuthorization';
 
@@ -258,6 +259,73 @@ function validPolicy(
   );
 }
 
+function validAuthorizationDecision(
+  value: unknown,
+): value is GoalWorkAuthorizationDecision {
+  if (
+    typeof value !== 'object'
+    || value === null
+    || Array.isArray(value)
+  ) {
+    return false;
+  }
+
+  const record =
+    value as Record<string, unknown>;
+  const allowedReasons =
+    new Set([
+      'allowed',
+      'runtime_untrusted',
+      'goal_admission_denied',
+      'binding_mismatch',
+      'invalid_runtime_decision',
+    ]);
+
+  if (
+    typeof record.allowed !== 'boolean'
+    || typeof record.reason !== 'string'
+    || !allowedReasons.has(record.reason)
+    || (
+      record.runtimeReason !== null
+      && !safeReference(
+        record.runtimeReason,
+        240,
+      )
+    )
+    || (
+      record.goalAdmissionReason !== null
+      && !safeReference(
+        record.goalAdmissionReason,
+        240,
+      )
+    )
+    || !Array.isArray(record.grantIds)
+    || record.grantIds.length > 64
+    || new Set(record.grantIds).size
+      !== record.grantIds.length
+    || record.grantIds.some(
+      (grantId) =>
+        !safeReference(grantId, 240),
+    )
+    || (
+      record.approvalRef !== null
+      && !safeReference(
+        record.approvalRef,
+        240,
+      )
+    )
+    || (
+      record.allowed
+        ? record.reason !== 'allowed'
+        : record.reason === 'allowed'
+    )
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 function stateOutcome(
   state: GoalWorkState | null,
   fallbackReason: string,
@@ -431,17 +499,45 @@ export class GoalWorkExecutionCoordinator {
       );
     }
 
-    const authorization =
-      this.authorization.authorize(
-        Object.freeze({
-          goal,
-          plan,
-          step,
-          state,
+    let authorization: unknown;
+
+    try {
+      authorization =
+        this.authorization.authorize(
+          Object.freeze({
+            goal,
+            plan,
+            step,
+            state,
+            workerRef,
+            trustedNowMs: now,
+          }),
+        );
+    } catch {
+      authorization = null;
+    }
+
+    if (
+      !validAuthorizationDecision(
+        authorization,
+      )
+    ) {
+      const failed =
+        this.queue.fail(
+          work.workId,
           workerRef,
-          trustedNowMs: now,
-        }),
+          'authorization_invalid',
+          false,
+          'not_committed',
+          null,
+          now,
+        );
+
+      return stateOutcome(
+        failed.state,
+        'authorization_invalid',
       );
+    }
 
     if (!authorization.allowed) {
       const failed =
