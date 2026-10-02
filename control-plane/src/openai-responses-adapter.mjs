@@ -309,6 +309,30 @@ export class OpenAIResponsesAdapter {
         ? request.history
         : [];
 
+    const contextEvidence =
+      Array.isArray(
+        request.contextEvidence,
+      )
+        ? request.contextEvidence
+        : [];
+
+    const evidenceMessage =
+      contextEvidence.length > 0
+        ? {
+            role: 'user',
+            content: [
+              {
+                type: 'input_text',
+                text:
+                  'MUDRIK_CONTEXT_EVIDENCE_V1\n'
+                  + JSON.stringify(
+                    contextEvidence,
+                  ),
+              },
+            ],
+          }
+        : null;
+
     const body = {
       model: this.apiModel,
       input: [
@@ -326,6 +350,9 @@ export class OpenAIResponsesAdapter {
             ],
           }),
         ),
+        ...(evidenceMessage
+          ? [evidenceMessage]
+          : []),
         {
           role: 'user',
           content: [

@@ -85,9 +85,33 @@ function validPublicRequest(value) {
       'streaming',
     ].sort().join(',');
 
+  const contextExpected =
+    [
+      'contextEvidence',
+      'conversationId',
+      'inputText',
+      'languageTag',
+      'protocolVersion',
+      'requestId',
+      'streaming',
+    ].sort().join(',');
+  const historyContextExpected =
+    [
+      'contextEvidence',
+      'conversationId',
+      'history',
+      'inputText',
+      'languageTag',
+      'protocolVersion',
+      'requestId',
+      'streaming',
+    ].sort().join(',');
+
   if (
     actual !== baseExpected
     && actual !== historyExpected
+    && actual !== contextExpected
+    && actual !== historyContextExpected
   ) {
     return false;
   }
@@ -102,6 +126,64 @@ function validPublicRequest(value) {
     || history.length > 48
   ) {
     return false;
+  }
+
+  const contextEvidence =
+    value.contextEvidence === undefined
+      ? []
+      : value.contextEvidence;
+
+  if (
+    !Array.isArray(contextEvidence)
+    || contextEvidence.length > 24
+  ) {
+    return false;
+  }
+
+  let contextCharacters = 0;
+
+  for (const item of contextEvidence) {
+    if (
+      !item
+      || typeof item !== 'object'
+      || Array.isArray(item)
+      || Object.keys(item)
+        .sort()
+        .join(',')
+        !== [
+          'confidenceScore',
+          'content',
+          'observedAtMs',
+          'provenanceRef',
+          'sourceKind',
+        ].sort().join(',')
+      || ![
+        'memory',
+        'knowledge',
+        'project_state',
+        'tool_evidence',
+      ].includes(item.sourceKind)
+      || typeof item.content !== 'string'
+      || item.content.length < 1
+      || item.content.length > 16_000
+      || typeof item.provenanceRef !== 'string'
+      || !/^[A-Za-z0-9][A-Za-z0-9._:@/+\-]{2,239}$/
+        .test(item.provenanceRef)
+      || !Number.isSafeInteger(item.observedAtMs)
+      || item.observedAtMs < 0
+      || !Number.isSafeInteger(item.confidenceScore)
+      || item.confidenceScore < 0
+      || item.confidenceScore > 1000
+    ) {
+      return false;
+    }
+
+    contextCharacters +=
+      item.content.length;
+
+    if (contextCharacters > 48_000) {
+      return false;
+    }
   }
 
   let historyCharacters = 0;
@@ -158,6 +240,7 @@ function validPublicRequest(value) {
     && value.inputText.length
       <= 200_000
     && historyCharacters
+      + contextCharacters
       + value.inputText.length
       <= 200_000
     && value.streaming === true
@@ -523,6 +606,12 @@ export function createIntelligenceChatHandler({
             history:
               Array.isArray(input.history)
                 ? input.history
+                : [],
+            contextEvidence:
+              Array.isArray(
+                input.contextEvidence,
+              )
+                ? input.contextEvidence
                 : [],
             streaming: true,
             maxOutputTokens:

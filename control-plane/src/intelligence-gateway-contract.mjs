@@ -13,6 +13,97 @@ const SERVICES =
 const HISTORY_ROLES =
   new Set(['user', 'assistant']);
 
+const CONTEXT_SOURCES =
+  new Set([
+    'memory',
+    'knowledge',
+    'project_state',
+    'tool_evidence',
+  ]);
+
+const CONTEXT_REF =
+  /^[A-Za-z0-9][A-Za-z0-9._:@/+\-]{2,239}$/;
+
+function parseContextEvidence(value) {
+  if (value === undefined) {
+    return Object.freeze([]);
+  }
+
+  if (
+    !Array.isArray(value)
+    || value.length > 24
+  ) {
+    return null;
+  }
+
+  let totalCharacters = 0;
+  const output = [];
+
+  for (const item of value) {
+    if (
+      !item
+      || typeof item !== 'object'
+      || Array.isArray(item)
+      || Object.keys(item)
+        .sort()
+        .join(',')
+        !== [
+          'confidenceScore',
+          'content',
+          'observedAtMs',
+          'provenanceRef',
+          'sourceKind',
+        ].sort().join(',')
+      || !CONTEXT_SOURCES.has(
+        item.sourceKind,
+      )
+      || typeof item.content !== 'string'
+      || item.content.length < 1
+      || item.content.length > 16_000
+      || typeof item.provenanceRef
+        !== 'string'
+      || !CONTEXT_REF.test(
+        item.provenanceRef,
+      )
+      || !Number.isSafeInteger(
+        item.observedAtMs,
+      )
+      || item.observedAtMs < 0
+      || !Number.isSafeInteger(
+        item.confidenceScore,
+      )
+      || item.confidenceScore < 0
+      || item.confidenceScore > 1000
+    ) {
+      return null;
+    }
+
+    totalCharacters +=
+      item.content.length;
+
+    if (totalCharacters > 48_000) {
+      return null;
+    }
+
+    output.push(
+      Object.freeze({
+        sourceKind:
+          item.sourceKind,
+        content:
+          item.content,
+        provenanceRef:
+          item.provenanceRef,
+        observedAtMs:
+          item.observedAtMs,
+        confidenceScore:
+          item.confidenceScore,
+      }),
+    );
+  }
+
+  return Object.freeze(output);
+}
+
 function parseHistory(value) {
   if (value === undefined) {
     return Object.freeze([]);
@@ -98,15 +189,49 @@ export function parseGatewayRequest(input) {
     'service',
     'streaming',
   ].sort().join(',');
+  const contextKeys = [
+    'contextEvidence',
+    'deadlineAtMs',
+    'inputText',
+    'languageTag',
+    'maxOutputTokens',
+    'modelRef',
+    'protocolVersion',
+    'providerRef',
+    'requestId',
+    'service',
+    'streaming',
+  ].sort().join(',');
+  const historyContextKeys = [
+    'contextEvidence',
+    'deadlineAtMs',
+    'history',
+    'inputText',
+    'languageTag',
+    'maxOutputTokens',
+    'modelRef',
+    'protocolVersion',
+    'providerRef',
+    'requestId',
+    'service',
+    'streaming',
+  ].sort().join(',');
   const history =
     parseHistory(input.history);
+  const contextEvidence =
+    parseContextEvidence(
+      input.contextEvidence,
+    );
 
   if (
     (
       keys !== baseKeys
       && keys !== historyKeys
+      && keys !== contextKeys
+      && keys !== historyContextKeys
     )
     || history === null
+    || contextEvidence === null
   ) {
     return null;
   }
@@ -159,6 +284,7 @@ export function parseGatewayRequest(input) {
     languageTag: input.languageTag,
     inputText: input.inputText,
     history,
+    contextEvidence,
     streaming: input.streaming,
     maxOutputTokens: input.maxOutputTokens,
     deadlineAtMs: input.deadlineAtMs,
