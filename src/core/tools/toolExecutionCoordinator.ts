@@ -19,6 +19,10 @@ import type {
   ToolCircuitBreakerRegistry,
 } from './toolCircuitBreaker';
 
+import type {
+  ToolConcurrencyGate,
+} from './toolConcurrencyGate';
+
 export type ToolAdapterInvocation =
   Readonly<{
     protocolVersion: '1.0';
@@ -286,6 +290,8 @@ export class ToolExecutionCoordinator {
       () => number = () => Date.now(),
     private readonly circuitBreaker:
       ToolCircuitBreakerRegistry | null = null,
+    private readonly concurrencyGate:
+      ToolConcurrencyGate | null = null,
   ) {}
 
   async execute(
@@ -359,12 +365,6 @@ export class ToolExecutionCoordinator {
         continue;
       }
 
-      this.circuitBreaker
-        ?.recordAttemptStarted(
-          candidate.toolRef,
-          now,
-        );
-
       const adapter =
         this.resolver.resolve(candidate);
 
@@ -379,6 +379,57 @@ export class ToolExecutionCoordinator {
         );
         continue;
       }
+
+      const permitKey =
+        lease.leaseId + ':' + candidate.toolRef;
+      const permitExpiry =
+        input.deadlineAtMs === null
+          ? lease.expiresAtMs
+          : Math.min(
+              lease.expiresAtMs,
+              input.deadlineAtMs,
+            );
+      const concurrencyAdmission =
+        this.concurrencyGate?.acquire(
+          candidate.toolRef,
+          permitKey,
+          now,
+          permitExpiry,
+        ) ?? null;
+
+      if (concurrencyAdmission) {
+        if (!concurrencyAdmission.allowed) {
+          lastFailure =
+            concurrencyAdmission.reason;
+          continue;
+        }
+
+        if (concurrencyAdmission.idempotent) {
+          return outcome({
+            status: 'failed',
+            toolRef: candidate.toolRef,
+            attempts,
+            failureReason:
+              'operation_in_progress',
+          });
+        }
+      }
+
+      const releasePermit = (
+        completedAtMs: number,
+      ): void => {
+        this.concurrencyGate?.release(
+          permitKey,
+          candidate.toolRef,
+          completedAtMs,
+        );
+      };
+
+      this.circuitBreaker
+        ?.recordAttemptStarted(
+          candidate.toolRef,
+          now,
+        );
 
       attempts += 1;
 
@@ -411,16 +462,41 @@ export class ToolExecutionCoordinator {
       try {
         raw = await adapter.execute(invocation);
       } catch {
+        const failureAt =
+          this.clock();
+        const observedFailureAt =
+          safeInteger(failureAt)
+            ? failureAt
+            : now;
+
+        releasePermit(observedFailureAt);
         lastFailure = 'adapter_exception';
         this.circuitBreaker?.recordFailure(
           candidate.toolRef,
-          now,
+          observedFailureAt,
         );
+
+        if (input.sideEffect) {
+          return outcome({
+            status: 'needs_reconciliation',
+            toolRef: candidate.toolRef,
+            attempts,
+            failureReason:
+              'adapter_exception_commit_unknown',
+            sideEffectCommitted: false,
+            completedAtMs: observedFailureAt,
+          });
+        }
+
         continue;
       }
 
       const result =
         parseToolAdapterOutput(raw);
+
+      const completionTime =
+        result?.completedAtMs ?? now;
+      releasePermit(completionTime);
 
       if (
         !result
@@ -438,6 +514,19 @@ export class ToolExecutionCoordinator {
           candidate.toolRef,
           now,
         );
+
+        if (input.sideEffect) {
+          return outcome({
+            status: 'needs_reconciliation',
+            toolRef: candidate.toolRef,
+            attempts,
+            failureReason:
+              'invalid_tool_output_commit_unknown',
+            sideEffectCommitted: false,
+            completedAtMs: completionTime,
+          });
+        }
+
         continue;
       }
 

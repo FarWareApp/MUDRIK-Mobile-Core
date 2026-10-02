@@ -24,6 +24,12 @@ const {
   'src/core/tools/toolCircuitBreaker.ts',
 );
 
+const {
+  ToolConcurrencyGate,
+} = loadTypeScriptModule(
+  'src/core/tools/toolConcurrencyGate.ts',
+);
+
 const NOW = 3_300_000_000;
 
 function registration(
@@ -297,7 +303,9 @@ test('non-retryable failure stops immediately', async () => {
   assert.equal(secondCalled, false);
 });
 
-test('malformed adapter output never becomes success', async () => {
+test('malformed output after side-effect dispatch requires reconciliation', async () => {
+  let fallbackCalled = false;
+
   const runtime =
     new ToolExecutionCoordinator(
       resolver({
@@ -308,10 +316,12 @@ test('malformed adapter output never becomes success', async () => {
               'result_ref_1111111111111111',
           }),
         tool_2222222222222222:
-          async () =>
-            output('succeeded', {
+          async () => {
+            fallbackCalled = true;
+            return output('succeeded', {
               completedAtMs: NOW + 400,
-            }),
+            });
+          },
       }),
       () => NOW + 100,
     );
@@ -319,8 +329,16 @@ test('malformed adapter output never becomes success', async () => {
   const result =
     await runtime.execute(input());
 
-  assert.equal(result.status, 'succeeded');
-  assert.equal(result.attempts, 2);
+  assert.equal(
+    result.status,
+    'needs_reconciliation',
+  );
+  assert.equal(result.attempts, 1);
+  assert.equal(
+    result.failureReason,
+    'invalid_tool_output_commit_unknown',
+  );
+  assert.equal(fallbackCalled, false);
 });
 
 test('deadline and lease expiry fail closed before adapter call', async () => {
@@ -480,5 +498,112 @@ test('permission denial does not poison tool health circuit', async () => {
       NOW + 200,
     ).allowed,
     true,
+  );
+});
+
+test('adapter exception after side-effect dispatch never falls through to fallback', async () => {
+  let fallbackCalled = false;
+
+  const runtime =
+    new ToolExecutionCoordinator(
+      resolver({
+        tool_1111111111111111:
+          async () => {
+            throw new Error('transport_lost');
+          },
+        tool_2222222222222222:
+          async () => {
+            fallbackCalled = true;
+            return output('succeeded');
+          },
+      }),
+      () => NOW + 100,
+    );
+
+  const result =
+    await runtime.execute(input());
+
+  assert.equal(
+    result.status,
+    'needs_reconciliation',
+  );
+  assert.equal(
+    result.failureReason,
+    'adapter_exception_commit_unknown',
+  );
+  assert.equal(result.attempts, 1);
+  assert.equal(fallbackCalled, false);
+});
+
+test('concurrency gate prevents duplicate in-flight execution of one lease', async () => {
+  const concurrency =
+    new ToolConcurrencyGate(
+      [
+        {
+          toolRef: 'tool_1111111111111111',
+          maxConcurrent: 1,
+        },
+        {
+          toolRef: 'tool_2222222222222222',
+          maxConcurrent: 1,
+        },
+      ],
+      1,
+    );
+
+  let releaseFirst;
+  const firstBarrier =
+    new Promise((resolve) => {
+      releaseFirst = resolve;
+    });
+
+  let firstEntered = false;
+
+  const runtime =
+    new ToolExecutionCoordinator(
+      resolver({
+        tool_1111111111111111:
+          async () => {
+            firstEntered = true;
+            await firstBarrier;
+            return output('succeeded', {
+              completedAtMs: NOW + 200,
+            });
+          },
+      }),
+      () => NOW + 100,
+      null,
+      concurrency,
+    );
+
+  const first =
+    runtime.execute(
+      input({ maxAttempts: 1 }),
+    );
+
+  while (!firstEntered) {
+    await new Promise(
+      (resolve) => setTimeout(resolve, 0),
+    );
+  }
+
+  const duplicate =
+    await runtime.execute(
+      input({ maxAttempts: 1 }),
+    );
+
+  assert.equal(duplicate.status, 'failed');
+  assert.equal(
+    duplicate.failureReason,
+    'operation_in_progress',
+  );
+
+  releaseFirst();
+  const completed = await first;
+
+  assert.equal(completed.status, 'succeeded');
+  assert.equal(
+    concurrency.snapshot(NOW + 300).length,
+    0,
   );
 });
