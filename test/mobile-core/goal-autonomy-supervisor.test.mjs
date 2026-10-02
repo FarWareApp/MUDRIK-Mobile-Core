@@ -225,6 +225,18 @@ function buildRuntime({
         },
       },
       {
+        authorize() {
+          return {
+            allowed: true,
+            reason: 'allowed',
+            runtimeReason: 'trusted_runtime',
+            goalAdmissionReason: 'allowed',
+            grantIds: [],
+            approvalRef: null,
+          };
+        },
+      },
+      {
         workerLeaseMs: 10_000,
         resultVerification: verificationPolicy,
       },

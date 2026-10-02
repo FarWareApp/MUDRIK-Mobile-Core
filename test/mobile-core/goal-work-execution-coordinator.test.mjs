@@ -255,6 +255,18 @@ function runtime({
     NOW + 50,
   ]),
   workerLeaseMs = 10_000,
+  authorization = {
+    authorize() {
+      return {
+        allowed: true,
+        reason: 'allowed',
+        runtimeReason: 'trusted_runtime',
+        goalAdmissionReason: 'allowed',
+        grantIds: [],
+        approvalRef: null,
+      };
+    },
+  },
 }) {
   return new GoalWorkExecutionCoordinator(
     queue,
@@ -264,6 +276,7 @@ function runtime({
       },
     },
     collector,
+    authorization,
     {
       workerLeaseMs,
       resultVerification:
@@ -698,4 +711,52 @@ test('work/plan binding mismatch is dead-lettered instead of executing wrong ope
 
   assert.equal(result.status, 'dead_letter');
   assert.equal(called, false);
+});
+
+test('authorization denial blocks runner before execution', async () => {
+  const queue = queueWithWork();
+  let called = false;
+
+  const coordinator =
+    runtime({
+      queue,
+      runner: {
+        async run() {
+          called = true;
+          return success();
+        },
+      },
+      collector: {
+        async collect() {
+          return [evidence()];
+        },
+      },
+      authorization: {
+        authorize() {
+          return {
+            allowed: false,
+            reason: 'runtime_untrusted',
+            runtimeReason:
+              'blocked_untrusted_runtime',
+            goalAdmissionReason: null,
+            grantIds: [],
+            approvalRef: null,
+          };
+        },
+      },
+    });
+
+  const result =
+    await coordinator.runNext(
+      goal(),
+      plan(),
+      WORKER,
+    );
+
+  assert.equal(called, false);
+  assert.equal(result.status, 'dead_letter');
+  assert.equal(
+    result.reason,
+    'authorization_denied',
+  );
 });

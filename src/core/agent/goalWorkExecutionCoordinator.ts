@@ -18,6 +18,10 @@ import {
   type GoalWorkState,
 } from './goalWorkQueue';
 
+import type {
+  GoalWorkExecutionAuthorizationAuthority,
+} from './goalWorkAuthorization';
+
 import {
   evaluateResultVerification,
   type ResultVerificationDecision,
@@ -317,6 +321,8 @@ export class GoalWorkExecutionCoordinator {
       GoalWorkRunnerResolver,
     private readonly evidenceCollector:
       GoalWorkEvidenceCollector,
+    private readonly authorization:
+      GoalWorkExecutionAuthorizationAuthority,
     private readonly policy:
       GoalWorkExecutionCoordinatorPolicy,
     private readonly clock:
@@ -422,6 +428,36 @@ export class GoalWorkExecutionCoordinator {
       return stateOutcome(
         failed.state,
         'work_plan_binding_mismatch',
+      );
+    }
+
+    const authorization =
+      this.authorization.authorize(
+        Object.freeze({
+          goal,
+          plan,
+          step,
+          state,
+          workerRef,
+          trustedNowMs: now,
+        }),
+      );
+
+    if (!authorization.allowed) {
+      const failed =
+        this.queue.fail(
+          work.workId,
+          workerRef,
+          'authorization_denied',
+          false,
+          'not_committed',
+          null,
+          now,
+        );
+
+      return stateOutcome(
+        failed.state,
+        'authorization_denied',
       );
     }
 
