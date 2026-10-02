@@ -18,6 +18,12 @@ const {
   'src/core/tools/toolOrchestrator.ts',
 );
 
+const {
+  ToolCircuitBreakerRegistry,
+} = loadTypeScriptModule(
+  'src/core/tools/toolCircuitBreaker.ts',
+);
+
 const NOW = 3_300_000_000;
 
 function registration(
@@ -383,5 +389,96 @@ test('adapter output parser rejects authority escalation', () => {
       }),
     ),
     null,
+  );
+});
+
+
+test('open primary circuit is skipped and healthy fallback executes', async () => {
+  const circuit =
+    new ToolCircuitBreakerRegistry({
+      failureThreshold: 1,
+      failureWindowMs: 60_000,
+      cooldownMs: 10_000,
+      halfOpenMaxAttempts: 1,
+      halfOpenSuccessesToClose: 1,
+    });
+
+  circuit.recordFailure(
+    'tool_1111111111111111',
+    NOW,
+  );
+
+  let primaryCalled = false;
+  let fallbackCalled = false;
+
+  const runtime =
+    new ToolExecutionCoordinator(
+      resolver({
+        tool_1111111111111111:
+          async () => {
+            primaryCalled = true;
+            return output('succeeded');
+          },
+        tool_2222222222222222:
+          async () => {
+            fallbackCalled = true;
+            return output('succeeded', {
+              completedAtMs: NOW + 300,
+            });
+          },
+      }),
+      () => NOW + 100,
+      circuit,
+    );
+
+  const result =
+    await runtime.execute(input());
+
+  assert.equal(result.status, 'succeeded');
+  assert.equal(primaryCalled, false);
+  assert.equal(fallbackCalled, true);
+  assert.equal(
+    result.toolRef,
+    'tool_2222222222222222',
+  );
+});
+
+test('permission denial does not poison tool health circuit', async () => {
+  const circuit =
+    new ToolCircuitBreakerRegistry({
+      failureThreshold: 1,
+      failureWindowMs: 60_000,
+      cooldownMs: 10_000,
+      halfOpenMaxAttempts: 1,
+      halfOpenSuccessesToClose: 1,
+    });
+
+  const runtime =
+    new ToolExecutionCoordinator(
+      resolver({
+        tool_1111111111111111:
+          async () =>
+            output('failed', {
+              retryable: false,
+              sideEffectCommitted: false,
+              failureReason: 'permission_denied',
+            }),
+      }),
+      () => NOW + 100,
+      circuit,
+    );
+
+  const result =
+    await runtime.execute(input({
+      maxAttempts: 1,
+    }));
+
+  assert.equal(result.status, 'failed');
+  assert.equal(
+    circuit.admit(
+      'tool_1111111111111111',
+      NOW + 200,
+    ).allowed,
+    true,
   );
 });

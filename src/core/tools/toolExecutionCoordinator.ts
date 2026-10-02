@@ -15,6 +15,10 @@ import type {
   ToolRouteDecision,
 } from './toolOrchestrator';
 
+import type {
+  ToolCircuitBreakerRegistry,
+} from './toolCircuitBreaker';
+
 export type ToolAdapterInvocation =
   Readonly<{
     protocolVersion: '1.0';
@@ -230,6 +234,23 @@ function routeCandidates(
   ]);
 }
 
+const NON_HEALTH_FAILURES =
+  new Set([
+    'permission_denied',
+    'policy_denied',
+    'unsupported_input',
+    'cancelled',
+  ]);
+
+function countsTowardCircuit(
+  reason: string | null,
+): boolean {
+  return (
+    reason === null
+    || !NON_HEALTH_FAILURES.has(reason)
+  );
+}
+
 function validInput(
   input: ToolExecutionInput,
 ): boolean {
@@ -263,6 +284,8 @@ export class ToolExecutionCoordinator {
       ToolExecutionAdapterResolver,
     private readonly clock:
       () => number = () => Date.now(),
+    private readonly circuitBreaker:
+      ToolCircuitBreakerRegistry | null = null,
   ) {}
 
   async execute(
@@ -322,6 +345,26 @@ export class ToolExecutionCoordinator {
         });
       }
 
+      const circuitAdmission =
+        this.circuitBreaker?.admit(
+          candidate.toolRef,
+          now,
+        ) ?? null;
+
+      if (
+        circuitAdmission
+        && !circuitAdmission.allowed
+      ) {
+        lastFailure = 'tool_circuit_open';
+        continue;
+      }
+
+      this.circuitBreaker
+        ?.recordAttemptStarted(
+          candidate.toolRef,
+          now,
+        );
+
       const adapter =
         this.resolver.resolve(candidate);
 
@@ -330,6 +373,10 @@ export class ToolExecutionCoordinator {
         || adapter.toolRef !== candidate.toolRef
       ) {
         lastFailure = 'tool_unavailable';
+        this.circuitBreaker?.recordFailure(
+          candidate.toolRef,
+          now,
+        );
         continue;
       }
 
@@ -365,6 +412,10 @@ export class ToolExecutionCoordinator {
         raw = await adapter.execute(invocation);
       } catch {
         lastFailure = 'adapter_exception';
+        this.circuitBreaker?.recordFailure(
+          candidate.toolRef,
+          now,
+        );
         continue;
       }
 
@@ -383,6 +434,10 @@ export class ToolExecutionCoordinator {
         )
       ) {
         lastFailure = 'invalid_tool_output';
+        this.circuitBreaker?.recordFailure(
+          candidate.toolRef,
+          now,
+        );
         continue;
       }
 
@@ -391,6 +446,10 @@ export class ToolExecutionCoordinator {
           result.sideEffectCommitted
             !== input.sideEffect
         ) {
+          this.circuitBreaker?.recordFailure(
+            candidate.toolRef,
+            result.completedAtMs,
+          );
           return outcome({
             status: 'needs_reconciliation',
             toolRef: candidate.toolRef,
@@ -403,6 +462,11 @@ export class ToolExecutionCoordinator {
               result.completedAtMs,
           });
         }
+
+        this.circuitBreaker?.recordSuccess(
+          candidate.toolRef,
+          result.completedAtMs,
+        );
 
         return outcome({
           status: 'succeeded',
@@ -421,6 +485,15 @@ export class ToolExecutionCoordinator {
       lastFailure =
         result.failureReason
         ?? 'tool_failed';
+
+      if (countsTowardCircuit(
+        result.failureReason,
+      )) {
+        this.circuitBreaker?.recordFailure(
+          candidate.toolRef,
+          result.completedAtMs,
+        );
+      }
 
       if (
         input.sideEffect

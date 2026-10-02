@@ -86,3 +86,36 @@ recovery paths may proceed.
 6. No runtime integrity failure may silently continue with normal authority.
 7. Resource, approval, capability, rollback and deadline gates remain
    independent.
+
+## Tool circuit breaking
+
+Tool health is protected by an independent circuit breaker. Repeated transport,
+adapter or invalid-output failures open a tool circuit for a bounded cooldown.
+After cooldown, only bounded half-open probes are admitted. A successful probe
+closes the circuit; a failed probe reopens it immediately.
+
+Requester or policy denials do not count as tool-health failures. This prevents
+a normal permission denial from poisoning a healthy adapter.
+
+The execution coordinator consults the circuit before resolving an adapter, so
+an unhealthy primary tool can be skipped in favor of a healthy fallback without
+wasting another live attempt.
+
+## Autonomy decision boundary
+
+A deterministic autonomy decision layer maps execution and verification state
+to one of six actions: accept result, gather more evidence, replan, rollback,
+recover runtime or block.
+
+The decision order is intentionally conservative:
+
+1. untrusted runtime diverts to recovery or blocks;
+2. exhausted deadline or resource budget blocks;
+3. uncertain committed side effects roll back before any retry;
+4. execution failure may replan only inside the repair budget;
+5. missing evidence requests evidence rather than guessing;
+6. contradictory evidence rolls back committed side effects or replans
+   read-only work;
+7. only verified or explicitly non-required results are accepted.
+
+This keeps model creativity out of the final authority decision.

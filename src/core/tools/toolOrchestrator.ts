@@ -17,7 +17,7 @@ import {
 const BODY =
   '[a-z0-9][a-z0-9_-]{15,127}';
 
-const TOOL_REF =
+export const TOOL_REF =
   new RegExp('^tool_' + BODY + '$');
 
 export type ToolHealth =
