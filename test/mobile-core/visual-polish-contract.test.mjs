@@ -14,6 +14,26 @@ const depthTokens = fs.readFileSync(
   'src/design-system/tokens/depth.ts',
   'utf8',
 );
+const flagshipTokens = fs.readFileSync(
+  'src/design-system/tokens/flagship.ts',
+  'utf8',
+);
+const colorTokens = fs.readFileSync(
+  'src/design-system/tokens/colors.ts',
+  'utf8',
+);
+const flagshipBackdrop = fs.readFileSync(
+  'src/design-system/components/FlagshipBackdrop.tsx',
+  'utf8',
+);
+const flagshipSafeArea = fs.readFileSync(
+  'src/design-system/components/FlagshipSafeAreaScreen.tsx',
+  'utf8',
+);
+const homeCommandTile = fs.readFileSync(
+  'src/features/chat/components/HomeCommandTile.tsx',
+  'utf8',
+);
 const settings = fs.readFileSync(
   'src/features/settings/SettingsScreen.tsx',
   'utf8',
@@ -49,9 +69,11 @@ test(
   'premium hero surfaces provide shared brand depth without expensive platform-only effects',
   () => {
     assert.match(premiumHero, /AdaptiveGlassSurface/);
+    assert.match(premiumHero, /LinearGradient/);
     assert.match(premiumHero, /depth\.elevated/);
     assert.match(premiumHero, /styles\.accentRail/);
     assert.match(premiumHero, /styles\.auraOuter/);
+    assert.match(premiumHero, /palette\.warmGlow/);
     assert.match(premiumHero, /pointerEvents="none"/);
     assert.match(depthTokens, /floating:/);
     assert.doesNotMatch(premiumHero, /Math\.random/);
@@ -62,8 +84,10 @@ test(
   'primary surfaces use shared inset-card hierarchy rather than flat settings rows',
   () => {
     assert.match(insetCard, /AdaptiveGlassSurface/);
+    assert.match(insetCard, /LinearGradient/);
+    assert.match(insetCard, /palette\.card/);
     assert.match(insetCard, /borderRadius:\s*radius\.xl/);
-    assert.match(insetCard, /shadowRadius:\s*18/);
+    assert.match(insetCard, /depth\.subtle/);
 
     assert.match(settings, /SettingsSectionCard/);
     assert.ok(
@@ -106,12 +130,12 @@ test(
     for (const [file, source] of headers) {
       assert.match(
         source,
-        /minHeight:\s*(?:70|72)/,
+        /minHeight:\s*(?:70|72|82)/,
         file,
       );
       assert.match(
         source,
-        /backgroundColor:\s*colors\.background/,
+        /backgroundColor:\s*'transparent'/,
         file,
       );
     }
@@ -278,8 +302,11 @@ test(
     }
 
     assert.match(tile, /accessibilityHint=\{description\}/);
-    assert.match(tile, /motion\.press\.subtleScale/);
-    assert.match(tile, /minHeight:\s*126/);
+    assert.match(tile, /motion\.press[\s\S]*?\.subtleScale/);
+    assert.match(tile, /minHeight:\s*136/);
+    assert.match(tile, /LinearGradient/);
+    assert.match(tile, /palette[\s\S]*?\.primaryAction/);
+    assert.match(tile, /palette[\s\S]*?\.card/);
   },
 );
 
@@ -295,5 +322,85 @@ test(
     assert.match(messageList, /flexGrow:\s*1/);
     assert.match(messageList, /justifyContent:\s*'flex-end'/);
     assert.match(messageList, /styles\.emptyContent/);
+  },
+);
+
+
+test(
+  'flagship identity uses graphite emerald and warm metal without purple AI-neon cues',
+  () => {
+    const combined =
+      flagshipTokens
+      + colorTokens
+      + premiumHero
+      + flagshipBackdrop
+      + homeCommandTile;
+
+    assert.doesNotMatch(
+      combined,
+      /purple|violet/iu,
+    );
+    assert.doesNotMatch(
+      combined,
+      /106,92,255|118,100,255|#5A54E8|#755DEB/iu,
+    );
+
+    assert.match(
+      flagshipTokens,
+      /metal:/,
+    );
+    assert.match(
+      flagshipTokens,
+      /warmGlow:/,
+    );
+    assert.match(
+      colorTokens,
+      /accent:\s*'#59CBA4'/,
+    );
+    assert.match(
+      flagshipBackdrop,
+      /architecturalBeam/,
+    );
+    assert.match(
+      flagshipBackdrop,
+      /warmField/,
+    );
+  },
+);
+
+test(
+  'major product routes share the flagship safe-area stage',
+  () => {
+    assert.match(
+      flagshipSafeArea,
+      /FlagshipScreen/,
+    );
+    assert.match(
+      flagshipSafeArea,
+      /backgroundColor:\s*'transparent'/,
+    );
+
+    for (const file of [
+      'src/features/chat/ChatScreen.tsx',
+      'src/features/settings/SettingsScreen.tsx',
+      'src/features/voice/VoiceScreen.tsx',
+      'src/features/companion/CompanionScreen.tsx',
+      'src/features/projects/ProjectsScreen.tsx',
+      'src/features/projects/ProjectDetailScreen.tsx',
+      'src/features/conversations/ConversationsScreen.tsx',
+      'src/features/diagnostics/DiagnosticsScreen.tsx',
+      'src/features/capabilities/CapabilitiesScreen.tsx',
+    ]) {
+      const source = fs.readFileSync(
+        file,
+        'utf8',
+      );
+
+      assert.match(
+        source,
+        /FlagshipSafeAreaScreen/,
+        file,
+      );
+    }
   },
 );

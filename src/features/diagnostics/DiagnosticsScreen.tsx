@@ -6,12 +6,11 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { DiagnosticRepository } from '../../contracts/DiagnosticRepository';
 import { useCoreHealth } from '../../core/health/CoreHealthProvider';
 import { useLocale } from '../../core/localization/LocaleProvider';
-import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { FlagshipSafeAreaScreen } from '../../design-system/components/FlagshipSafeAreaScreen';
 import { spacing } from '../../design-system/tokens/spacing';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
@@ -42,7 +41,6 @@ export function DiagnosticsScreen({
   repository,
   runAttachmentMaintenance,
 }: Props) {
-  const { colors } = useTheme();
   const { t } = useLocale();
   const health = useCoreHealth();
   const controller = useDiagnosticsController({
@@ -85,11 +83,9 @@ export function DiagnosticsScreen({
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        { backgroundColor: colors.background },
-      ]}
+    <FlagshipSafeAreaScreen
+      quiet
+      style={styles.safeArea}
     >
       <DiagnosticsScreenHeader />
 
@@ -163,7 +159,7 @@ export function DiagnosticsScreen({
           </>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </FlagshipSafeAreaScreen>
   );
 }
 

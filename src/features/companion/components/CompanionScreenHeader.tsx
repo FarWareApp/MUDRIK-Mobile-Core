@@ -36,7 +36,7 @@ export function CompanionScreenHeader({
         styles.container,
         {
           borderBottomColor: colors.border,
-          backgroundColor: colors.background,
+          backgroundColor: 'transparent',
         },
       ]}
     >

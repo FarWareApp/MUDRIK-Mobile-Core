@@ -10,9 +10,6 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import {
-  SafeAreaView,
-} from 'react-native-safe-area-context';
 
 import { AttachmentPicker } from '../../contracts/AttachmentPicker';
 import { AttachmentRepository } from '../../contracts/AttachmentRepository';
@@ -22,7 +19,7 @@ import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useAppSettings } from '../../core/settings/AppSettingsProvider';
-import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { FlagshipSafeAreaScreen } from '../../design-system/components/FlagshipSafeAreaScreen';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 import { AttachmentImportService } from '../attachments/AttachmentImportService';
 import { AttachmentDraftTray } from '../attachments/components/AttachmentDraftTray';
@@ -70,7 +67,6 @@ export function ChatScreen({
   attachmentImportService,
   attachmentFileStore,
 }: Props) {
-  const { colors } = useTheme();
   const { t } = useLocale();
   const { settings } = useAppSettings();
 
@@ -270,13 +266,8 @@ export function ChatScreen({
     );
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        {
-          backgroundColor: colors.background,
-        },
-      ]}
+    <FlagshipSafeAreaScreen
+      style={styles.safeArea}
     >
       <KeyboardAvoidingView
         style={styles.flex}
@@ -422,7 +413,7 @@ export function ChatScreen({
           </>
         )}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </FlagshipSafeAreaScreen>
   );
 }
 

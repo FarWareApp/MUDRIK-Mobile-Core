@@ -10,9 +10,6 @@ import {
   router,
   useFocusEffect,
 } from 'expo-router';
-import {
-  SafeAreaView,
-} from 'react-native-safe-area-context';
 
 import type {
   ConversationRecord,
@@ -22,7 +19,7 @@ import {
   diagnosticsService,
 } from '../../core/diagnostics/DiagnosticsService';
 import { useLocale } from '../../core/localization/LocaleProvider';
-import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { FlagshipSafeAreaScreen } from '../../design-system/components/FlagshipSafeAreaScreen';
 import { spacing } from '../../design-system/tokens/spacing';
 import {
   InlineErrorBanner,
@@ -45,7 +42,6 @@ export function ConversationsScreen({
   repository,
   onConversationDeleted,
 }: Props) {
-  const { colors } = useTheme();
   const { t } = useLocale();
 
   const {
@@ -188,13 +184,8 @@ export function ConversationsScreen({
     : null;
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        {
-          backgroundColor: colors.background,
-        },
-      ]}
+    <FlagshipSafeAreaScreen
+      style={styles.safeArea}
     >
       <ConversationHistoryHeader
         busy={busy}
@@ -251,7 +242,7 @@ export function ConversationsScreen({
           onDelete={confirmDelete}
         />
       )}
-    </SafeAreaView>
+    </FlagshipSafeAreaScreen>
   );
 }
 

@@ -4,10 +4,9 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useLocale } from '../../core/localization/LocaleProvider';
-import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { FlagshipSafeAreaScreen } from '../../design-system/components/FlagshipSafeAreaScreen';
 import { spacing } from '../../design-system/tokens/spacing';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
@@ -18,7 +17,6 @@ import { VoiceScreenHeader } from './components/VoiceScreenHeader';
 import { useVoiceRecorderController } from './hooks/useVoiceRecorderController';
 
 export function VoiceScreen() {
-  const { colors } = useTheme();
   const { t } = useLocale();
   const recorder = useVoiceRecorderController();
 
@@ -36,11 +34,8 @@ export function VoiceScreen() {
               : null;
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        { backgroundColor: colors.background },
-      ]}
+    <FlagshipSafeAreaScreen
+      style={styles.safeArea}
     >
       <VoiceScreenHeader />
 
@@ -81,7 +76,7 @@ export function VoiceScreen() {
           />
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </FlagshipSafeAreaScreen>
   );
 }
 

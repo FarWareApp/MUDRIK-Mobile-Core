@@ -4,8 +4,12 @@ import React, {
 import {
   StyleProp,
   StyleSheet,
+  View,
   ViewStyle,
 } from 'react-native';
+import {
+  LinearGradient,
+} from 'expo-linear-gradient';
 
 import {
   AdaptiveGlassSurface,
@@ -13,6 +17,12 @@ import {
 import {
   useTheme,
 } from '../theme/ThemeProvider';
+import {
+  depth,
+} from '../tokens/depth';
+import {
+  flagshipPalette,
+} from '../tokens/flagship';
 import {
   radius,
 } from '../tokens/radius';
@@ -27,24 +37,58 @@ export function InsetSurfaceCard({
   style,
   elevated = true,
 }: Props) {
-  const { colors } = useTheme();
+  const {
+    colors,
+    mode,
+  } = useTheme();
+  const palette =
+    flagshipPalette[mode];
 
   return (
-    <AdaptiveGlassSurface
-      fallbackColor={colors.surface}
-      tintColor={colors.surface}
+    <LinearGradient
+      colors={palette.card}
+      start={{
+        x: 0.04,
+        y: 0,
+      }}
+      end={{
+        x: 0.96,
+        y: 1,
+      }}
       style={[
         styles.card,
-        elevated && styles.elevated,
+        elevated
+          ? depth.subtle
+          : null,
         {
-          borderColor: colors.border,
-          shadowColor: colors.shadow,
+          borderColor:
+            palette.hairline,
+          shadowColor:
+            colors.shadow,
         },
         style,
       ]}
     >
-      {children}
-    </AdaptiveGlassSurface>
+      <AdaptiveGlassSurface
+        fallbackColor="transparent"
+        tintColor="transparent"
+        style={styles.glass}
+      >
+        <View
+          importantForAccessibility="no"
+          pointerEvents="none"
+          style={[
+            styles.highlight,
+            {
+              backgroundColor:
+                palette.shine,
+            },
+          ]}
+        />
+
+        {children}
+      </AdaptiveGlassSurface>
+    </LinearGradient>
   );
 }
 
@@ -55,13 +99,16 @@ const styles = StyleSheet.create({
       StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
   },
-  elevated: {
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: {
-      width: 0,
-      height: 7,
-    },
-    elevation: 3,
+  glass: {
+    borderRadius: radius.xl,
+  },
+  highlight: {
+    position: 'absolute',
+    top: 0,
+    start: 24,
+    end: 24,
+    height: 1,
+    opacity: 0.62,
+    borderRadius: radius.pill,
   },
 });

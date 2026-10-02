@@ -34,7 +34,7 @@ export function ConversationHistoryHeader({
         styles.container,
         {
           borderBottomColor: colors.border,
-          backgroundColor: colors.background,
+          backgroundColor: 'transparent',
         },
       ]}
     >

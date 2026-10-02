@@ -14,6 +14,10 @@ const rootLayout = fs.readFileSync(
   'src/app/_layout.tsx',
   'utf8',
 );
+const flagshipSafeArea = fs.readFileSync(
+  'src/design-system/components/FlagshipSafeAreaScreen.tsx',
+  'utf8',
+);
 const appConfig = JSON.parse(
   fs.readFileSync('app.json', 'utf8'),
 );
@@ -45,7 +49,8 @@ test(
 test(
   'chat screen keeps safe-area and keyboard avoidance responsibilities explicit',
   () => {
-    assert.match(chatScreen, /\bSafeAreaView\b/);
+    assert.match(chatScreen, /FlagshipSafeAreaScreen/);
+    assert.match(flagshipSafeArea, /\bSafeAreaView\b/);
     assert.match(chatScreen, /\bKeyboardAvoidingView\b/);
     assert.match(chatScreen, /Platform\.OS\s*===\s*'ios'/);
     assert.match(chatScreen, /\?\s*'padding'/);

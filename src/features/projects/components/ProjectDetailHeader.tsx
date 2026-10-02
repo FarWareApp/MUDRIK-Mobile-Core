@@ -36,7 +36,7 @@ export function ProjectDetailHeader({
         styles.container,
         {
           borderBottomColor: colors.border,
-          backgroundColor: colors.background,
+          backgroundColor: 'transparent',
         },
       ]}
     >

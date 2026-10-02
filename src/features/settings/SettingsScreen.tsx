@@ -5,7 +5,6 @@ import {
   StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type {
   LanguagePreference,
@@ -19,7 +18,7 @@ import type {
 } from '../../contracts/PermissionSettingsService';
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useAppSettings } from '../../core/settings/AppSettingsProvider';
-import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { FlagshipSafeAreaScreen } from '../../design-system/components/FlagshipSafeAreaScreen';
 import { spacing } from '../../design-system/tokens/spacing';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
@@ -47,7 +46,6 @@ export function SettingsScreen({
   permissionService,
   permissionSettingsService,
 }: Props) {
-  const { colors } = useTheme();
   const { t } = useLocale();
   const settings = useAppSettings();
   const permissions = usePermissionController(
@@ -108,11 +106,9 @@ export function SettingsScreen({
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        { backgroundColor: colors.background },
-      ]}
+    <FlagshipSafeAreaScreen
+      quiet
+      style={styles.safeArea}
     >
       <SettingsScreenHeader />
 
@@ -308,7 +304,7 @@ export function SettingsScreen({
           </ScrollView>
         </>
       )}
-    </SafeAreaView>
+    </FlagshipSafeAreaScreen>
   );
 }
 

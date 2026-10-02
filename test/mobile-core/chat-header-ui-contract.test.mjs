@@ -16,8 +16,8 @@ test(
   () => {
     assert.match(header, /accessibilityRole="button"/);
     assert.match(header, /t\('newConversation'\)/);
-    assert.match(header, /width:\s*46/);
-    assert.match(header, /height:\s*46/);
+    assert.match(header, /width:\s*48/);
+    assert.match(header, /height:\s*48/);
     assert.match(header, /ChatNewConversationIcon/);
     assert.doesNotMatch(header, />\s*\+\s*</);
     assert.match(
@@ -31,8 +31,9 @@ test(
 test(
   'chat header press feedback uses the shared motion contract',
   () => {
-    assert.match(header, /motion\.press\.scale/);
-    assert.doesNotMatch(header, /\?\s*0\.96/);
-    assert.match(header, /surfacePressed/);
+    assert.match(header, /motion\.press[\s\S]*?\.scale/);
+    assert.doesNotMatch(header, /scale:[\s\S]*?\?\s*0\.96/);
+    assert.match(header, /palette[\s\S]*?\.secondaryAction/);
+    assert.match(header, /LinearGradient/);
   },
 );

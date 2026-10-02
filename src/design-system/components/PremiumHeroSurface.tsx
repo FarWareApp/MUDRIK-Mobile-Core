@@ -8,6 +8,9 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import {
+  LinearGradient,
+} from 'expo-linear-gradient';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -27,6 +30,9 @@ import {
   depth,
 } from '../tokens/depth';
 import {
+  flagshipPalette,
+} from '../tokens/flagship';
+import {
   motion,
 } from '../tokens/motion';
 import {
@@ -41,6 +47,7 @@ type Props = PropsWithChildren<{
   accentRail?: boolean;
   decorativeAura?: boolean;
   active?: boolean;
+  strong?: boolean;
 }>;
 
 export function PremiumHeroSurface({
@@ -49,10 +56,16 @@ export function PremiumHeroSurface({
   accentRail = true,
   decorativeAura = true,
   active = false,
+  strong = false,
 }: Props) {
-  const { colors } = useTheme();
+  const {
+    colors,
+    mode,
+  } = useTheme();
   const { reducedMotion } =
     useAccessibility();
+  const palette =
+    flagshipPalette[mode];
   const energy = useSharedValue(
     active ? 0.55 : 0,
   );
@@ -97,123 +110,212 @@ export function PremiumHeroSurface({
   const auraAnimatedStyle =
     useAnimatedStyle(() => ({
       opacity: active
-        ? 0.62
-          + energy.value * 0.24
-        : 0.78,
+        ? 0.52
+          + energy.value * 0.32
+        : 0.64,
       transform: [
         {
           scale: active
             ? 1
-              + energy.value * 0.035
+              + energy.value * 0.05
             : 1,
         },
       ],
     }));
 
   return (
-    <AdaptiveGlassSurface
-      fallbackColor={colors.surface}
-      tintColor={colors.surface}
+    <View
       style={[
-        styles.surface,
-        depth.elevated,
+        styles.frame,
+        strong
+          ? depth.floating
+          : depth.elevated,
         {
-          borderColor: colors.border,
-          shadowColor: colors.shadow,
+          shadowColor:
+            colors.shadow,
         },
         style,
       ]}
     >
-      {decorativeAura ? (
-        <Animated.View
-          importantForAccessibility="no-hide-descendants"
-          pointerEvents="none"
-          style={[
-            styles.decorativeLayer,
-            auraAnimatedStyle,
-          ]}
+      <LinearGradient
+        colors={
+          strong
+            ? palette.heroStrong
+            : palette.hero
+        }
+        start={{
+          x: 0.04,
+          y: 0,
+        }}
+        end={{
+          x: 0.96,
+          y: 1,
+        }}
+        style={[
+          styles.surface,
+          {
+            borderColor:
+              palette.hairline,
+          },
+        ]}
+      >
+        <AdaptiveGlassSurface
+          fallbackColor="transparent"
+          tintColor="transparent"
+          style={styles.glass}
         >
           <View
+            importantForAccessibility="no"
+            pointerEvents="none"
             style={[
-              styles.auraOuter,
+              styles.topHighlight,
               {
-                borderColor:
-                  colors.accentSoft,
                 backgroundColor:
-                  colors.accentSoft,
+                  palette.shine,
               },
             ]}
           />
+
+          {decorativeAura ? (
+            <>
+              <Animated.View
+                importantForAccessibility="no-hide-descendants"
+                pointerEvents="none"
+                style={[
+                  styles.decorativeLayer,
+                  auraAnimatedStyle,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.auraOuter,
+                    {
+                      borderColor:
+                        palette.glow,
+                      backgroundColor:
+                        palette.glow,
+                    },
+                  ]}
+                />
+
+                <View
+                  style={[
+                    styles.auraInner,
+                    {
+                      borderColor:
+                        palette.warmGlow,
+                      backgroundColor:
+                        palette.warmGlow,
+                    },
+                  ]}
+                />
+              </Animated.View>
+
+              <View
+                importantForAccessibility="no-hide-descendants"
+                pointerEvents="none"
+                style={[
+                  styles.secondaryGlow,
+                  {
+                    backgroundColor:
+                      palette.warmGlow,
+                  },
+                ]}
+              />
+            </>
+          ) : null}
+
+          {accentRail ? (
+            <LinearGradient
+              importantForAccessibility="no"
+              pointerEvents="none"
+              colors={
+                palette.primaryAction
+              }
+              style={styles.accentRail}
+            />
+          ) : null}
+
           <View
-            style={[
-              styles.auraInner,
-              {
-                borderColor:
-                  colors.border,
-              },
-            ]}
-          />
-        </Animated.View>
-      ) : null}
-
-      {accentRail ? (
-        <View
-          importantForAccessibility="no"
-          pointerEvents="none"
-          style={[
-            styles.accentRail,
-            {
-              backgroundColor:
-                colors.accent,
-            },
-          ]}
-        />
-      ) : null}
-
-      {children}
-    </AdaptiveGlassSurface>
+            style={styles.content}
+          >
+            {children}
+          </View>
+        </AdaptiveGlassSurface>
+      </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  frame: {
+    borderRadius: radius.xxl,
+  },
   surface: {
     overflow: 'hidden',
     borderWidth:
       StyleSheet.hairlineWidth,
-    borderRadius: radius.xl,
+    borderRadius: radius.xxl,
+  },
+  glass: {
+    overflow: 'hidden',
+    borderRadius: radius.xxl,
+  },
+  content: {
+    zIndex: 2,
+  },
+  topHighlight: {
+    position: 'absolute',
+    top: 0,
+    start: 32,
+    end: 32,
+    height: 1,
+    opacity: 0.78,
+    borderRadius: radius.pill,
   },
   decorativeLayer: {
     position: 'absolute',
-    top: -68,
-    end: -54,
-    width: 196,
-    height: 196,
+    top: -104,
+    end: -82,
+    width: 276,
+    height: 276,
     alignItems: 'center',
     justifyContent: 'center',
   },
   auraOuter: {
     position: 'absolute',
-    width: 196,
-    height: 196,
+    width: 276,
+    height: 276,
     borderWidth:
       StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
   },
   auraInner: {
     position: 'absolute',
-    width: 126,
-    height: 126,
+    width: 168,
+    height: 168,
     borderWidth:
       StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
   },
+  secondaryGlow: {
+    position: 'absolute',
+    bottom: -88,
+    start: -72,
+    width: 210,
+    height: 210,
+    borderRadius: radius.pill,
+    opacity: 0.42,
+  },
   accentRail: {
     position: 'absolute',
-    top: 22,
+    top: 24,
     start: 0,
-    width: 4,
-    height: 44,
-    borderTopEndRadius: radius.pill,
-    borderBottomEndRadius: radius.pill,
+    width: 5,
+    height: 56,
+    borderTopEndRadius:
+      radius.pill,
+    borderBottomEndRadius:
+      radius.pill,
   },
 });

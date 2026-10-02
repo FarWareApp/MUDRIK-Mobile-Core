@@ -9,14 +9,13 @@ import {
   router,
   useFocusEffect,
 } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type {
   ProjectRecord,
   ProjectRepository,
 } from '../../contracts/ProjectRepository';
 import { useLocale } from '../../core/localization/LocaleProvider';
-import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { FlagshipSafeAreaScreen } from '../../design-system/components/FlagshipSafeAreaScreen';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
 import { ProjectEditorModal } from './components/ProjectEditorModal';
@@ -37,7 +36,6 @@ export function ProjectsScreen({
   repository,
   onProjectDeleted,
 }: Props) {
-  const { colors } = useTheme();
   const { t } = useLocale();
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -126,11 +124,8 @@ export function ProjectsScreen({
       : null);
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-      }}
+    <FlagshipSafeAreaScreen
+      style={{ flex: 1 }}
     >
       <ProjectScreenHeader
         busy={controller.busy}
@@ -214,6 +209,6 @@ export function ProjectsScreen({
           })();
         }}
       />
-    </SafeAreaView>
+    </FlagshipSafeAreaScreen>
   );
 }

@@ -27,7 +27,7 @@ export function VoiceScreenHeader() {
         styles.container,
         {
           borderBottomColor: colors.border,
-          backgroundColor: colors.background,
+          backgroundColor: 'transparent',
         },
       ]}
     >

@@ -5,13 +5,13 @@ import {
   Text,
   View,
 } from 'react-native';
-import {
-  SafeAreaView,
-} from 'react-native-safe-area-context';
 
 import {
   useLocale,
 } from '../../core/localization/LocaleProvider';
+import {
+  FlagshipSafeAreaScreen,
+} from '../../design-system/components/FlagshipSafeAreaScreen';
 import {
   InsetSurfaceCard,
 } from '../../design-system/components/InsetSurfaceCard';
@@ -107,14 +107,9 @@ export function CapabilitiesScreen() {
   const { t } = useLocale();
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        {
-          backgroundColor:
-            colors.background,
-        },
-      ]}
+    <FlagshipSafeAreaScreen
+      quiet
+      style={styles.safeArea}
     >
       <CapabilitiesScreenHeader />
 
@@ -405,7 +400,7 @@ export function CapabilitiesScreen() {
           </View>
         </CapabilitySection>
       </ScrollView>
-    </SafeAreaView>
+    </FlagshipSafeAreaScreen>
   );
 }
 

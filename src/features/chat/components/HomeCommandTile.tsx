@@ -8,6 +8,9 @@ import {
   Text,
   View,
 } from 'react-native';
+import {
+  LinearGradient,
+} from 'expo-linear-gradient';
 
 import {
   useAccessibility,
@@ -15,6 +18,12 @@ import {
 import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
+import {
+  depth,
+} from '../../../design-system/tokens/depth';
+import {
+  flagshipPalette,
+} from '../../../design-system/tokens/flagship';
 import {
   motion,
 } from '../../../design-system/tokens/motion';
@@ -44,165 +53,286 @@ export const HomeCommandTile = memo(
     primary = false,
     onPress,
   }: Props) {
-  const { colors } = useTheme();
-  const { reducedMotion } =
-    useAccessibility();
+    const {
+      colors,
+      mode,
+    } = useTheme();
+    const { reducedMotion } =
+      useAccessibility();
+    const palette =
+      flagshipPalette[mode];
 
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={description}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.tile,
-        primary && styles.primaryTile,
-        {
-          backgroundColor: primary
-            ? colors.accent
-            : pressed
-              ? colors.surfacePressed
-              : colors.surface,
-          borderColor: primary
-            ? colors.accent
-            : colors.border,
-          shadowColor: colors.shadow,
-          shadowOpacity: primary
-            ? 0.14
-            : 0.06,
-          opacity: pressed ? 0.94 : 1,
-          transform: [
-            {
-              scale:
-                pressed && !reducedMotion
-                  ? motion.press.subtleScale
-                  : 1,
-            },
-          ],
-        },
-      ]}
-    >
-      {primary ? (
-        <View
-          importantForAccessibility="no-hide-descendants"
-          pointerEvents="none"
-          style={styles.primaryDecoration}
-        >
-          <View
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={description}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.frame,
+          primary && styles.primaryFrame,
+          primary
+            ? depth.elevated
+            : depth.subtle,
+          {
+            shadowColor:
+              colors.shadow,
+            opacity:
+              pressed ? 0.96 : 1,
+            transform: [
+              {
+                scale:
+                  pressed
+                  && !reducedMotion
+                    ? motion.press
+                        .subtleScale
+                    : 1,
+              },
+            ],
+          },
+        ]}
+      >
+        {({ pressed }) => (
+          <LinearGradient
+            colors={
+              primary
+                ? pressed
+                  ? palette
+                      .primaryActionPressed
+                  : palette
+                      .primaryAction
+                : pressed
+                  ? palette
+                      .secondaryAction
+                  : palette.card
+            }
+            start={{
+              x: 0.04,
+              y: 0,
+            }}
+            end={{
+              x: 0.96,
+              y: 1,
+            }}
             style={[
-              styles.primaryRingOuter,
+              styles.tile,
               {
                 borderColor:
-                  colors.accentText,
+                  primary
+                    ? palette.glow
+                    : palette.hairline,
               },
             ]}
-          />
-          <View
-            style={[
-              styles.primaryRingInner,
-              {
-                borderColor:
-                  colors.accentText,
-              },
-            ]}
-          />
-        </View>
-      ) : null}
+          >
+            <View
+              importantForAccessibility="no"
+              pointerEvents="none"
+              style={[
+                styles.topHighlight,
+                {
+                  backgroundColor:
+                    primary
+                      ? 'rgba(255,255,255,0.16)'
+                      : palette.shine,
+                },
+              ]}
+            />
 
-      <View
-        importantForAccessibility="no-hide-descendants"
-        style={[
-          styles.icon,
-          {
-            backgroundColor: primary
-              ? colors.accentText
-              : colors.accentSoft,
-          },
-        ]}
-      >
-        {icon}
-      </View>
+            <View
+              importantForAccessibility="no"
+              pointerEvents="none"
+              style={[
+                styles.metalAccent,
+                {
+                  backgroundColor:
+                    primary
+                      ? colors.accentText
+                      : palette.metal,
+                  opacity:
+                    primary ? 0.34 : 0.28,
+                },
+              ]}
+            />
 
-      <Text
-        numberOfLines={1}
-        style={[
-          styles.label,
-          {
-            color: primary
-              ? colors.accentText
-              : colors.textPrimary,
-          },
-        ]}
-      >
-        {label}
-      </Text>
+            {primary ? (
+              <View
+                importantForAccessibility="no-hide-descendants"
+                pointerEvents="none"
+                style={styles.primaryDecoration}
+              >
+                <View
+                  style={[
+                    styles.primaryPanel,
+                    {
+                      borderColor:
+                        colors.accentText,
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.primaryPanel,
+                    styles.primaryPanelInner,
+                    {
+                      borderColor:
+                        colors.accentText,
+                    },
+                  ]}
+                />
+              </View>
+            ) : null}
 
-      <Text
-        numberOfLines={2}
-        style={[
-          styles.description,
-          {
-            color: primary
-              ? colors.accentText
-              : colors.textSecondary,
-            opacity: primary ? 0.86 : 1,
-          },
-        ]}
-      >
-        {description}
-      </Text>
-    </Pressable>
-  );
+            <View
+              importantForAccessibility="no-hide-descendants"
+              style={[
+                styles.icon,
+                {
+                  backgroundColor:
+                    primary
+                      ? 'rgba(248,255,249,0.92)'
+                      : colors.accentSoft,
+                  borderColor:
+                    primary
+                      ? 'rgba(255,255,255,0.22)'
+                      : palette.hairline,
+                },
+              ]}
+            >
+              {icon}
+            </View>
+
+            <Text
+              numberOfLines={1}
+              style={[
+                primary
+                  ? styles.primaryLabel
+                  : styles.label,
+                {
+                  color: primary
+                    ? colors.accentText
+                    : colors.textPrimary,
+                },
+              ]}
+            >
+              {label}
+            </Text>
+
+            <Text
+              numberOfLines={2}
+              style={[
+                styles.description,
+                {
+                  color: primary
+                    ? colors.accentText
+                    : colors.textSecondary,
+                  opacity:
+                    primary ? 0.86 : 1,
+                },
+              ]}
+            >
+              {description}
+            </Text>
+
+            <View
+              importantForAccessibility="no"
+              pointerEvents="none"
+              style={[
+                styles.actionMark,
+                {
+                  borderColor:
+                    primary
+                      ? 'rgba(255,255,255,0.34)'
+                      : palette.hairline,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.actionMarkLine,
+                  {
+                    backgroundColor:
+                      primary
+                        ? colors.accentText
+                        : colors.accent,
+                  },
+                ]}
+              />
+            </View>
+          </LinearGradient>
+        )}
+      </Pressable>
+    );
   },
 );
 
 const styles = StyleSheet.create({
-  tile: {
-    minHeight: 126,
+  frame: {
+    minHeight: 136,
     flexBasis: '47%',
     flexGrow: 1,
+    borderRadius: radius.xl,
+  },
+  primaryFrame: {
+    flexBasis: '100%',
+    minHeight: 148,
+  },
+  tile: {
+    flex: 1,
+    overflow: 'hidden',
     borderWidth:
       StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
     padding: spacing.lg,
-    shadowRadius: 14,
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    elevation: 2,
   },
-  primaryTile: {
-    flexBasis: '100%',
-    minHeight: 118,
+  topHighlight: {
+    position: 'absolute',
+    top: 0,
+    start: 22,
+    end: 22,
+    height: 1,
+    borderRadius: radius.pill,
+  },
+  metalAccent: {
+    position: 'absolute',
+    top: 20,
+    end: 18,
+    width: 28,
+    height: 2,
+    borderRadius: radius.pill,
   },
   primaryDecoration: {
     position: 'absolute',
-    top: -42,
-    end: -30,
-    width: 168,
-    height: 168,
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.18,
+    top: -34,
+    end: -20,
+    width: 182,
+    height: 170,
+    opacity: 0.14,
   },
-  primaryRingOuter: {
+  primaryPanel: {
     position: 'absolute',
-    width: 168,
-    height: 168,
+    top: 10,
+    end: 8,
+    width: 142,
+    height: 118,
     borderWidth: 1,
-    borderRadius: radius.pill,
+    borderRadius: radius.xxl,
+    transform: [
+      {
+        rotate: '-8deg',
+      },
+    ],
   },
-  primaryRingInner: {
-    position: 'absolute',
-    width: 110,
-    height: 110,
-    borderWidth: 1,
-    borderRadius: radius.pill,
+  primaryPanelInner: {
+    top: 30,
+    end: 26,
+    width: 102,
+    height: 82,
   },
   icon: {
-    width: 42,
-    height: 42,
+    width: 46,
+    height: 46,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -213,9 +343,33 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     writingDirection: 'auto',
   },
+  primaryLabel: {
+    ...typeScale.heading,
+    marginTop: spacing.md,
+    fontWeight: '800',
+    writingDirection: 'auto',
+  },
   description: {
     ...typeScale.caption,
+    maxWidth: '88%',
     marginTop: spacing.xs,
     writingDirection: 'auto',
+  },
+  actionMark: {
+    position: 'absolute',
+    end: spacing.lg,
+    bottom: spacing.lg,
+    width: 30,
+    height: 30,
+    borderWidth:
+      StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionMarkLine: {
+    width: 10,
+    height: 2,
+    borderRadius: radius.pill,
   },
 });

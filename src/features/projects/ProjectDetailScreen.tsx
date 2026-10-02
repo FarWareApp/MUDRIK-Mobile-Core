@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type {
   AttachmentPicker,
@@ -23,6 +22,7 @@ import type {
 } from '../../contracts/ProjectRepository';
 import { useLocale } from '../../core/localization/LocaleProvider';
 import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { FlagshipSafeAreaScreen } from '../../design-system/components/FlagshipSafeAreaScreen';
 import { spacing } from '../../design-system/tokens/spacing';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
@@ -64,24 +64,18 @@ export function ProjectDetailScreen(
 
   if (controller.loading && !controller.project) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safeArea,
-          { backgroundColor: colors.background },
-        ]}
+      <FlagshipSafeAreaScreen
+        style={styles.safeArea}
       >
         <ProjectDetailState mode="loading" />
-      </SafeAreaView>
+      </FlagshipSafeAreaScreen>
     );
   }
 
   if (!controller.project) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safeArea,
-          { backgroundColor: colors.background },
-        ]}
+      <FlagshipSafeAreaScreen
+        style={styles.safeArea}
       >
         <ProjectDetailState
           mode={
@@ -97,7 +91,7 @@ export function ProjectDetailScreen(
               : undefined
           }
         />
-      </SafeAreaView>
+      </FlagshipSafeAreaScreen>
     );
   }
 
@@ -146,11 +140,8 @@ export function ProjectDetailScreen(
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        { backgroundColor: colors.background },
-      ]}
+    <FlagshipSafeAreaScreen
+      style={styles.safeArea}
     >
       <ProjectDetailHeader
         title={project.name}
@@ -247,7 +238,7 @@ export function ProjectDetailScreen(
           })();
         }}
       />
-    </SafeAreaView>
+    </FlagshipSafeAreaScreen>
   );
 }
 

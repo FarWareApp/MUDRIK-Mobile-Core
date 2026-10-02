@@ -60,9 +60,10 @@ test(
 test(
   'chat header keeps a large localized new-conversation target with pressed feedback',
   () => {
-    assert.match(chatHeader, /width:\s*46/);
-    assert.match(chatHeader, /height:\s*46/);
-    assert.match(chatHeader, /surfacePressed/);
+    assert.match(chatHeader, /width:\s*48/);
+    assert.match(chatHeader, /height:\s*48/);
+    assert.match(chatHeader, /LinearGradient/);
+    assert.match(chatHeader, /palette[\s\S]*?\.secondaryAction/);
     assert.match(chatHeader, /t\('newConversation'\)/);
   },
 );

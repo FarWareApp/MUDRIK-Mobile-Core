@@ -7,13 +7,12 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type {
   CompanionRepository,
 } from '../../contracts/CompanionRepository';
 import { useLocale } from '../../core/localization/LocaleProvider';
-import { useTheme } from '../../design-system/theme/ThemeProvider';
+import { FlagshipSafeAreaScreen } from '../../design-system/components/FlagshipSafeAreaScreen';
 import { spacing } from '../../design-system/tokens/spacing';
 import { InlineErrorBanner } from '../../shared/components/InlineErrorBanner';
 
@@ -35,7 +34,6 @@ type Props = {
 export function CompanionScreen({
   repository,
 }: Props) {
-  const { colors } = useTheme();
   const { t } = useLocale();
   const [editing, setEditing] = useState(false);
 
@@ -61,11 +59,8 @@ export function CompanionScreen({
 
   if (profile.loading || profile.failed) {
     return (
-      <SafeAreaView
-        style={[
-          styles.safeArea,
-          { backgroundColor: colors.background },
-        ]}
+      <FlagshipSafeAreaScreen
+        style={styles.safeArea}
       >
         <CompanionScreenState
           mode={profile.failed ? 'error' : 'loading'}
@@ -77,7 +72,7 @@ export function CompanionScreen({
               : undefined
           }
         />
-      </SafeAreaView>
+      </FlagshipSafeAreaScreen>
     );
   }
 
@@ -96,11 +91,8 @@ export function CompanionScreen({
       : null;
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        { backgroundColor: colors.background },
-      ]}
+    <FlagshipSafeAreaScreen
+      style={styles.safeArea}
     >
       <CompanionScreenHeader
         disabled={profile.saving}
@@ -187,7 +179,7 @@ export function CompanionScreen({
           void profile.reset();
         }}
       />
-    </SafeAreaView>
+    </FlagshipSafeAreaScreen>
   );
 }
 
