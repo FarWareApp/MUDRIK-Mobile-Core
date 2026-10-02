@@ -261,7 +261,7 @@ jobs:
       - name: Competition intelligence contract gate
         run: yarn competition:core
 
-      - name: Brain and agent internal contract gate
+      - name: Brain, agent, autonomy and integrity contract gate
         run: yarn internal:core
 
       - name: Expo Doctor

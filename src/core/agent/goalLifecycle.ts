@@ -44,6 +44,7 @@ export type GoalExecutionTransition =
     idempotent: boolean;
     reason:
       | 'accepted'
+      | 'replanned'
       | 'idempotent'
       | 'invalid_time'
       | 'deadline_exceeded'
@@ -93,7 +94,7 @@ function requiredVerificationPasses(
 
 export class GoalExecutionTracker {
   private readonly goal: GoalExecutionSpec;
-  private readonly plan: GoalExecutionPlan;
+  private plan: GoalExecutionPlan;
 
   private current: GoalExecutionState;
 
@@ -146,6 +147,111 @@ export class GoalExecutionTracker {
     }
 
     return this.plan.steps[ordinal - 1] ?? null;
+  }
+
+  applyValidatedReplan(
+    nextPlanInput: unknown,
+    trustedNowMs: number,
+  ): GoalExecutionTransition {
+    const time =
+      this.validateTime(trustedNowMs);
+
+    if (time) {
+      return time;
+    }
+
+    const closed = this.terminal();
+    if (closed) {
+      return closed;
+    }
+
+    if (
+      this.current.phase !== 'running'
+      && this.current.phase !== 'verifying'
+      && this.current.phase !== 'repairing'
+    ) {
+      return transition(
+        false,
+        false,
+        'invalid_phase',
+        this.current,
+      );
+    }
+
+    const validation =
+      validateGoalExecutionPlan(
+        this.goal,
+        nextPlanInput,
+      );
+
+    if (!validation.accepted || !validation.value) {
+      return transition(
+        false,
+        false,
+        'invalid_result',
+        this.current,
+      );
+    }
+
+    const nextPlan = validation.value;
+    const completedCount =
+      this.current.completedStepIds.length;
+
+    for (let index = 0; index < completedCount; index += 1) {
+      const previous = this.plan.steps[index];
+      const replacement = nextPlan.steps[index];
+
+      if (
+        !previous
+        || !replacement
+        || this.current.completedStepIds[index]
+          !== previous.stepId
+        || JSON.stringify(previous)
+          !== JSON.stringify(replacement)
+      ) {
+        return transition(
+          false,
+          false,
+          'invalid_result',
+          this.current,
+        );
+      }
+    }
+
+    const nextOrdinal = completedCount + 1;
+    const nextStep =
+      nextPlan.steps[nextOrdinal - 1];
+
+    if (!nextStep) {
+      return transition(
+        false,
+        false,
+        'invalid_result',
+        this.current,
+      );
+    }
+
+    this.plan = nextPlan;
+    this.current =
+      freezeState({
+        ...this.current,
+        phase:
+          nextStep.kind === 'verify'
+            ? 'verifying'
+            : 'running',
+        currentStepOrdinal: nextOrdinal,
+        failedStepId: null,
+        lastFailureReason: null,
+        finalResultRef: null,
+        updatedAtMs: trustedNowMs,
+      });
+
+    return transition(
+      true,
+      false,
+      'replanned',
+      this.current,
+    );
   }
 
   private validateTime(

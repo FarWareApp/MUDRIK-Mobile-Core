@@ -46,6 +46,11 @@ import {
   type GoalResourceUsage,
 } from './goalResourceBudget';
 
+import {
+  validateGoalReplanTransition,
+  type GoalReplanDecision,
+} from './goalReplanner';
+
 export interface GoalExecutionKernelIdFactory {
   nextLeaseId(): string;
   nextRollbackId(): string;
@@ -72,6 +77,14 @@ export type GoalStepSettlement =
   Readonly<{
     accepted: boolean;
     reason: string;
+    transition: GoalExecutionTransition | null;
+  }>;
+
+export type GoalKernelReplanResult =
+  Readonly<{
+    accepted: boolean;
+    reason: string;
+    decision: GoalReplanDecision | null;
     transition: GoalExecutionTransition | null;
   }>;
 
@@ -155,7 +168,7 @@ function usageWithin(
 export class GoalExecutionKernel {
   private readonly goal:
     GoalExecutionSpec;
-  private readonly plan:
+  private plan:
     GoalExecutionPlan;
   private readonly tracker:
     GoalExecutionTracker;
@@ -171,6 +184,8 @@ export class GoalExecutionKernel {
 
   private readonly lastGeneration =
     new Map<string, number>();
+
+  private replanGeneration = 0;
 
   constructor(
     goalInput: unknown,
@@ -271,6 +286,77 @@ export class GoalExecutionKernel {
       evidenceRef,
       trustedNowMs,
     );
+  }
+
+  replan(
+    nextPlanInput: unknown,
+    amendmentInput: unknown,
+    trustedNowMs: number,
+  ): GoalKernelReplanResult {
+    if (this.active) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'active_preparation',
+        decision: null,
+        transition: null,
+      });
+    }
+
+    if (!this.rollbacks.canFinalize()) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'rollback_pending',
+        decision: null,
+        transition: null,
+      });
+    }
+
+    const state = this.tracker.getState();
+    const decision =
+      validateGoalReplanTransition(
+        this.goal,
+        this.plan,
+        nextPlanInput,
+        amendmentInput,
+        state.completedStepIds,
+        this.replanGeneration,
+        trustedNowMs,
+      );
+
+    if (!decision.accepted || !decision.nextPlan) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'replan_denied:' + decision.reason,
+        decision,
+        transition: null,
+      });
+    }
+
+    const transition =
+      this.tracker.applyValidatedReplan(
+        decision.nextPlan,
+        trustedNowMs,
+      );
+
+    if (!transition.accepted) {
+      return Object.freeze({
+        accepted: false,
+        reason: 'lifecycle_replan_denied:'
+          + transition.reason,
+        decision,
+        transition,
+      });
+    }
+
+    this.plan = decision.nextPlan;
+    this.replanGeneration += 1;
+
+    return Object.freeze({
+      accepted: true,
+      reason: 'replanned',
+      decision,
+      transition,
+    });
   }
 
   prepareCurrentStep(
