@@ -193,3 +193,22 @@ test(
     );
   },
 );
+
+
+test(
+  'empty home keeps the command surface uncluttered while populated chat retains quick navigation',
+  () => {
+    assert.match(
+      chatScreen,
+      /messages\.length > 0 \? \(/,
+    );
+    assert.match(
+      chatScreen,
+      /QuickActionButton/,
+    );
+    assert.match(
+      chatScreen,
+      /QuickActionMenu/,
+    );
+  },
+);

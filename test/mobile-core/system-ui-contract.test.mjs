@@ -68,11 +68,23 @@ test(
 );
 
 test(
-  'root navigation follows system status-bar appearance and reduced motion',
+  'root navigation binds status-bar contrast to the resolved app theme and respects reduced motion',
   () => {
     assert.match(
       rootLayout,
-      /<StatusBar\s+style="auto"\s*\/>/,
+      /useTheme/,
+    );
+    assert.match(
+      rootLayout,
+      /const \{ mode \} = useTheme\(\)/,
+    );
+    assert.match(
+      rootLayout,
+      /mode === 'light'[\s\S]*?\? 'dark'[\s\S]*?: 'light'/,
+    );
+    assert.doesNotMatch(
+      rootLayout,
+      /<StatusBar\s+style="auto"/,
     );
     assert.match(
       rootLayout,

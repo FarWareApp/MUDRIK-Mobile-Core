@@ -324,31 +324,39 @@ export function ChatScreen({
                 <SendingIndicator />
               )}
 
-              <QuickActionBackdrop
-                visible={quickActionsOpen}
-                onPress={closeQuickActions}
-              />
+              {messages.length > 0 ? (
+                <>
+                  <QuickActionBackdrop
+                    visible={quickActionsOpen}
+                    onPress={closeQuickActions}
+                  />
 
-              <QuickActionMenu
-                visible={quickActionsOpen}
-                onConversations={
-                  handleConversations
-                }
-                onProjects={
-                  handleProjects
-                }
-                onCompanion={
-                  handleCompanion
-                }
-                onSettings={
-                  handleSettings
-                }
-              />
+                  <QuickActionMenu
+                    visible={quickActionsOpen}
+                    onConversations={
+                      handleConversations
+                    }
+                    onProjects={
+                      handleProjects
+                    }
+                    onCompanion={
+                      handleCompanion
+                    }
+                    onSettings={
+                      handleSettings
+                    }
+                  />
 
-              <QuickActionButton
-                expanded={quickActionsOpen}
-                onPress={toggleQuickActions}
-              />
+                  <QuickActionButton
+                    expanded={
+                      quickActionsOpen
+                    }
+                    onPress={
+                      toggleQuickActions
+                    }
+                  />
+                </>
+              ) : null}
             </View>
 
             {error && (

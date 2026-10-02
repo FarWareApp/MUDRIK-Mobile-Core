@@ -6,15 +6,23 @@ import { AppErrorBoundary } from '../core/errors/AppErrorBoundary';
 import { RootProviders } from '../core/composition/RootProviders';
 import { RuntimeStatusBanner } from '../core/runtime/RuntimeStatusBanner';
 import { useAccessibility } from '../core/accessibility/AccessibilityProvider';
+import { useTheme } from '../design-system/theme/ThemeProvider';
 import { NotificationNavigationBridge } from '../features/notifications/components/NotificationNavigationBridge';
 
 function AppShell() {
   const { reducedMotion } =
     useAccessibility();
+  const { mode } = useTheme();
 
   return (
     <>
-      <StatusBar style="auto" />
+      <StatusBar
+        style={
+          mode === 'light'
+            ? 'dark'
+            : 'light'
+        }
+      />
 
       <RuntimeStatusBanner />
 

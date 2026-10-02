@@ -68,6 +68,28 @@ test(
 );
 
 test(
+  'empty command center does not duplicate the floating quick-action launcher',
+  () => {
+    assert.match(
+      chatScreen,
+      /messages\.length > 0 \? \(/,
+    );
+    assert.match(
+      chatScreen,
+      /<QuickActionBackdrop/,
+    );
+    assert.match(
+      chatScreen,
+      /<QuickActionMenu/,
+    );
+    assert.match(
+      chatScreen,
+      /<QuickActionButton/,
+    );
+  },
+);
+
+test(
   'quick actions support reduced motion, RTL placement and explicit dismissal',
   () => {
     assert.match(quickBackdrop, /useAccessibility/);
