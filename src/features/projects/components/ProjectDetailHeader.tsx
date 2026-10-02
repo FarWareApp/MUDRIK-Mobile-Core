@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import {
@@ -15,14 +14,14 @@ import {
   FlagshipIconButton,
 } from '../../../design-system/components/FlagshipIconButton';
 import {
+  FlagshipHeaderIdentity,
+} from '../../../design-system/components/FlagshipHeaderIdentity';
+import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
 import {
   spacing,
 } from '../../../design-system/tokens/spacing';
-import {
-  typeScale,
-} from '../../../design-system/tokens/typography';
 import {
   ProjectBackIcon,
 } from './ProjectBackIcon';
@@ -69,20 +68,9 @@ export function ProjectDetailHeader({
         )}
         onPress={() => router.back()}
       />
-
-      <Text
-        accessibilityRole="header"
-        numberOfLines={1}
-        style={[
-          styles.title,
-          {
-            color:
-              colors.textPrimary,
-          },
-        ]}
-      >
-        {title}
-      </Text>
+      <FlagshipHeaderIdentity
+        title={title}
+      />
 
       <FlagshipIconButton
         accessibilityLabel={
@@ -102,18 +90,11 @@ export function ProjectDetailHeader({
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 70,
+    minHeight: 84,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth:
       StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.lg,
-  },
-  title: {
-    ...typeScale.heading,
-    flex: 1,
-    paddingHorizontal: spacing.sm,
-    textAlign: 'center',
-    fontWeight: '800',
   },
 });

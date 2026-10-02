@@ -126,7 +126,8 @@ test(
     assert.match(screenHeader, /CompanionBackIcon/);
     assert.match(screenHeader, /CompanionEditIcon/);
     assert.match(screenHeader, /isRTL/);
-    assert.match(screenHeader, /typeScale\.heading/);
+    assert.match(screenHeader, /FlagshipHeaderIdentity/);
+    assert.match(screenHeader, /minHeight:\s*84/);
     assert.doesNotMatch(screenHeader, /[‹✎]/u);
 
     assert.match(flagshipIconButton, /size = 44/);

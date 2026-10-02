@@ -123,7 +123,8 @@ test(
     assert.match(header, /FlagshipIconButton/);
     assert.match(header, /SettingsBackIcon/);
     assert.match(header, /isRTL/);
-    assert.match(header, /typeScale\.heading/);
+    assert.match(header, /FlagshipHeaderIdentity/);
+    assert.match(header, /minHeight:\s*84/);
     assert.doesNotMatch(header, /[‹›]/u);
     assert.doesNotMatch(backIcon, /Text/);
     assert.match(backIcon, /scaleX:\s*-1/);

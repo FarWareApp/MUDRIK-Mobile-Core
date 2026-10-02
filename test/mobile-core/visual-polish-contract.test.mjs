@@ -30,6 +30,10 @@ const flagshipSafeArea = fs.readFileSync(
   'src/design-system/components/FlagshipSafeAreaScreen.tsx',
   'utf8',
 );
+const flagshipHeaderIdentity = fs.readFileSync(
+  'src/design-system/components/FlagshipHeaderIdentity.tsx',
+  'utf8',
+);
 const homeCommandTile = fs.readFileSync(
   'src/features/chat/components/HomeCommandTile.tsx',
   'utf8',
@@ -130,12 +134,63 @@ test(
     for (const [file, source] of headers) {
       assert.match(
         source,
-        /minHeight:\s*(?:70|72|82)/,
+        /minHeight:\s*(?:72|82|84)/,
         file,
       );
       assert.match(
         source,
         /backgroundColor:\s*'transparent'/,
+        file,
+      );
+    }
+  },
+);
+
+test(
+  'flagship route headers share one branded accessible identity primitive',
+  () => {
+    assert.match(
+      flagshipHeaderIdentity,
+      /accessibilityRole="header"/,
+    );
+    assert.match(
+      flagshipHeaderIdentity,
+      />\s*MUDRIK\s*</,
+    );
+    assert.match(
+      flagshipHeaderIdentity,
+      /LinearGradient/,
+    );
+    assert.match(
+      flagshipHeaderIdentity,
+      /palette\.metal/,
+    );
+    assert.match(
+      flagshipHeaderIdentity,
+      /colors\.accent/,
+    );
+
+    for (const file of [
+      'src/features/settings/components/SettingsScreenHeader.tsx',
+      'src/features/conversations/components/ConversationHistoryHeader.tsx',
+      'src/features/projects/components/ProjectScreenHeader.tsx',
+      'src/features/projects/components/ProjectDetailHeader.tsx',
+      'src/features/companion/components/CompanionScreenHeader.tsx',
+      'src/features/voice/components/VoiceScreenHeader.tsx',
+      'src/features/diagnostics/components/DiagnosticsScreenHeader.tsx',
+    ]) {
+      const source = fs.readFileSync(
+        file,
+        'utf8',
+      );
+      assert.match(
+        source,
+        /FlagshipHeaderIdentity/,
+        file,
+      );
+      assert.match(
+        source,
+        /minHeight:\s*84/,
         file,
       );
     }

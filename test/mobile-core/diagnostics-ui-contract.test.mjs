@@ -86,7 +86,8 @@ test(
     assert.match(header, /FlagshipIconButton/);
     assert.match(header, /DiagnosticsBackIcon/);
     assert.match(header, /isRTL/);
-    assert.match(header, /typeScale\.heading/);
+    assert.match(header, /FlagshipHeaderIdentity/);
+    assert.match(header, /minHeight:\s*84/);
     assert.doesNotMatch(header, /‹/u);
 
     assert.match(flagshipIconButton, /useAccessibility/);

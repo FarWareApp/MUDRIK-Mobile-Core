@@ -22,6 +22,10 @@ const flagshipIconButton = fs.readFileSync(
   'src/design-system/components/FlagshipIconButton.tsx',
   'utf8',
 );
+const flagshipHeaderIdentity = fs.readFileSync(
+  'src/design-system/components/FlagshipHeaderIdentity.tsx',
+  'utf8',
+);
 const route = fs.readFileSync(
   'src/app/capabilities.tsx',
   'utf8',
@@ -151,11 +155,27 @@ test(
     );
     assert.match(
       header,
+      /FlagshipHeaderIdentity/,
+    );
+    assert.match(
+      flagshipHeaderIdentity,
       /accessibilityRole="header"/,
     );
     assert.match(
+      flagshipHeaderIdentity,
+      />\s*MUDRIK\s*</,
+    );
+    assert.match(
+      flagshipHeaderIdentity,
+      /palette\.metal/,
+    );
+    assert.match(
+      flagshipHeaderIdentity,
+      /LinearGradient/,
+    );
+    assert.match(
       header,
-      /minHeight:\s*70/,
+      /minHeight:\s*84/,
     );
     assert.doesNotMatch(
       header,

@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import {
@@ -15,14 +14,14 @@ import {
   FlagshipIconButton,
 } from '../../../design-system/components/FlagshipIconButton';
 import {
+  FlagshipHeaderIdentity,
+} from '../../../design-system/components/FlagshipHeaderIdentity';
+import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
 import {
   spacing,
 } from '../../../design-system/tokens/spacing';
-import {
-  typeScale,
-} from '../../../design-system/tokens/typography';
 import {
   CompanionBackIcon,
 } from './CompanionBackIcon';
@@ -67,19 +66,9 @@ export function CompanionScreenHeader({
         )}
         onPress={() => router.back()}
       />
-
-      <Text
-        accessibilityRole="header"
-        style={[
-          styles.title,
-          {
-            color:
-              colors.textPrimary,
-          },
-        ]}
-      >
-        {t('companion')}
-      </Text>
+      <FlagshipHeaderIdentity
+        title={t('companion')}
+      />
 
       <FlagshipIconButton
         accessibilityLabel={
@@ -99,17 +88,11 @@ export function CompanionScreenHeader({
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 70,
+    minHeight: 84,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth:
       StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.lg,
-  },
-  title: {
-    ...typeScale.heading,
-    flex: 1,
-    textAlign: 'center',
-    fontWeight: '800',
   },
 });
