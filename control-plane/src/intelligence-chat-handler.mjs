@@ -288,12 +288,40 @@ export function createIntelligenceChatHandler({
       route = null;
     }
 
+    const candidates =
+      route
+      && Array.isArray(
+        route.candidates,
+      )
+        ? route.candidates
+        : route
+          && typeof route.providerRef
+            === 'string'
+          && typeof route.modelRef
+            === 'string'
+            ? [
+                {
+                  providerRef:
+                    route.providerRef,
+                  modelRef:
+                    route.modelRef,
+                },
+              ]
+            : null;
+
     if (
       !route
-      || typeof route.providerRef
-        !== 'string'
-      || typeof route.modelRef
-        !== 'string'
+      || !candidates
+      || candidates.length < 1
+      || candidates.length > 8
+      || candidates.some(
+        (candidate) =>
+          !candidate
+          || typeof candidate.providerRef
+            !== 'string'
+          || typeof candidate.modelRef
+            !== 'string',
+      )
       || !Number.isSafeInteger(
         route.maxOutputTokens,
       )
@@ -334,26 +362,28 @@ export function createIntelligenceChatHandler({
               );
             };
 
-          void gateway.invoke(
-            {
-              protocolVersion: '1.0',
-              requestId:
-                input.requestId,
-              providerRef:
-                route.providerRef,
-              modelRef:
-                route.modelRef,
-              service: 'general',
-              languageTag:
-                input.languageTag,
-              inputText:
-                input.inputText,
-              streaming: true,
-              maxOutputTokens:
-                route.maxOutputTokens,
-              deadlineAtMs,
-            },
-            {
+          const gatewayInput = {
+            protocolVersion: '1.0',
+            requestId:
+              input.requestId,
+            service: 'general',
+            languageTag:
+              input.languageTag,
+            inputText:
+              input.inputText,
+            streaming: true,
+            maxOutputTokens:
+              route.maxOutputTokens,
+            deadlineAtMs,
+          };
+
+          const invoke =
+            typeof gateway.invokePlan
+              === 'function'
+              ? gateway.invokePlan(
+                  gatewayInput,
+                  candidates,
+                  {
               signal:
                 request.signal,
               now: () => now,
@@ -369,7 +399,36 @@ export function createIntelligenceChatHandler({
                 );
               },
             },
-          )
+                )
+              : gateway.invoke(
+                  {
+                    ...gatewayInput,
+                    providerRef:
+                      candidates[0]
+                        .providerRef,
+                    modelRef:
+                      candidates[0]
+                        .modelRef,
+                  },
+                  {
+                    signal:
+                      request.signal,
+                    now: () => now,
+                    onDelta(event) {
+                      push(
+                        'delta',
+                        {
+                          sequence:
+                            event.sequence,
+                          delta:
+                            event.delta,
+                        },
+                      );
+                    },
+                  },
+                );
+
+          void invoke
             .then((result) => {
               if (!result.ok) {
                 push(

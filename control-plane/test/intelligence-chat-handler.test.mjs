@@ -234,3 +234,73 @@ test(
     );
   },
 );
+
+
+test(
+  'chat handler accepts a bounded server-selected failover plan',
+  async () => {
+    const seen = [];
+
+    const response =
+      await handler({
+        gateway: {
+          async invokePlan(
+            request,
+            candidates,
+            options,
+          ) {
+            seen.push(
+              ...candidates,
+            );
+
+            await options.onDelta({
+              sequence: 1,
+              delta: 'ok',
+            });
+
+            return {
+              ok: true,
+              providerResponseRef:
+                'resp_fallback_123',
+              text: 'ok',
+              usage: null,
+              routeIndex: 1,
+              attempts: 2,
+            };
+          },
+        },
+        routeSelector:
+          async () => ({
+            candidates: [
+              {
+                providerRef:
+                  'provider_alpha_1111111111111111',
+                modelRef:
+                  'model_alpha_1111111111111111',
+              },
+              {
+                providerRef:
+                  'provider_beta_2222222222222222',
+                modelRef:
+                  'model_beta_2222222222222222',
+              },
+            ],
+            maxOutputTokens: 1024,
+          }),
+      })(
+        makeRequest(),
+      );
+
+    assert.equal(
+      response.status,
+      200,
+    );
+
+    await response.text();
+
+    assert.equal(
+      seen.length,
+      2,
+    );
+  },
+);

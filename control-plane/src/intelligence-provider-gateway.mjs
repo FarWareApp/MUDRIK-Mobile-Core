@@ -3,6 +3,69 @@ import {
   parseGatewayRequest,
 } from './intelligence-gateway-contract.mjs';
 
+function failure(
+  code,
+  retryable,
+  status = null,
+  extra = {},
+) {
+  return Object.freeze({
+    ok: false,
+    code,
+    retryable,
+    status,
+    ...extra,
+  });
+}
+
+function parseCandidates(input) {
+  if (
+    !Array.isArray(input)
+    || input.length < 1
+    || input.length > 8
+  ) {
+    return null;
+  }
+
+  const seen = new Set();
+  const output = [];
+
+  for (const candidate of input) {
+    if (
+      !candidate
+      || typeof candidate !== 'object'
+      || typeof candidate.providerRef
+        !== 'string'
+      || typeof candidate.modelRef
+        !== 'string'
+    ) {
+      return null;
+    }
+
+    const key =
+      gatewayKey(
+        candidate.providerRef,
+        candidate.modelRef,
+      );
+
+    if (seen.has(key)) {
+      return null;
+    }
+
+    seen.add(key);
+    output.push(
+      Object.freeze({
+        providerRef:
+          candidate.providerRef,
+        modelRef:
+          candidate.modelRef,
+      }),
+    );
+  }
+
+  return Object.freeze(output);
+}
+
 export class IntelligenceProviderGateway {
   constructor(adapters = []) {
     this.adapters = new Map();
@@ -45,12 +108,10 @@ export class IntelligenceProviderGateway {
       parseGatewayRequest(input);
 
     if (!request) {
-      return Object.freeze({
-        ok: false,
-        code: 'invalid_request',
-        retryable: false,
-        status: null,
-      });
+      return failure(
+        'invalid_request',
+        false,
+      );
     }
 
     const adapter =
@@ -62,12 +123,10 @@ export class IntelligenceProviderGateway {
       );
 
     if (!adapter) {
-      return Object.freeze({
-        ok: false,
-        code: 'route_unavailable',
-        retryable: true,
-        status: null,
-      });
+      return failure(
+        'route_unavailable',
+        true,
+      );
     }
 
     const now =
@@ -79,12 +138,10 @@ export class IntelligenceProviderGateway {
       request.deadlineAtMs !== null
       && now >= request.deadlineAtMs
     ) {
-      return Object.freeze({
-        ok: false,
-        code: 'deadline_exceeded',
-        retryable: false,
-        status: null,
-      });
+      return failure(
+        'deadline_exceeded',
+        false,
+      );
     }
 
     const controller =
@@ -130,5 +187,110 @@ export class IntelligenceProviderGateway {
         clearTimeout(timer);
       }
     }
+  }
+
+  async invokePlan(
+    input,
+    candidateInput,
+    options = {},
+  ) {
+    const candidates =
+      parseCandidates(
+        candidateInput,
+      );
+
+    if (!candidates) {
+      return failure(
+        'invalid_route_plan',
+        false,
+      );
+    }
+
+    let previous = null;
+
+    for (
+      let index = 0;
+      index < candidates.length;
+      index += 1
+    ) {
+      const candidate =
+        candidates[index];
+      let emittedDeltas = 0;
+
+      options.onAttempt?.(
+        Object.freeze({
+          index,
+          providerRef:
+            candidate.providerRef,
+          modelRef:
+            candidate.modelRef,
+        }),
+      );
+
+      const result =
+        await this.invoke(
+          {
+            ...input,
+            providerRef:
+              candidate.providerRef,
+            modelRef:
+              candidate.modelRef,
+          },
+          {
+            ...options,
+            onDelta:
+              async (event) => {
+                emittedDeltas += 1;
+                await options.onDelta?.(
+                  event,
+                );
+              },
+          },
+        );
+
+      if (result.ok) {
+        return Object.freeze({
+          ...result,
+          routeIndex: index,
+          attempts: index + 1,
+        });
+      }
+
+      previous = result;
+
+      if (emittedDeltas > 0) {
+        return failure(
+          'partial_stream_failure',
+          false,
+          result.status ?? null,
+          {
+            providerCode:
+              result.code,
+            routeIndex: index,
+            attempts: index + 1,
+          },
+        );
+      }
+
+      if (!result.retryable) {
+        return Object.freeze({
+          ...result,
+          routeIndex: index,
+          attempts: index + 1,
+        });
+      }
+    }
+
+    return Object.freeze({
+      ...(previous
+        ?? failure(
+          'route_unavailable',
+          true,
+        )),
+      routeIndex:
+        candidates.length - 1,
+      attempts:
+        candidates.length,
+    });
   }
 }
