@@ -11,6 +11,8 @@ const env = {
     'sk-test-abcdefghijklmnopqrstuvwxyz',
   MUDRIK_OPENAI_MODEL:
     'test-model',
+  MUDRIK_OPENAI_FAST_MODEL:
+    'test-fast-model',
   MUDRIK_GATEWAY_ACCESS_TOKEN:
     'gateway-access-token-abcdefghijklmnopqrstuvwxyz',
   MUDRIK_GATEWAY_SESSION_SECRET:
@@ -38,6 +40,11 @@ test(
     assert.equal(
       runtime.modelRef,
       'model_general_1111111111111111',
+    );
+
+    assert.equal(
+      runtime.fastModelRef,
+      'model_fast_2222222222222222',
     );
   },
 );
