@@ -35,6 +35,20 @@ function request(overrides = {}) {
   };
 }
 
+function adapter(overrides = {}) {
+  return new OpenAIResponsesAdapter({
+    providerRef: PROVIDER,
+    modelRef: MODEL,
+    apiModel: 'gpt-6-luna',
+    credentialRef:
+      'secret_ref_openai_primary',
+    credentialResolver:
+      async () =>
+        'sk-test-abcdefghijklmnopqrstuvwxyz',
+    ...overrides,
+  });
+}
+
 test(
   'gateway request is strict and bounded',
   () => {
@@ -66,16 +80,8 @@ test(
   async () => {
     let observed;
 
-    const adapter =
-      new OpenAIResponsesAdapter({
-        providerRef: PROVIDER,
-        modelRef: MODEL,
-        apiModel: 'gpt-6-luna',
-        credentialRef:
-          'secret_ref_openai_primary',
-        credentialResolver:
-          async () =>
-            'sk-test-abcdefghijklmnopqrstuvwxyz',
+    const client =
+      adapter({
         fetchImpl:
           async (url, init) => {
             observed = { url, init };
@@ -108,7 +114,7 @@ test(
       });
 
     const result =
-      await adapter.invoke(
+      await client.invoke(
         parseGatewayRequest(request()),
       );
 
@@ -141,18 +147,124 @@ test(
 );
 
 test(
+  'streaming emits ordered deltas and returns final assembled text',
+  async () => {
+    const encoder = new TextEncoder();
+    const chunks = [
+      'data: {"type":"response.output_text.delta","delta":"أه"}\n\n',
+      'data: {"type":"response.output_text.delta","delta":"لاً"}\n\n',
+      'data: {"type":"response.completed","response":{"id":"resp_stream_123","usage":{"input_tokens":4,"output_tokens":3}}}\n\n',
+      'data: [DONE]\n\n',
+    ];
+
+    const client =
+      adapter({
+        fetchImpl:
+          async (_url, init) => {
+            const sent =
+              JSON.parse(init.body);
+
+            assert.equal(
+              sent.stream,
+              true,
+            );
+
+            return {
+              ok: true,
+              status: 200,
+              body: {
+                async *[
+                  Symbol.asyncIterator
+                ]() {
+                  for (const chunk of chunks) {
+                    yield encoder.encode(
+                      chunk,
+                    );
+                  }
+                },
+              },
+            };
+          },
+      });
+
+    const deltas = [];
+
+    const result =
+      await client.invoke(
+        parseGatewayRequest(
+          request({
+            streaming: true,
+          }),
+        ),
+        {
+          onDelta(event) {
+            deltas.push(event);
+          },
+        },
+      );
+
+    assert.equal(result.ok, true);
+    assert.equal(result.text, 'أهلاً');
+    assert.equal(
+      result.providerResponseRef,
+      'resp_stream_123',
+    );
+    assert.deepEqual(
+      deltas.map((item) => item.sequence),
+      [1, 2],
+    );
+    assert.deepEqual(
+      deltas.map((item) => item.delta),
+      ['أه', 'لاً'],
+    );
+  },
+);
+
+test(
+  'malformed provider stream fails closed',
+  async () => {
+    const encoder = new TextEncoder();
+
+    const client =
+      adapter({
+        fetchImpl:
+          async () => ({
+            ok: true,
+            status: 200,
+            body: {
+              async *[
+                Symbol.asyncIterator
+              ]() {
+                yield encoder.encode(
+                  'data: {not-json}\n\n',
+                );
+              },
+            },
+          }),
+      });
+
+    const result =
+      await client.invoke(
+        parseGatewayRequest(
+          request({
+            streaming: true,
+          }),
+        ),
+      );
+
+    assert.equal(result.ok, false);
+    assert.equal(
+      result.code,
+      'invalid_provider_stream',
+    );
+  },
+);
+
+test(
   'provider failures are normalized without exposing response bodies',
   async () => {
-    const adapter =
-      new OpenAIResponsesAdapter({
-        providerRef: PROVIDER,
-        modelRef: MODEL,
-        apiModel: 'gpt-6-luna',
-        credentialRef:
-          'secret_ref_openai_primary',
-        credentialResolver:
-          async () =>
-            'sk-test-abcdefghijklmnopqrstuvwxyz',
+    const client =
+      adapter({
         fetchImpl:
           async () => ({
             ok: false,
@@ -161,7 +273,7 @@ test(
       });
 
     const result =
-      await adapter.invoke(
+      await client.invoke(
         parseGatewayRequest(request()),
       );
 
@@ -177,7 +289,7 @@ test(
 test(
   'gateway only invokes registered provider-model routes',
   async () => {
-    const adapter = {
+    const client = {
       providerRef: PROVIDER,
       modelRef: MODEL,
       async invoke(value) {
@@ -195,7 +307,7 @@ test(
 
     const gateway =
       new IntelligenceProviderGateway([
-        adapter,
+        client,
       ]);
 
     assert.equal(
@@ -216,6 +328,63 @@ test(
     assert.equal(
       missing.code,
       'route_unavailable',
+    );
+  },
+);
+
+test(
+  'gateway forwards streaming deltas but never credentials',
+  async () => {
+    const observed = [];
+
+    const gateway =
+      new IntelligenceProviderGateway([
+        {
+          providerRef: PROVIDER,
+          modelRef: MODEL,
+          async invoke(
+            value,
+            options,
+          ) {
+            await options.onDelta?.({
+              sequence: 1,
+              delta: 'x',
+            });
+
+            return {
+              ok: true,
+              providerRef: PROVIDER,
+              modelRef: MODEL,
+              providerResponseRef:
+                'response_ref_1111111111111111',
+              text: value.inputText,
+              usage: null,
+            };
+          },
+        },
+      ]);
+
+    const result =
+      await gateway.invoke(
+        request({
+          streaming: true,
+        }),
+        {
+          onDelta(value) {
+            observed.push(value);
+          },
+        },
+      );
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(
+      observed,
+      [
+        {
+          sequence: 1,
+          delta: 'x',
+        },
+      ],
     );
   },
 );

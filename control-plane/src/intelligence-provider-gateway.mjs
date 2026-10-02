@@ -122,6 +122,7 @@ export class IntelligenceProviderGateway {
         request,
         {
           signal: controller.signal,
+          onDelta: options.onDelta,
         },
       );
     } finally {

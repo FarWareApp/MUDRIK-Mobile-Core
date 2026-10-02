@@ -45,6 +45,30 @@ function extractText(payload) {
     : null;
 }
 
+function usageOf(value) {
+  if (
+    !value
+    || typeof value !== 'object'
+  ) {
+    return null;
+  }
+
+  return Object.freeze({
+    inputTokens:
+      Number.isSafeInteger(
+        value.input_tokens,
+      )
+        ? value.input_tokens
+        : null,
+    outputTokens:
+      Number.isSafeInteger(
+        value.output_tokens,
+      )
+        ? value.output_tokens
+        : null,
+  });
+}
+
 function providerFailure(
   code,
   retryable,
@@ -55,6 +79,155 @@ function providerFailure(
     code,
     retryable,
     status,
+  });
+}
+
+function parseSseFrame(frame) {
+  const data =
+    frame
+      .split(/\r?\n/)
+      .filter((line) =>
+        line.startsWith('data:'),
+      )
+      .map((line) =>
+        line.slice(5).trimStart(),
+      )
+      .join('\n');
+
+  if (!data || data === '[DONE]') {
+    return null;
+  }
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    return Symbol.for(
+      'mudrik.invalid_sse',
+    );
+  }
+}
+
+async function consumeStream(
+  response,
+  onDelta,
+) {
+  if (
+    !response.body
+    || typeof response.body[
+      Symbol.asyncIterator
+    ] !== 'function'
+  ) {
+    return providerFailure(
+      'invalid_provider_stream',
+      true,
+    );
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let text = '';
+  let sequence = 0;
+  let responseRef = null;
+  let usage = null;
+
+  for await (
+    const chunk of response.body
+  ) {
+    buffer += decoder.decode(
+      chunk,
+      { stream: true },
+    );
+
+    const frames =
+      buffer.split(/\r?\n\r?\n/);
+    buffer = frames.pop() ?? '';
+
+    for (const frame of frames) {
+      const event =
+        parseSseFrame(frame);
+
+      if (
+        event
+        === Symbol.for(
+          'mudrik.invalid_sse',
+        )
+      ) {
+        return providerFailure(
+          'invalid_provider_stream',
+          true,
+        );
+      }
+
+      if (!event) {
+        continue;
+      }
+
+      if (
+        event.type
+          === 'response.output_text.delta'
+        && typeof event.delta === 'string'
+      ) {
+        text += event.delta;
+        sequence += 1;
+
+        if (typeof onDelta === 'function') {
+          await onDelta(
+            Object.freeze({
+              sequence,
+              delta: event.delta,
+            }),
+          );
+        }
+        continue;
+      }
+
+      if (
+        event.type === 'response.completed'
+      ) {
+        if (
+          event.response
+          && typeof event.response.id
+            === 'string'
+        ) {
+          responseRef =
+            event.response.id;
+          usage =
+            usageOf(
+              event.response.usage,
+            );
+        }
+        continue;
+      }
+
+      if (
+        event.type === 'response.failed'
+        || event.type
+          === 'response.incomplete'
+      ) {
+        return providerFailure(
+          'provider_generation_failed',
+          event.type
+            === 'response.incomplete',
+        );
+      }
+    }
+  }
+
+  if (
+    !responseRef
+    || text.length === 0
+  ) {
+    return providerFailure(
+      'invalid_provider_stream',
+      true,
+    );
+  }
+
+  return Object.freeze({
+    ok: true,
+    providerResponseRef: responseRef,
+    text,
+    usage,
   });
 }
 
@@ -103,14 +276,13 @@ export class OpenAIResponsesAdapter {
     this.endpoint = endpoint;
   }
 
-  async invoke(request, { signal } = {}) {
-    if (request.streaming) {
-      return providerFailure(
-        'streaming_not_enabled',
-        false,
-      );
-    }
-
+  async invoke(
+    request,
+    {
+      signal,
+      onDelta = null,
+    } = {},
+  ) {
     let apiKey;
 
     try {
@@ -149,6 +321,10 @@ export class OpenAIResponsesAdapter {
         request.maxOutputTokens,
       store: false,
     };
+
+    if (request.streaming) {
+      body.stream = true;
+    }
 
     if (this.instructions !== null) {
       body.instructions = this.instructions;
@@ -212,6 +388,24 @@ export class OpenAIResponsesAdapter {
       );
     }
 
+    if (request.streaming) {
+      const streamed =
+        await consumeStream(
+          response,
+          onDelta,
+        );
+
+      if (!streamed.ok) {
+        return streamed;
+      }
+
+      return Object.freeze({
+        ...streamed,
+        providerRef: this.providerRef,
+        modelRef: this.modelRef,
+      });
+    }
+
     let payload;
 
     try {
@@ -241,24 +435,7 @@ export class OpenAIResponsesAdapter {
       modelRef: this.modelRef,
       providerResponseRef: payload.id,
       text,
-      usage:
-        payload.usage
-        && typeof payload.usage === 'object'
-          ? Object.freeze({
-              inputTokens:
-                Number.isSafeInteger(
-                  payload.usage.input_tokens,
-                )
-                  ? payload.usage.input_tokens
-                  : null,
-              outputTokens:
-                Number.isSafeInteger(
-                  payload.usage.output_tokens,
-                )
-                  ? payload.usage.output_tokens
-                  : null,
-            })
-          : null,
+      usage: usageOf(payload.usage),
     });
   }
 }
