@@ -54,7 +54,7 @@
     "release:preflight": "node ./scripts/production-release-preflight.mjs",
     "validate:core": "npm run typecheck && npx expo-doctor",
     "benchmark:core": "node --test test/mobile-core/benchmark-*.test.mjs",
-    "competition:core": "node --test test/mobile-core/benchmark-*.test.mjs test/mobile-core/intelligence-deliberation*.test.mjs",
+    "competition:core": "node --test test/mobile-core/benchmark-*.test.mjs test/mobile-core/intelligence-deliberation*.test.mjs test/mobile-core/intelligence-execution-coordinator.test.mjs",
     "benchmark:report": "node ./scripts/benchmark-arena-report.mjs",
     "brain:core": "node --test test/mobile-core/brain-*.test.mjs",
     "agent:core": "node --test test/mobile-core/agent-*.test.mjs",

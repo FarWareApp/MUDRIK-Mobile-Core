@@ -79,3 +79,32 @@ The branch includes contract tests for strict parsing, authority isolation,
 adaptive routing, independent-provider enforcement, stale/duplicate review
 rejection, rejection vetoes, proposal budgets, disagreement handling and
 integration with the existing route-plan format.
+
+
+## Provider execution coordinator
+
+The internal intelligence layer now has a provider-independent execution
+coordinator that consumes only route plans issued by the Intelligence Provider
+Registry.
+
+For each attempt it:
+
+- resolves the exact provider/model binding from the issued plan;
+- rejects an adapter whose runtime identity differs from that binding;
+- creates a generation-bound attempt tracker;
+- validates every adapter output through the existing strict output contract;
+- buffers provider output internally until a final result reference exists;
+- normalizes provider failures;
+- applies the registry's issued-plan failover policy;
+- rotates generation after partial output before crossing providers;
+- stops on non-retryable failures;
+- bounds provider attempts;
+- enforces cancellation and a hard attempt timeout.
+
+A provider cannot insert itself merely by returning a plausible adapter object.
+The provider/model/service identity must match the current registered binding,
+and the next provider must still be healthy at failover time.
+
+Partial output from one provider is never mixed into the final result of a
+fallback provider. If a failure occurs after output has been observed, failover
+requires the existing explicit-restart and generation-rotation rules.
