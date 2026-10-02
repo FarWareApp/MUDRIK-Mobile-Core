@@ -30,6 +30,10 @@ import {
   createGatewaySessionHandler,
 } from './gateway-session-handler.mjs';
 
+import {
+  FixedWindowRateLimiter,
+} from './rate-limiter.mjs';
+
 const PROVIDER_REF =
   'provider_openai_1111111111111111';
 
@@ -170,9 +174,18 @@ export function buildIntelligenceRuntime(
           ],
     );
 
+  const chatRateLimiter =
+    new FixedWindowRateLimiter({
+      windowMs: 60_000,
+      maxEvents: 120,
+      maxKeys: 50_000,
+    });
+
   const chatHandler =
     createIntelligenceChatHandler({
       gateway,
+      rateLimiter:
+        chatRateLimiter,
       authenticateBearer:
         async (token) =>
           sessionAuthority.verify(
