@@ -174,73 +174,7 @@ jobs:
 
           yarn audit --groups dependencies --json > /tmp/yarn-audit.jsonl || true
 
-          node <<'NODE'
-          const fs = require('fs');
-          const lines = fs.readFileSync('/tmp/yarn-audit.jsonl', 'utf8')
-            .split(/\r?\n/)
-            .filter(Boolean);
-
-          const counts = {
-            info: 0,
-            low: 0,
-            moderate: 0,
-            high: 0,
-            critical: 0,
-          };
-
-          const seen = new Set();
-          const advisories = [];
-
-          for (const line of lines) {
-            let record;
-            try {
-              record = JSON.parse(line);
-            } catch {
-              continue;
-            }
-
-            if (record.type !== 'auditAdvisory') {
-              continue;
-            }
-
-            const advisory = record.data?.advisory;
-            if (!advisory) {
-              continue;
-            }
-
-            const key = String(advisory.id ?? advisory.url ?? JSON.stringify(advisory));
-            if (seen.has(key)) {
-              continue;
-            }
-            seen.add(key);
-
-            const severity = String(advisory.severity ?? '').toLowerCase();
-            if (severity in counts) {
-              counts[severity] += 1;
-            }
-
-            advisories.push({
-              severity,
-              module: advisory.module_name ?? 'unknown',
-              title: advisory.title ?? 'untitled advisory',
-              url: advisory.url ?? '',
-            });
-          }
-
-          console.log('Dependency vulnerability counts:', counts);
-          for (const advisory of advisories) {
-            console.log(
-              `[${advisory.severity}] ${advisory.module}: ${advisory.title}${advisory.url ? ` (${advisory.url})` : ''}`,
-            );
-          }
-
-          if (counts.critical > 0 || counts.high > 0) {
-            console.error(
-              `Blocking dependency vulnerabilities detected: ${counts.critical} critical, ${counts.high} high.`,
-            );
-            process.exit(1);
-          }
-          NODE
+          node scripts/dependency-audit-gate.mjs /tmp/yarn-audit.jsonl
 
       - name: Reviewed advisory dependency paths
         shell: bash
@@ -248,6 +182,7 @@ jobs:
           set -euo pipefail
           yarn why uuid || true
           yarn why decode-uri-component || true
+          yarn why node-forge || true
 
       - name: Lint
         run: yarn lint
