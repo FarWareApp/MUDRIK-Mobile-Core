@@ -63,7 +63,9 @@
     "knowledge:core": "node --test test/mobile-core/knowledge-engine.test.mjs test/mobile-core/knowledge-consensus.test.mjs test/mobile-core/knowledge-grounding-gate.test.mjs test/mobile-core/context-compiler.test.mjs",
     "memory:core": "node --test test/mobile-core/memory-contract.test.mjs test/mobile-core/memory-conflict-gate.test.mjs test/mobile-core/context-memory-conflict.test.mjs",
     "security:core": "node --test test/mobile-core/security-*.test.mjs test/mobile-core/identity-security-events.test.mjs test/mobile-core/credential-broker.test.mjs",
-    "reconciliation:core": "node --test test/mobile-core/goal-reconciliation-coordinator.test.mjs"
+    "reconciliation:core": "node --test test/mobile-core/goal-reconciliation-coordinator.test.mjs",
+    "gateway:start": "node control-plane/src/intelligence-server.mjs",
+    "gateway:test": "node --test control-plane/test/intelligence-*.test.mjs"
   },
   "private": true,
   "resolutions": {
