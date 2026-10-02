@@ -7,6 +7,7 @@ const REQUEST_ID =
 function jsonResponse(
   status,
   body,
+  headers = {},
 ) {
   return new Response(
     JSON.stringify(body),
@@ -18,6 +19,7 @@ function jsonResponse(
         'cache-control': 'no-store',
         'x-content-type-options':
           'nosniff',
+        ...headers,
       },
     },
   );
@@ -183,6 +185,7 @@ export function createIntelligenceChatHandler({
   clock = () => Date.now(),
   requestTimeoutMs = 60_000,
   maxBodyBytes = 256_000,
+  rateLimiter = null,
 }) {
   if (
     !gateway
@@ -207,6 +210,11 @@ export function createIntelligenceChatHandler({
     )
     || maxBodyBytes < 1024
     || maxBodyBytes > 1_000_000
+    || (
+      rateLimiter !== null
+      && typeof rateLimiter.check
+        !== 'function'
+    )
   ) {
     throw new TypeError(
       'Invalid intelligence chat handler configuration.',
@@ -329,6 +337,81 @@ export function createIntelligenceChatHandler({
         400,
         { code: 'invalid_request' },
       );
+    }
+
+    if (rateLimiter) {
+      const sessionId =
+        typeof session.sessionId
+          === 'string'
+          ? session.sessionId
+          : null;
+
+      if (!sessionId) {
+        return jsonResponse(
+          401,
+          { code: 'unauthorized' },
+        );
+      }
+
+      const contextCharacters =
+        (
+          Array.isArray(
+            input.history,
+          )
+            ? input.history.reduce(
+                (total, item) =>
+                  total
+                  + item.text.length,
+                0,
+              )
+            : 0
+        )
+        + input.inputText.length;
+
+      const cost =
+        Math.min(
+          16,
+          Math.max(
+            1,
+            Math.ceil(
+              contextCharacters
+              / 8000,
+            ),
+          ),
+        );
+
+      const decision =
+        rateLimiter.check(
+          sessionId,
+          clock(),
+          { cost },
+        );
+
+      if (!decision.allowed) {
+        const retryAfterMs =
+          Number.isSafeInteger(
+            decision.retryAfterMs,
+          )
+            ? decision.retryAfterMs
+            : 1000;
+
+        return jsonResponse(
+          429,
+          { code: 'rate_limited' },
+          {
+            'retry-after':
+              String(
+                Math.max(
+                  1,
+                  Math.ceil(
+                    retryAfterMs
+                    / 1000,
+                  ),
+                ),
+              ),
+          },
+        );
+      }
     }
 
     let route;
