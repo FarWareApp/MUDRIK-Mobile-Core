@@ -223,7 +223,8 @@ function attestationFailure(
 export async function attestGoalWorkQueueSnapshot(
   snapshotInput: unknown,
   entryId: string,
-  previousLedgerDigest: string | null,
+  previousAnchor:
+    GoalWorkQueueIntegrityAnchor | null,
   digestProvider: IntegrityDigestProvider,
   signer: IntegritySigner,
 ): Promise<GoalWorkQueueAttestationResult> {
@@ -261,20 +262,26 @@ export async function attestGoalWorkQueueSnapshot(
     snapshot.sequence - 1;
 
   if (
-    ledgerSequence === 0
-      ? previousLedgerDigest !== null
+    snapshot.sequence === 1
+      ? previousAnchor !== null
       : (
-          typeof previousLedgerDigest
-            !== 'string'
-          || !DIGEST.test(
-            previousLedgerDigest,
-          )
+          previousAnchor === null
+          || !validAnchor(previousAnchor)
+          || previousAnchor.queueRef
+            !== snapshot.queueRef
+          || previousAnchor.sequence
+            !== snapshot.sequence - 1
+          || snapshot.previousSnapshotId
+            !== previousAnchor.snapshotId
         )
   ) {
     return attestationFailure(
       'ledger_creation_failed',
     );
   }
+
+  const previousLedgerDigest =
+    previousAnchor?.chainDigest ?? null;
 
   let ledgerEntry: IntegrityLedgerEntry;
 

@@ -407,13 +407,39 @@ test('second checkpoint ledger entry must chain from a previous digest', async (
       plan(),
       NOW + 50,
       'integrity_entry_2222222222222222',
-      firstAttested.envelope.ledgerEntry
-        .chainDigest,
+      firstAttested.anchor,
       digestProvider,
       signer,
     );
 
   assert.equal(chained.accepted, true);
+
+  const wrongPreviousId = {
+    ...second.checkpoint,
+    previousCheckpointId:
+      'goal_checkpoint_9999999999999999',
+  };
+
+  const substituted =
+    await attestGoalExecutionCheckpoint(
+      wrongPreviousId,
+      goal(),
+      plan(),
+      NOW + 50,
+      'integrity_entry_3333333333333333',
+      firstAttested.anchor,
+      digestProvider,
+      signer,
+    );
+
+  assert.equal(
+    substituted.accepted,
+    false,
+  );
+  assert.equal(
+    substituted.reason,
+    'ledger_creation_failed',
+  );
   assert.equal(
     chained.envelope?.ledgerEntry
       .previousDigest,

@@ -118,7 +118,8 @@ export async function attestGoalExecutionCheckpoint(
   planInput: unknown,
   trustedNowMs: number,
   entryId: string,
-  previousLedgerDigest: string | null,
+  previousAnchor:
+    GoalCheckpointIntegrityAnchor | null,
   digestProvider: IntegrityDigestProvider,
   signer: IntegritySigner,
 ): Promise<GoalCheckpointAttestationResult> {
@@ -161,19 +162,24 @@ export async function attestGoalExecutionCheckpoint(
     checkpoint.sequence - 1;
 
   if (
-    ledgerSequence === 0
-      ? previousLedgerDigest !== null
+    checkpoint.sequence === 1
+      ? previousAnchor !== null
       : (
-          typeof previousLedgerDigest !== 'string'
-          || !DIGEST.test(
-            previousLedgerDigest,
-          )
+          previousAnchor === null
+          || !validAnchor(previousAnchor)
+          || previousAnchor.checkpointSequence
+            !== checkpoint.sequence - 1
+          || checkpoint.previousCheckpointId
+            !== previousAnchor.checkpointId
         )
   ) {
     return attestationFailure(
       'ledger_creation_failed',
     );
   }
+
+  const previousLedgerDigest =
+    previousAnchor?.chainDigest ?? null;
 
   let ledgerEntry: IntegrityLedgerEntry;
 

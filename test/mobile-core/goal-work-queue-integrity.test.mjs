@@ -284,7 +284,7 @@ test('forged signature and substituted anchor fail closed', async () => {
   );
 });
 
-test('snapshot chain requires previous digest after first sequence', async () => {
+test('snapshot chain requires exact previous anchor after first sequence', async () => {
   const first =
     await attestGoalWorkQueueSnapshot(
       snapshot(
@@ -333,7 +333,7 @@ test('snapshot chain requires previous digest after first sequence', async () =>
     await attestGoalWorkQueueSnapshot(
       secondRaw,
       'integrity_entry_2222222222222222',
-      first.anchor.chainDigest,
+      first.anchor,
       digestProvider,
       signer,
     );
@@ -342,6 +342,28 @@ test('snapshot chain requires previous digest after first sequence', async () =>
   assert.equal(
     chained.envelope?.ledgerEntry.previousDigest,
     first.anchor.chainDigest,
+  );
+
+  const substitutedPrevious =
+    await attestGoalWorkQueueSnapshot(
+      {
+        ...secondRaw,
+        previousSnapshotId:
+          'goal_work_snapshot_3333333333333333',
+      },
+      'integrity_entry_3333333333333333',
+      first.anchor,
+      digestProvider,
+      signer,
+    );
+
+  assert.equal(
+    substitutedPrevious.accepted,
+    false,
+  );
+  assert.equal(
+    substitutedPrevious.reason,
+    'ledger_creation_failed',
   );
 });
 
