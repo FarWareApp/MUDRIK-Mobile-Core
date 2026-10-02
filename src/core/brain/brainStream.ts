@@ -34,6 +34,7 @@ export type BrainStreamResult =
       | 'sequence_conflict'
       | 'time_rollback'
       | 'deadline_exceeded'
+      | 'event_limit_exceeded'
       | 'lifecycle_closed';
     state: BrainStreamState;
   }>;
@@ -89,6 +90,7 @@ function sameEvent(
 
 export class BrainStreamTracker {
   private readonly request: BrainInputEnvelope;
+  private readonly maxEvents: number;
 
   private current: BrainStreamState =
     state('processing', 0, 0, null, null);
@@ -98,6 +100,7 @@ export class BrainStreamTracker {
 
   constructor(
     requestInput: unknown,
+    maxEvents = 4096,
   ) {
     const request =
       parseBrainInputEnvelope(requestInput);
@@ -108,7 +111,18 @@ export class BrainStreamTracker {
       );
     }
 
+    if (
+      !Number.isSafeInteger(maxEvents)
+      || maxEvents < 1
+      || maxEvents > 100_000
+    ) {
+      throw new RangeError(
+        'Invalid brain stream event limit.',
+      );
+    }
+
     this.request = request;
+    this.maxEvents = maxEvents;
   }
 
   getRequest(): BrainInputEnvelope {
@@ -177,6 +191,17 @@ export class BrainStreamTracker {
         false,
         false,
         'lifecycle_closed',
+        this.current,
+      );
+    }
+
+    if (
+      this.current.eventCount >= this.maxEvents
+    ) {
+      return result(
+        false,
+        false,
+        'event_limit_exceeded',
         this.current,
       );
     }

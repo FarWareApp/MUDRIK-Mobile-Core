@@ -78,7 +78,7 @@ function step(
             + String(ordinal - 1)
               .padStart(16, '0'),
           ],
-    capabilityRefs: [],
+    requiredCapabilities: [],
     sideEffect: false,
     requiresApproval: false,
     rollbackRef: null,
@@ -490,5 +490,75 @@ test('deadline and cancellation close execution safely', () => {
       NOW + 22,
     ).idempotent,
     true,
+  );
+});
+
+test('plan risk cannot understate required capability risk', () => {
+  const highRiskStep =
+    step(2, 'tool', {
+      requiredCapabilities: [
+        'filesystem.write',
+      ],
+    });
+
+  assert.equal(
+    validateGoalExecutionPlan(
+      goal({
+        risk: 'medium',
+      }),
+      plan([
+        step(1, 'reason'),
+        highRiskStep,
+        step(3, 'verify'),
+        step(4, 'finalize'),
+      ]),
+    ).reason,
+    'risk_underdeclared',
+  );
+
+  assert.equal(
+    validateGoalExecutionPlan(
+      goal({
+        risk: 'high',
+      }),
+      plan([
+        step(1, 'reason'),
+        highRiskStep,
+        step(3, 'verify'),
+        step(4, 'finalize'),
+      ]),
+    ).accepted,
+    true,
+  );
+});
+
+test('side effects must declare at least one concrete capability', () => {
+  const mutableGoal =
+    goal({
+      intent: 'operate',
+      risk: 'high',
+      sideEffectPolicy: 'approval-required',
+    });
+
+  const sideEffectWithoutCapability =
+    step(2, 'tool', {
+      sideEffect: true,
+      requiresApproval: true,
+      requiredCapabilities: [],
+      rollbackRef:
+        'rollback_ref_1111111111111111',
+    });
+
+  assert.equal(
+    validateGoalExecutionPlan(
+      mutableGoal,
+      plan([
+        step(1, 'reason'),
+        sideEffectWithoutCapability,
+        step(3, 'verify'),
+        step(4, 'finalize'),
+      ]),
+    ).reason,
+    'capability_missing',
   );
 });

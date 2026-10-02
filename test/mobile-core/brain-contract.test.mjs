@@ -384,3 +384,34 @@ test('request registry is capacity bounded', () => {
     'capacity_exceeded',
   );
 });
+
+test('stream tracker applies a hard event-count bound', () => {
+  const tracker =
+    new BrainStreamTracker(
+      request(),
+      1,
+    );
+
+  assert.equal(
+    tracker.accept(
+      event({
+        isFinal: false,
+      }),
+    ).accepted,
+    true,
+  );
+
+  assert.equal(
+    tracker.accept(
+      event({
+        eventId:
+          'brain_event_2222222222222222',
+        sequence: 1,
+        payloadRef:
+          'payload_ref_3333333333333333',
+        observedAtMs: NOW + 101,
+      }),
+    ).reason,
+    'event_limit_exceeded',
+  );
+});

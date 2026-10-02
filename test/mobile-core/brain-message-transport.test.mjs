@@ -339,3 +339,45 @@ test('cancellation after provider handle creation propagates exactly once', asyn
 
   assert.equal(cancelled, 1);
 });
+
+test('early output is buffered until request handle identity is validated', async () => {
+  let decoded = false;
+  let providerCancelled = 0;
+
+  const customCodec = {
+    ...codec(),
+    async decodeText() {
+      decoded = true;
+      return 'must-not-decode';
+    },
+  };
+
+  const port = {
+    async submit(_request, onOutput) {
+      onOutput(outputEvent());
+
+      return {
+        requestId:
+          'brain_request_9999999999999999',
+        async cancel() {
+          providerCancelled += 1;
+        },
+      };
+    },
+  };
+
+  const transport =
+    new BrainMessageTransport(
+      port,
+      customCodec,
+      factory(),
+    );
+
+  await assert.rejects(
+    transport.send(input()).result,
+    BrainTransportProtocolError,
+  );
+
+  assert.equal(decoded, false);
+  assert.equal(providerCancelled, 1);
+});

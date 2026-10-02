@@ -185,82 +185,131 @@ implements MessageTransport {
           );
         const tracker =
           new BrainStreamTracker(envelope);
+        const earlyEvents:
+          BrainOutputEvent[] = [];
+        let handleValidated = false;
+        let queuedEvents = 0;
+        let eventChain:
+          Promise<void> = Promise.resolve();
+
+        const processOutput =
+          async (
+            event: BrainOutputEvent,
+          ): Promise<void> => {
+            if (cancelled || settled) {
+              return;
+            }
+
+            const accepted =
+              tracker.accept(event);
+
+            if (!accepted.accepted) {
+              fail(
+                new BrainTransportProtocolError(
+                  accepted.reason,
+                ),
+              );
+              return;
+            }
+
+            if (accepted.idempotent) {
+              return;
+            }
+
+            if (!event.isFinal) {
+              return;
+            }
+
+            if (event.kind === 'error') {
+              fail(
+                new BrainTransportRemoteError(
+                  event.reasonCode
+                    ?? 'unknown_error',
+                ),
+              );
+              return;
+            }
+
+            if (
+              event.kind !== 'text'
+              || event.payloadRef === null
+            ) {
+              fail(
+                new BrainTransportProtocolError(
+                  'Final chat output is not text',
+                ),
+              );
+              return;
+            }
+
+            const text =
+              await this.codec.decodeText(
+                event.payloadRef,
+              );
+
+            if (cancelled || settled) {
+              return;
+            }
+
+            complete({
+              id: event.eventId,
+              conversationId:
+                event.conversationId,
+              kind: 'text',
+              text,
+              createdAt:
+                event.observedAtMs,
+            });
+          };
+
+        const enqueueOutput =
+          (event: BrainOutputEvent) => {
+            if (cancelled || settled) {
+              return;
+            }
+
+            if (queuedEvents >= 4096) {
+              fail(
+                new BrainTransportProtocolError(
+                  'Brain output queue limit exceeded',
+                ),
+              );
+              return;
+            }
+
+            queuedEvents += 1;
+            eventChain =
+              eventChain
+                .then(
+                  () => processOutput(event),
+                )
+                .catch(
+                  (error) => fail(error),
+                )
+                .finally(
+                  () => {
+                    queuedEvents -= 1;
+                  },
+                );
+          };
 
         const onOutput =
           (event: BrainOutputEvent) => {
-            void (async () => {
-              if (cancelled || settled) {
-                return;
-              }
-
-              const accepted =
-                tracker.accept(event);
-
-              if (!accepted.accepted) {
+            if (!handleValidated) {
+              if (earlyEvents.length >= 64) {
                 fail(
                   new BrainTransportProtocolError(
-                    accepted.reason,
+                    'Too many Brain events before handle validation',
                   ),
                 );
                 return;
               }
 
-              if (accepted.idempotent) {
-                return;
-              }
+              earlyEvents.push(event);
+              return;
+            }
 
-              if (!event.isFinal) {
-                return;
-              }
-
-              if (event.kind === 'error') {
-                fail(
-                  new BrainTransportRemoteError(
-                    event.reasonCode
-                      ?? 'unknown_error',
-                  ),
-                );
-                return;
-              }
-
-              if (
-                event.kind !== 'text'
-                || event.payloadRef === null
-              ) {
-                fail(
-                  new BrainTransportProtocolError(
-                    'Final chat output is not text',
-                  ),
-                );
-                return;
-              }
-
-              try {
-                const text =
-                  await this.codec.decodeText(
-                    event.payloadRef,
-                  );
-
-                if (
-                  cancelled
-                  || settled
-                ) {
-                  return;
-                }
-
-                complete({
-                  id: event.eventId,
-                  conversationId:
-                    event.conversationId,
-                  kind: 'text',
-                  text,
-                  createdAt:
-                    event.observedAtMs,
-                });
-              } catch (error) {
-                fail(error);
-              }
-            })();
+            enqueueOutput(event);
           };
 
         handle =
@@ -273,6 +322,7 @@ implements MessageTransport {
           handle.requestId
             !== envelope.requestId
         ) {
+          await handle.cancel().catch(() => {});
           fail(
             new BrainTransportProtocolError(
               'Brain handle request mismatch',
@@ -281,10 +331,20 @@ implements MessageTransport {
           return;
         }
 
-        if (cancelled) {
-          await handle.cancel();
-          fail(new TransportCancelledError());
+        handleValidated = true;
+
+        if (cancelled || settled) {
+          await handle.cancel().catch(() => {});
+          if (cancelled) {
+            fail(new TransportCancelledError());
+          }
+          return;
         }
+
+        for (const event of earlyEvents) {
+          enqueueOutput(event);
+        }
+        earlyEvents.length = 0;
       } catch (error) {
         fail(error);
       }

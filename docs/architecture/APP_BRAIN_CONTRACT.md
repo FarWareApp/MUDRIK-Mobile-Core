@@ -123,3 +123,23 @@ changing presentation code.
 The payload store is also abstracted so transport implementations can choose
 encrypted local storage, secure IPC, server upload or another mechanism without
 putting provider-specific logic into the app UI.
+
+
+## Stream admission hardening
+
+A Brain provider is not trusted merely because it has been selected.
+
+Before any provider output is decoded into user-visible chat content, the
+returned request handle must be bound to the exact requestId. Output emitted
+synchronously during provider submission is held in a small bounded pre-handle
+buffer and is processed only after that identity check succeeds.
+
+Output handling is serialized so asynchronous payload decoding cannot reorder
+events. Both the stream and the pending processing queue have hard event-count
+limits. Excess output fails closed instead of creating an unbounded-memory
+condition.
+
+A provider that returns a mismatched handle is cancelled, and its early output
+is discarded without decoding. Cancellation propagation is idempotent and
+provider cancellation failures cannot turn a user cancellation into an
+unhandled promise rejection.

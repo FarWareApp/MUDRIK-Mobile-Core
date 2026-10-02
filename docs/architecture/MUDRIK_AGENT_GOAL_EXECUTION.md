@@ -112,3 +112,32 @@ The result is intentional separation:
 
 That separation is mandatory for a powerful agent that can operate real
 devices without making model output a security bypass.
+
+
+## Capability-bound action admission
+
+Plan steps now declare concrete MUDRIK capability identifiers through
+requiredCapabilities rather than arbitrary capability-shaped references.
+
+Plan validation refuses to understate risk. If a step requires a capability
+whose registered risk is higher than the goal risk, the plan is rejected
+before execution. A side-effecting step must declare at least one concrete
+capability.
+
+Immediately before an external step can execute, action-time admission rechecks:
+
+- the current trusted evaluation time and goal deadline;
+- the goal side-effect policy;
+- the step risk against every required capability;
+- a trusted approval authority when the step requires approval;
+- the current capability grant for each required capability;
+- scope constraints such as resource path, domain, background use and
+  elevation;
+- revocation and expiry through the existing capability policy.
+
+An approval decision is bound to goalId, stepId, operationRef and the trusted
+evaluation time. Model output, plan metadata and UI booleans are not accepted
+as approval provenance.
+
+The admission layer returns evidence about the matching grant identifiers and
+approval reference, but it does not manufacture or widen a capability grant.

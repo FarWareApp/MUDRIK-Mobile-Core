@@ -4,6 +4,16 @@ import {
 } from '../brain/brainSecurity';
 
 import {
+  isCapabilityId,
+  type CapabilityId,
+} from '../security/capabilities';
+
+import {
+  getCapabilityRisk,
+  type CapabilityRisk,
+} from '../security/capabilityRisk';
+
+import {
   GOAL_ID,
   GOAL_PLAN_ID,
   GOAL_STEP_ID,
@@ -25,7 +35,7 @@ export type GoalPlanStep =
     kind: GoalStepKind;
     operationRef: string;
     dependsOn: readonly string[];
-    capabilityRefs: readonly string[];
+    requiredCapabilities: readonly CapabilityId[];
     sideEffect: boolean;
     requiresApproval: boolean;
     rollbackRef: string | null;
@@ -62,6 +72,8 @@ export type GoalPlanValidation =
       | 'dependency_invalid'
       | 'side_effect_forbidden'
       | 'approval_required'
+      | 'capability_missing'
+      | 'risk_underdeclared'
       | 'verification_missing'
       | 'finalize_invalid';
     value: GoalExecutionPlan | null;
@@ -84,7 +96,7 @@ const STEP_KEYS =
     'kind',
     'operationRef',
     'dependsOn',
-    'capabilityRefs',
+    'requiredCapabilities',
     'sideEffect',
     'requiresApproval',
     'rollbackRef',
@@ -145,6 +157,35 @@ function exactStrings(
   return Object.freeze(output);
 }
 
+
+function parseCapabilities(
+  value: unknown,
+): readonly CapabilityId[] | null {
+  if (
+    !Array.isArray(value)
+    || value.length > 32
+  ) {
+    return null;
+  }
+
+  const output: CapabilityId[] = [];
+  const seen = new Set<CapabilityId>();
+
+  for (const item of value) {
+    if (
+      !isCapabilityId(item)
+      || seen.has(item)
+    ) {
+      return null;
+    }
+
+    seen.add(item);
+    output.push(item);
+  }
+
+  return Object.freeze(output);
+}
+
 export function parseGoalPlanStep(
   input: unknown,
 ): GoalPlanStep | null {
@@ -180,10 +221,10 @@ export function parseGoalPlanStep(
 
   const dependsOn =
     exactStrings(record.dependsOn, GOAL_STEP_ID, 63);
-  const capabilityRefs =
-    exactStrings(record.capabilityRefs, null, 32);
+  const requiredCapabilities =
+    parseCapabilities(record.requiredCapabilities);
 
-  if (!dependsOn || !capabilityRefs) {
+  if (!dependsOn || !requiredCapabilities) {
     return null;
   }
 
@@ -200,7 +241,7 @@ export function parseGoalPlanStep(
     kind: record.kind as GoalStepKind,
     operationRef: record.operationRef as string,
     dependsOn,
-    capabilityRefs,
+    requiredCapabilities,
     sideEffect: record.sideEffect as boolean,
     requiresApproval:
       record.requiresApproval as boolean,
@@ -336,6 +377,30 @@ export function validateGoalExecutionPlan(
       && !step.requiresApproval
     ) {
       return fail('approval_required');
+    }
+
+    if (
+      step.sideEffect
+      && step.requiredCapabilities.length === 0
+    ) {
+      return fail('capability_missing');
+    }
+
+    const riskRank: Readonly<Record<CapabilityRisk, number>> = {
+      low: 0,
+      medium: 1,
+      high: 2,
+      critical: 3,
+    };
+
+    if (
+      step.requiredCapabilities.some(
+        (capability) =>
+          riskRank[getCapabilityRisk(capability)]
+          > riskRank[goal.risk],
+      )
+    ) {
+      return fail('risk_underdeclared');
     }
   }
 
