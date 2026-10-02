@@ -505,3 +505,39 @@ test(
     );
   },
 );
+
+test(
+  'home command hierarchy differentiates product domains without introducing off-brand colors',
+  () => {
+    const tile = fs.readFileSync(
+      'src/features/chat/components/HomeCommandTile.tsx',
+      'utf8',
+    );
+    const emptyState = fs.readFileSync(
+      'src/features/chat/components/EmptyChatState.tsx',
+      'utf8',
+    );
+
+    assert.match(tile, /'standard'/);
+    assert.match(tile, /'metal'/);
+    assert.match(tile, /'emerald'/);
+    assert.match(tile, /palette\.metal/);
+    assert.match(tile, /palette\.warmGlow/);
+    assert.match(tile, /colors\.accentSoft/);
+    assert.match(tile, /styles\.toneField/);
+
+    assert.match(
+      emptyState,
+      /tone="metal"[\s\S]*?label=\{t\('projects'\)\}/,
+    );
+    assert.match(
+      emptyState,
+      /tone="emerald"[\s\S]*?label=\{t\('companion'\)\}/,
+    );
+
+    assert.doesNotMatch(
+      tile,
+      /#(?:7[0-9A-Fa-f]{5}|8[0-9A-Fa-f]{5}|9[0-9A-Fa-f]{5})/,
+    );
+  },
+);

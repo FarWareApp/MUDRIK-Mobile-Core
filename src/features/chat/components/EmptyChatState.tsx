@@ -233,6 +233,7 @@ export const EmptyChatState = memo(
         />
 
         <HomeCommandTile
+          tone="metal"
           label={t('projects')}
           description={
             t('homeProjectsDescription')
@@ -246,6 +247,7 @@ export const EmptyChatState = memo(
         />
 
         <HomeCommandTile
+          tone="emerald"
           label={t('companion')}
           description={
             t('homeCompanionDescription')

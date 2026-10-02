@@ -37,11 +37,17 @@ import {
   typeScale,
 } from '../../../design-system/tokens/typography';
 
+type HomeCommandTone =
+  | 'standard'
+  | 'metal'
+  | 'emerald';
+
 type Props = {
   label: string;
   description: string;
   icon: ReactNode;
   primary?: boolean;
+  tone?: HomeCommandTone;
   onPress: () => void;
 };
 
@@ -51,6 +57,7 @@ export const HomeCommandTile = memo(
     description,
     icon,
     primary = false,
+    tone = 'standard',
     onPress,
   }: Props) {
     const {
@@ -61,6 +68,18 @@ export const HomeCommandTile = memo(
       useAccessibility();
     const palette =
       flagshipPalette[mode];
+
+    const toneColor =
+      tone === 'metal'
+        ? palette.metal
+        : colors.accent;
+
+    const toneSurface =
+      tone === 'metal'
+        ? palette.warmGlow
+        : tone === 'emerald'
+          ? colors.accentSoft
+          : 'transparent';
 
     return (
       <Pressable
@@ -124,6 +143,21 @@ export const HomeCommandTile = memo(
               },
             ]}
           >
+            {!primary
+            && tone !== 'standard' ? (
+              <View
+                importantForAccessibility="no"
+                pointerEvents="none"
+                style={[
+                  styles.toneField,
+                  {
+                    backgroundColor:
+                      toneSurface,
+                  },
+                ]}
+              />
+            ) : null}
+
             <View
               importantForAccessibility="no"
               pointerEvents="none"
@@ -147,9 +181,15 @@ export const HomeCommandTile = memo(
                   backgroundColor:
                     primary
                       ? palette.primaryActionText
-                      : palette.metal,
+                      : tone === 'standard'
+                        ? palette.metal
+                        : toneColor,
                   opacity:
-                    primary ? 0.34 : 0.28,
+                    primary
+                      ? 0.34
+                      : tone === 'standard'
+                        ? 0.28
+                        : 0.62,
                 },
               ]}
             />
@@ -194,7 +234,9 @@ export const HomeCommandTile = memo(
                   borderColor:
                     primary
                       ? 'rgba(255,255,255,0.22)'
-                      : palette.hairline,
+                      : tone === 'standard'
+                        ? palette.hairline
+                        : toneColor,
                 },
               ]}
             >
@@ -253,7 +295,9 @@ export const HomeCommandTile = memo(
                     backgroundColor:
                       primary
                         ? palette.primaryActionText
-                        : colors.accent,
+                        : tone === 'standard'
+                          ? colors.accent
+                          : toneColor,
                   },
                 ]}
               />
@@ -283,6 +327,19 @@ const styles = StyleSheet.create({
       StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
     padding: spacing.lg,
+  },
+  toneField: {
+    position: 'absolute',
+    top: 0,
+    end: 0,
+    width: '58%',
+    height: '100%',
+    opacity: 0.2,
+    transform: [
+      {
+        skewX: '-12deg',
+      },
+    ],
   },
   topHighlight: {
     position: 'absolute',
