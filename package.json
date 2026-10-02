@@ -52,7 +52,8 @@
     "typecheck": "tsc --noEmit",
     "device:preflight": "node ./scripts/section01-device-preflight.mjs",
     "release:preflight": "node ./scripts/production-release-preflight.mjs",
-    "validate:core": "npm run typecheck && npx expo-doctor"
+    "validate:core": "npm run typecheck && npx expo-doctor",
+    "benchmark:core": "node --test test/mobile-core/benchmark-arena.test.mjs"
   },
   "private": true,
   "resolutions": {
