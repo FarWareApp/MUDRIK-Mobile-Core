@@ -1,3 +1,7 @@
+import {
+  fetch as expoFetch,
+} from 'expo/fetch';
+
 import type {
   MessageTransport,
   MessageTransportInput,
@@ -151,7 +155,8 @@ implements MessageTransport {
     private readonly languageTagProvider:
       GatewayLanguageTagProvider,
     private readonly fetchImpl:
-      typeof fetch = fetch,
+      typeof fetch =
+        expoFetch as typeof fetch,
   ) {
     if (
       !/^https:\/\//.test(endpoint)
