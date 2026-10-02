@@ -1,3 +1,7 @@
+import {
+  fetch as expoFetch,
+} from 'expo/fetch';
+
 import { AttachmentPicker } from '../../contracts/AttachmentPicker';
 import { AttachmentRepository } from '../../contracts/AttachmentRepository';
 import { CompanionRepository } from '../../contracts/CompanionRepository';
@@ -65,6 +69,7 @@ const gatewayMessageTransport =
       gatewaySessionManager
         .getAccessToken(),
     getNativeGatewayLanguageTag,
+    expoFetch as typeof fetch,
   );
 
 const attachmentFileStore =
