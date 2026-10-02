@@ -26,6 +26,10 @@ import {
 } from './goalWorkExecutionCoordinator';
 
 import type {
+  GoalReconciliationCoordinator,
+} from './goalReconciliationCoordinator';
+
+import type {
   GoalTaskGraphPolicy,
 } from './goalTaskGraphScheduler';
 
@@ -198,6 +202,8 @@ export class GoalAutonomySupervisor {
       GoalWorkExecutionCoordinator,
     private readonly clock:
       () => number = () => Date.now(),
+    private readonly reconciliation:
+      GoalReconciliationCoordinator | null = null,
   ) {}
 
   async runTick(
@@ -280,12 +286,42 @@ export class GoalAutonomySupervisor {
       if (
         before.reconciliationWorkIds.length > 0
       ) {
+        if (!this.reconciliation) {
+          return finish(
+            'reconciliation_required',
+            'reconciliation_required',
+            rounds,
+            executions,
+            before,
+            cycles,
+          );
+        }
+
+        const reconciliation =
+          await this.reconciliation.runNext(
+            goal,
+            plan.value,
+          );
+
+        if (
+          reconciliation.status === 'completed'
+          || reconciliation.status
+            === 'retry_scheduled'
+        ) {
+          continue;
+        }
+
         return finish(
           'reconciliation_required',
-          'reconciliation_required',
+          reconciliation.reason,
           rounds,
           executions,
-          before,
+          summarize(
+            this.queue,
+            goal.goalId,
+            plan.value.planId,
+            now,
+          ),
           cycles,
         );
       }
@@ -387,6 +423,11 @@ export class GoalAutonomySupervisor {
           item.status
             === 'reconciliation_required'
         ) {
+          if (this.reconciliation) {
+            progressedThisRound = true;
+            continue;
+          }
+
           const current = this.clock();
           return finish(
             'reconciliation_required',

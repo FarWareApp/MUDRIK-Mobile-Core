@@ -12,6 +12,12 @@ const {
 );
 
 const {
+  GoalReconciliationCoordinator,
+} = loadTypeScriptModule(
+  'src/core/agent/goalReconciliationCoordinator.ts',
+);
+
+const {
   GoalWorkExecutionCoordinator,
 } = loadTypeScriptModule(
   'src/core/agent/goalWorkExecutionCoordinator.ts',
@@ -158,6 +164,7 @@ function buildRuntime({
   collector,
   executionBudget =
     supervisorPolicy.maxExecutionsPerTick,
+  reconciliationResolver = null,
 } = {}) {
   const queue = new GoalWorkQueue(queuePolicy);
   const clock = mutableClock();
@@ -243,11 +250,26 @@ function buildRuntime({
       () => clock.now(),
     );
 
+  const reconciliation =
+    reconciliationResolver
+      ? new GoalReconciliationCoordinator(
+          queue,
+          reconciliationResolver,
+          {
+            minimumConfidenceScore: 900,
+            maximumEvidenceAgeMs: 30_000,
+            allowManualConfirmation: false,
+          },
+          () => clock.now(),
+        )
+      : null;
+
   const supervisor =
     new GoalAutonomySupervisor(
       queue,
       execution,
       () => clock.now(),
+      reconciliation,
     );
 
   return {
@@ -422,4 +444,102 @@ test('duplicate worker identity fails closed', async () => {
     );
 
   assert.equal(result.status, 'invalid_input');
+});
+
+
+test('supervisor reconciles confirmed side effect and resumes graph', async () => {
+  const { supervisor, policy } =
+    buildRuntime({
+      runner: {
+        async run(invocation) {
+          if (
+            invocation.stepId
+              === 'goal_step_' + S1
+          ) {
+            throw new Error(
+              'transport_lost_after_commit',
+            );
+          }
+
+          return {
+            protocolVersion: '1.0',
+            status: 'succeeded',
+            resultRef:
+              'result_ref_'
+              + invocation.stepId.slice(-16),
+            evidenceRef:
+              'execution_evidence_'
+              + invocation.stepId.slice(-16),
+            failureReason: null,
+            retryable: false,
+            commitState: 'not_committed',
+            completedAtMs: NOW + 1_000,
+            grantsExecutionAuthority: false,
+            grantsSensorAuthority: false,
+            grantsApprovalAuthority: false,
+            grantsCapabilityAuthority: false,
+          };
+        },
+      },
+      reconciliationResolver: {
+        async reconcile(input) {
+          return {
+            protocolVersion: '1.0',
+            workId: input.workId,
+            goalId: input.goalId,
+            planId: input.planId,
+            stepId: input.stepId,
+            operationRef: input.operationRef,
+            resolution: 'completed',
+            commitState: 'committed',
+            method: 'state_readback',
+            evidenceRef:
+              'reconciliation_evidence_'
+              + input.stepId.slice(-16),
+            confidenceScore: 990,
+            observedAtMs: NOW + 20,
+            grantsExecutionAuthority: false,
+            grantsSensorAuthority: false,
+            grantsApprovalAuthority: false,
+            grantsCapabilityAuthority: false,
+          };
+        },
+      },
+    });
+
+  const sideGoal =
+    goal({
+      intent: 'operate',
+      risk: 'high',
+      sideEffectPolicy: 'approval-required',
+    });
+  const sidePlan =
+    plan({
+      sideEffect: true,
+      requiresApproval: true,
+      rollbackRef:
+        'rollback_ref_1111111111111111',
+      requiredCapabilities: [
+        'filesystem.write',
+      ],
+    });
+
+  const result =
+    await supervisor.runTick(
+      sideGoal,
+      sidePlan,
+      ['worker_ref_1111111111111111'],
+      policy,
+    );
+
+  assert.equal(result.status, 'progressed');
+  assert.ok(
+    result.completedStepIds.includes(
+      'goal_step_' + S1,
+    ),
+  );
+  assert.equal(
+    result.reconciliationWorkIds.length,
+    0,
+  );
 });
