@@ -22,6 +22,14 @@ import {
   createIntelligenceChatHandler,
 } from './intelligence-chat-handler.mjs';
 
+import {
+  GatewaySessionAuthority,
+} from './gateway-session-authority.mjs';
+
+import {
+  createGatewaySessionHandler,
+} from './gateway-session-handler.mjs';
+
 const PROVIDER_REF =
   'provider_openai_1111111111111111';
 
@@ -91,6 +99,12 @@ export function buildIntelligenceRuntime(
       'MUDRIK_GATEWAY_ACCESS_TOKEN',
     );
 
+  const sessionSecret =
+    requiredEnv(
+      env,
+      'MUDRIK_GATEWAY_SESSION_SECRET',
+    );
+
   if (
     accessToken.length < 32
     || accessToken.length > 4096
@@ -100,6 +114,11 @@ export function buildIntelligenceRuntime(
       'MUDRIK_GATEWAY_ACCESS_TOKEN must be 32-4096 safe characters.',
     );
   }
+
+  const sessionAuthority =
+    new GatewaySessionAuthority(
+      sessionSecret,
+    );
 
   const adapter =
     new OpenAIResponsesAdapter({
@@ -124,21 +143,11 @@ export function buildIntelligenceRuntime(
     createIntelligenceChatHandler({
       gateway,
       authenticateBearer:
-        async (token) => {
-          if (
-            !safeEqual(
-              token,
-              accessToken,
-            )
-          ) {
-            return null;
-          }
-
-          return Object.freeze({
-            subjectRef:
-              'subject_gateway_live_1111111111111111',
-          });
-        },
+        async (token) =>
+          sessionAuthority.verify(
+            token,
+            Date.now(),
+          ),
       routeSelector:
         async () =>
           Object.freeze({
@@ -151,8 +160,15 @@ export function buildIntelligenceRuntime(
           }),
     });
 
+  const sessionHandler =
+    createGatewaySessionHandler({
+      accessToken,
+      sessionAuthority,
+    });
+
   return Object.freeze({
     chatHandler,
+    sessionHandler,
     providerRef: PROVIDER_REF,
     modelRef: MODEL_REF,
   });
@@ -305,6 +321,8 @@ export function createGatewayHttpServer({
 
         if (
           request.url !== '/v1/chat'
+          && request.url
+            !== '/v1/internal/session'
         ) {
           response.statusCode = 404;
           response.setHeader(
@@ -327,9 +345,14 @@ export function createGatewayHttpServer({
         const origin =
           'http://127.0.0.1';
 
+        const targetPath =
+          request.url === '/v1/chat'
+            ? '/v1/chat'
+            : '/v1/internal/session';
+
         const webRequest =
           new Request(
-            origin + '/v1/chat',
+            origin + targetPath,
             {
               method:
                 request.method,
@@ -348,10 +371,15 @@ export function createGatewayHttpServer({
           );
 
         const webResponse =
-          await runtime
-            .chatHandler(
-              webRequest,
-            );
+          request.url === '/v1/chat'
+            ? await runtime
+              .chatHandler(
+                webRequest,
+              )
+            : await runtime
+              .sessionHandler(
+                webRequest,
+              );
 
         await sendWebResponse(
           webResponse,

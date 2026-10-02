@@ -13,6 +13,8 @@ const env = {
     'test-model',
   MUDRIK_GATEWAY_ACCESS_TOKEN:
     'gateway-access-token-abcdefghijklmnopqrstuvwxyz',
+  MUDRIK_GATEWAY_SESSION_SECRET:
+    'session-signing-secret-abcdefghijklmnopqrstuvwxyz-0123456789',
 };
 
 test(
