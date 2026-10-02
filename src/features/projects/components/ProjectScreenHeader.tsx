@@ -1,20 +1,34 @@
 import React from 'react';
 import {
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import {
+  router,
+} from 'expo-router';
 
-import { useLocale } from '../../../core/localization/LocaleProvider';
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
-import { motion } from '../../../design-system/tokens/motion';
-import { radius } from '../../../design-system/tokens/radius';
-import { spacing } from '../../../design-system/tokens/spacing';
-import { typeScale } from '../../../design-system/tokens/typography';
-import { ProjectAddIcon } from './ProjectAddIcon';
-import { ProjectBackIcon } from './ProjectBackIcon';
+import {
+  useLocale,
+} from '../../../core/localization/LocaleProvider';
+import {
+  FlagshipIconButton,
+} from '../../../design-system/components/FlagshipIconButton';
+import {
+  useTheme,
+} from '../../../design-system/theme/ThemeProvider';
+import {
+  spacing,
+} from '../../../design-system/tokens/spacing';
+import {
+  typeScale,
+} from '../../../design-system/tokens/typography';
+import {
+  ProjectAddIcon,
+} from './ProjectAddIcon';
+import {
+  ProjectBackIcon,
+} from './ProjectBackIcon';
 
 type Props = {
   busy?: boolean;
@@ -26,88 +40,61 @@ export function ProjectScreenHeader({
   onCreateProject,
 }: Props) {
   const { colors } = useTheme();
-  const { isRTL, t } = useLocale();
+  const {
+    isRTL,
+    t,
+  } = useLocale();
 
   return (
     <View
       style={[
         styles.container,
         {
-          borderBottomColor: colors.border,
-          backgroundColor: 'transparent',
+          borderBottomColor:
+            colors.border,
+          backgroundColor:
+            'transparent',
         },
       ]}
     >
-      <Pressable
-        accessibilityRole="button"
+      <FlagshipIconButton
         accessibilityLabel={t('back')}
+        renderIcon={(color) => (
+          <ProjectBackIcon
+            color={color}
+            isRTL={isRTL}
+          />
+        )}
         onPress={() => router.back()}
-        style={({ pressed }) => [
-          styles.circleButton,
-          {
-            backgroundColor: pressed
-              ? colors.surfacePressed
-              : colors.surface,
-            borderColor: colors.border,
-            transform: [
-              {
-                scale: pressed
-                  ? motion.press.subtleScale
-                  : 1,
-              },
-            ],
-          },
-        ]}
-      >
-        <ProjectBackIcon
-          color={colors.textPrimary}
-          isRTL={isRTL}
-        />
-      </Pressable>
+      />
 
       <Text
         accessibilityRole="header"
         numberOfLines={1}
         style={[
           styles.title,
-          { color: colors.textPrimary },
+          {
+            color:
+              colors.textPrimary,
+          },
         ]}
       >
         {t('projects')}
       </Text>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('createProject')}
-        accessibilityState={{ disabled: busy }}
+      <FlagshipIconButton
+        primary
+        accessibilityLabel={
+          t('createProject')
+        }
         disabled={busy}
+        renderIcon={(color) => (
+          <ProjectAddIcon
+            color={color}
+          />
+        )}
         onPress={onCreateProject}
-        style={({ pressed }) => [
-          styles.circleButton,
-          styles.primaryButton,
-          {
-            backgroundColor: colors.accent,
-            borderColor: colors.accent,
-            opacity: busy
-              ? 0.44
-              : pressed
-                ? 0.86
-                : 1,
-            shadowColor: colors.shadow,
-            transform: [
-              {
-                scale: pressed && !busy
-                  ? motion.press.scale
-                  : 1,
-              },
-            ],
-          },
-        ]}
-      >
-        <ProjectAddIcon
-          color={colors.accentText}
-        />
-      </Pressable>
+      />
     </View>
   );
 }
@@ -117,7 +104,8 @@ const styles = StyleSheet.create({
     minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.lg,
   },
   title: {
@@ -126,29 +114,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     textAlign: 'center',
     fontWeight: '800',
-  },
-  circleButton: {
-    width: 44,
-    height: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 2,
-  },
-  primaryButton: {
-    elevation: 4,
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
   },
 });

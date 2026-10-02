@@ -10,6 +10,10 @@ const header = fs.readFileSync(
   'src/features/diagnostics/components/DiagnosticsScreenHeader.tsx',
   'utf8',
 );
+const flagshipIconButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 const backIcon = fs.readFileSync(
   'src/features/diagnostics/components/DiagnosticsBackIcon.tsx',
   'utf8',
@@ -77,18 +81,20 @@ test(
 );
 
 test(
-  'diagnostics header uses a stable RTL-aware primitive and reduced-motion press feedback',
+  'diagnostics header uses a stable RTL-aware flagship primitive with reduced-motion feedback',
   () => {
+    assert.match(header, /FlagshipIconButton/);
     assert.match(header, /DiagnosticsBackIcon/);
-    assert.match(header, /useAccessibility/);
     assert.match(header, /isRTL/);
-    assert.match(header, /motion\.press\.subtleScale/);
     assert.match(header, /typeScale\.heading/);
-    assert.match(header, /width:\s*44/);
-    assert.match(header, /height:\s*44/);
     assert.doesNotMatch(header, /‹/u);
 
-    assert.doesNotMatch(backIcon, /\bText\b/);
+    assert.match(flagshipIconButton, /useAccessibility/);
+    assert.match(flagshipIconButton, /motion\.press/);
+    assert.match(flagshipIconButton, /size = 44/);
+    assert.match(flagshipIconButton, /accessibilityRole="button"/);
+
+    assert.doesNotMatch(backIcon, /Text/);
     assert.match(backIcon, /scaleX:\s*-1/);
   },
 );

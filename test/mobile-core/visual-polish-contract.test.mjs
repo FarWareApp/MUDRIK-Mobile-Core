@@ -209,6 +209,10 @@ test(
       'src/features/projects/components/ProjectListState.tsx',
       'utf8',
     );
+    const commandCenter = fs.readFileSync(
+      'src/features/projects/components/ProjectEmptyCommandCenter.tsx',
+      'utf8',
+    );
     const icon = fs.readFileSync(
       'src/features/projects/components/ProjectEmptyIcon.tsx',
       'utf8',
@@ -218,10 +222,16 @@ test(
       'utf8',
     );
 
-    assert.match(state, /ProjectEmptyIcon/);
+    assert.match(state, /ProjectEmptyCommandCenter/);
     assert.match(state, /onCreateProject/);
-    assert.match(state, /t\('createProject'\)/);
-    assert.match(state, /minHeight:\s*48/);
+    assert.match(commandCenter, /ProjectEmptyIcon/);
+    assert.match(commandCenter, /FlagshipActionButton/);
+    assert.match(commandCenter, /PremiumHeroSurface/);
+    assert.match(commandCenter, /projectsEmptyTitle/);
+    assert.match(commandCenter, /projectsEmptyFiles/);
+    assert.match(commandCenter, /projectsEmptyConversations/);
+    assert.match(commandCenter, /projectsEmptyArchive/);
+    assert.doesNotMatch(commandCenter, /Math\.random/);
     assert.match(icon, /styles\.folder/);
     assert.match(icon, /styles\.plusHorizontal/);
     assert.match(icon, /styles\.plusVertical/);

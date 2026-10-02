@@ -10,6 +10,10 @@ const header = fs.readFileSync(
   'src/features/projects/components/ProjectScreenHeader.tsx',
   'utf8',
 );
+const flagshipIconButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 const search = fs.readFileSync(
   'src/features/projects/components/ProjectSearchBar.tsx',
   'utf8',
@@ -99,11 +103,13 @@ test(
 test(
   'project collection header and search avoid font glyph controls',
   () => {
+    assert.match(header, /FlagshipIconButton/);
     assert.match(header, /ProjectBackIcon/);
     assert.match(header, /ProjectAddIcon/);
-    assert.match(header, /motion\.press/);
     assert.match(header, /isRTL/);
     assert.doesNotMatch(header, /[‹+]/u);
+    assert.match(flagshipIconButton, /motion\.press/);
+    assert.match(flagshipIconButton, /accessibilityRole="button"/);
 
     assert.match(search, /ProjectSearchIcon/);
     assert.match(search, /ProjectClearIcon/);

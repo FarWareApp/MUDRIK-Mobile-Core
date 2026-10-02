@@ -1,21 +1,21 @@
 import React from 'react';
 import {
-  Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
 import type {
   CompanionSessionPhase,
 } from '../../../contracts/Companion';
-import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
-import { useLocale } from '../../../core/localization/LocaleProvider';
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
-import { motion } from '../../../design-system/tokens/motion';
-import { radius } from '../../../design-system/tokens/radius';
-import { spacing } from '../../../design-system/tokens/spacing';
-import { typeScale } from '../../../design-system/tokens/typography';
+import {
+  useLocale,
+} from '../../../core/localization/LocaleProvider';
+import {
+  FlagshipActionButton,
+} from '../../../design-system/components/FlagshipActionButton';
+import {
+  spacing,
+} from '../../../design-system/tokens/spacing';
 
 type Props = {
   phase: CompanionSessionPhase;
@@ -43,7 +43,9 @@ export function CompanionSessionControls({
   if (phase === 'idle') {
     return (
       <Control
-        label={t('startCompanionSession')}
+        label={t(
+          'startCompanionSession',
+        )}
         primary
         disabled={!enabled}
         onPress={onStart}
@@ -55,13 +57,17 @@ export function CompanionSessionControls({
     return (
       <View style={styles.row}>
         <Control
-          label={t('resumeCompanionSession')}
+          label={t(
+            'resumeCompanionSession',
+          )}
           primary
           disabled={!enabled}
           onPress={onResume}
         />
         <Control
-          label={t('endCompanionSession')}
+          label={t(
+            'endCompanionSession',
+          )}
           onPress={onStop}
         />
       </View>
@@ -72,13 +78,17 @@ export function CompanionSessionControls({
     return (
       <View style={styles.row}>
         <Control
-          label={t('continueCompanionSession')}
+          label={t(
+            'continueCompanionSession',
+          )}
           primary
           disabled={!enabled}
           onPress={onRecover}
         />
         <Control
-          label={t('endCompanionSession')}
+          label={t(
+            'endCompanionSession',
+          )}
           onPress={onStop}
         />
       </View>
@@ -88,7 +98,9 @@ export function CompanionSessionControls({
   if (phase === 'error') {
     return (
       <Control
-        label={t('endCompanionSession')}
+        label={t(
+          'endCompanionSession',
+        )}
         onPress={onStop}
       />
     );
@@ -102,18 +114,26 @@ export function CompanionSessionControls({
     <View style={styles.row}>
       {canPause ? (
         <Control
-          label={t('pauseCompanionSession')}
+          label={t(
+            'pauseCompanionSession',
+          )}
           disabled={!enabled}
           onPress={onPause}
         />
       ) : null}
+
       <Control
-        label={t('interruptCompanionSession')}
+        label={t(
+          'interruptCompanionSession',
+        )}
         disabled={!enabled}
         onPress={onInterrupt}
       />
+
       <Control
-        label={t('endCompanionSession')}
+        label={t(
+          'endCompanionSession',
+        )}
         onPress={onStop}
       />
     </View>
@@ -133,58 +153,13 @@ function Control({
   disabled = false,
   onPress,
 }: ControlProps) {
-  const { colors } = useTheme();
-  const { reducedMotion } = useAccessibility();
-
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
+    <FlagshipActionButton
+      label={label}
+      primary={primary}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.control,
-        {
-          backgroundColor: primary
-            ? colors.accent
-            : pressed
-              ? colors.surfacePressed
-              : colors.surfaceElevated,
-          borderColor: primary
-            ? colors.accent
-            : colors.border,
-          opacity: disabled
-            ? 0.44
-            : pressed
-              ? 0.86
-              : 1,
-          transform: [
-            {
-              scale:
-                pressed
-                && !disabled
-                && !reducedMotion
-                  ? motion.press.subtleScale
-                  : 1,
-            },
-          ],
-        },
-      ]}
-    >
-      <Text
-        style={[
-          styles.controlText,
-          {
-            color: primary
-              ? colors.accentText
-              : colors.textPrimary,
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
+    />
   );
 }
 
@@ -194,19 +169,5 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: spacing.sm,
-  },
-  control: {
-    minHeight: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.pill,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-  },
-  controlText: {
-    ...typeScale.secondary,
-    fontWeight: '700',
-    textAlign: 'center',
-    writingDirection: 'auto',
   },
 });

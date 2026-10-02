@@ -18,6 +18,10 @@ const header = fs.readFileSync(
   'src/features/capabilities/components/CapabilitiesScreenHeader.tsx',
   'utf8',
 );
+const flagshipIconButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 const route = fs.readFileSync(
   'src/app/capabilities.tsx',
   'utf8',
@@ -139,6 +143,10 @@ test(
     );
     assert.match(
       header,
+      /FlagshipIconButton/,
+    );
+    assert.match(
+      flagshipIconButton,
       /accessibilityRole="button"/,
     );
     assert.match(

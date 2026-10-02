@@ -2,7 +2,6 @@ import React, {
   memo,
 } from 'react';
 import {
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -15,17 +14,14 @@ import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
 import {
-  useAccessibility,
-} from '../../../core/accessibility/AccessibilityProvider';
+  FlagshipIconButton,
+} from '../../../design-system/components/FlagshipIconButton';
 import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
 import {
   flagshipPalette,
 } from '../../../design-system/tokens/flagship';
-import {
-  motion,
-} from '../../../design-system/tokens/motion';
 import {
   radius,
 } from '../../../design-system/tokens/radius';
@@ -55,8 +51,6 @@ export const ChatHeader = memo(
       colors,
       mode,
     } = useTheme();
-    const { reducedMotion } =
-      useAccessibility();
     const palette =
       flagshipPalette[mode];
 
@@ -169,74 +163,19 @@ export const ChatHeader = memo(
           </View>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
+        <FlagshipIconButton
+          primary
+          size={48}
           accessibilityLabel={
             t('newConversation')
           }
-          hitSlop={4}
-          onPress={onNewConversation}
-          style={({ pressed }) => [
-            styles.newButtonFrame,
-            {
-              shadowColor:
-                colors.shadow,
-              opacity:
-                pressed ? 0.96 : 1,
-              transform: [
-                {
-                  scale:
-                    pressed
-                    && !reducedMotion
-                      ? motion.press
-                          .scale
-                      : 1,
-                },
-              ],
-            },
-          ]}
-        >
-          {({ pressed }) => (
-            <LinearGradient
-              colors={
-                pressed
-                  ? palette
-                      .secondaryAction
-                  : palette.card
-              }
-              start={{
-                x: 0,
-                y: 0,
-              }}
-              end={{
-                x: 1,
-                y: 1,
-              }}
-              style={[
-                styles.newButton,
-                {
-                  borderColor:
-                    palette.hairline,
-                },
-              ]}
-            >
-              <View
-                importantForAccessibility="no"
-                style={[
-                  styles.buttonHighlight,
-                  {
-                    backgroundColor:
-                      palette.shine,
-                  },
-                ]}
-              />
-
-              <ChatNewConversationIcon
-                color={colors.accent}
-              />
-            </LinearGradient>
+          renderIcon={(color) => (
+            <ChatNewConversationIcon
+              color={color}
+            />
           )}
-        </Pressable>
+          onPress={onNewConversation}
+        />
       </View>
     );
   },
@@ -321,35 +260,5 @@ const styles = StyleSheet.create({
       typography.caption,
     lineHeight: 16,
     fontWeight: '600',
-  },
-  newButtonFrame: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.pill,
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 2,
-  },
-  newButton: {
-    flex: 1,
-    overflow: 'hidden',
-    borderWidth:
-      StyleSheet.hairlineWidth,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonHighlight: {
-    position: 'absolute',
-    top: 0,
-    start: 10,
-    end: 10,
-    height: 1,
-    opacity: 0.66,
-    borderRadius: radius.pill,
   },
 });

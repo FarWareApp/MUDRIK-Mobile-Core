@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -10,20 +9,14 @@ import {
 } from 'expo-router';
 
 import {
-  useAccessibility,
-} from '../../../core/accessibility/AccessibilityProvider';
-import {
   useLocale,
 } from '../../../core/localization/LocaleProvider';
 import {
+  FlagshipIconButton,
+} from '../../../design-system/components/FlagshipIconButton';
+import {
   useTheme,
 } from '../../../design-system/theme/ThemeProvider';
-import {
-  motion,
-} from '../../../design-system/tokens/motion';
-import {
-  radius,
-} from '../../../design-system/tokens/radius';
 import {
   spacing,
 } from '../../../design-system/tokens/spacing';
@@ -36,10 +29,10 @@ import {
 
 export function CapabilitiesScreenHeader() {
   const { colors } = useTheme();
-  const { reducedMotion } =
-    useAccessibility();
-  const { isRTL, t } =
-    useLocale();
+  const {
+    isRTL,
+    t,
+  } = useLocale();
 
   return (
     <View
@@ -47,42 +40,22 @@ export function CapabilitiesScreenHeader() {
         styles.container,
         {
           backgroundColor:
-            colors.background,
+            'transparent',
           borderBottomColor:
             colors.border,
         },
       ]}
     >
-      <Pressable
-        accessibilityRole="button"
+      <FlagshipIconButton
         accessibilityLabel={t('back')}
+        renderIcon={(color) => (
+          <CapabilitiesBackIcon
+            color={color}
+            isRTL={isRTL}
+          />
+        )}
         onPress={() => router.back()}
-        style={({ pressed }) => [
-          styles.backButton,
-          {
-            backgroundColor: pressed
-              ? colors.surfacePressed
-              : colors.surface,
-            borderColor: colors.border,
-            shadowColor: colors.shadow,
-            transform: [
-              {
-                scale:
-                  pressed
-                  && !reducedMotion
-                    ? motion.press
-                        .subtleScale
-                    : 1,
-              },
-            ],
-          },
-        ]}
-      >
-        <CapabilitiesBackIcon
-          color={colors.textPrimary}
-          isRTL={isRTL}
-        />
-      </Pressable>
+      />
 
       <Text
         accessibilityRole="header"
@@ -112,22 +85,6 @@ const styles = StyleSheet.create({
       StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderWidth:
-      StyleSheet.hairlineWidth,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 2,
   },
   title: {
     ...typeScale.heading,

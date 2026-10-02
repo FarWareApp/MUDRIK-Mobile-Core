@@ -10,6 +10,10 @@ const screenHeader = fs.readFileSync(
   'src/features/companion/components/CompanionScreenHeader.tsx',
   'utf8',
 );
+const flagshipIconButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 const avatar = fs.readFileSync(
   'src/features/companion/components/CompanionAvatar.tsx',
   'utf8',
@@ -32,6 +36,10 @@ const editorSection = fs.readFileSync(
 );
 const controls = fs.readFileSync(
   'src/features/companion/components/CompanionSessionControls.tsx',
+  'utf8',
+);
+const flagshipAction = fs.readFileSync(
+  'src/design-system/components/FlagshipActionButton.tsx',
   'utf8',
 );
 const optionGroup = fs.readFileSync(
@@ -112,16 +120,19 @@ test(
 );
 
 test(
-  'companion header uses stable RTL-aware icon primitives and design motion',
+  'companion header delegates stable RTL-aware controls to the flagship button primitive',
   () => {
+    assert.match(screenHeader, /FlagshipIconButton/);
     assert.match(screenHeader, /CompanionBackIcon/);
     assert.match(screenHeader, /CompanionEditIcon/);
     assert.match(screenHeader, /isRTL/);
-    assert.match(screenHeader, /motion\.press\.subtleScale/);
     assert.match(screenHeader, /typeScale\.heading/);
-    assert.match(screenHeader, /width:\s*44/);
-    assert.match(screenHeader, /height:\s*44/);
     assert.doesNotMatch(screenHeader, /[‹✎]/u);
+
+    assert.match(flagshipIconButton, /size = 44/);
+    assert.match(flagshipIconButton, /motion\.press/);
+    assert.match(flagshipIconButton, /subtleScale/);
+    assert.match(flagshipIconButton, /accessibilityRole="button"/);
   },
 );
 
@@ -239,9 +250,14 @@ test(
 test(
   'companion controls use semantic roles, stable primitives and minimum touch targets',
   () => {
-    assert.match(controls, /useAccessibility/);
-    assert.match(controls, /motion\.press\.subtleScale/);
-    assert.match(controls, /minHeight:\s*44/);
+    assert.match(controls, /FlagshipActionButton/);
+    assert.match(flagshipAction, /useAccessibility/);
+    assert.match(
+      flagshipAction,
+      /motion\.press[\s\S]*?\.subtleScale/,
+    );
+    assert.match(flagshipAction, /minHeight:\s*52/);
+    assert.match(flagshipAction, /accessibilityRole="button"/);
     assert.match(controls, /const canPause/);
     assert.match(controls, /phase === 'listening'/);
     assert.match(controls, /phase === 'speaking'/);

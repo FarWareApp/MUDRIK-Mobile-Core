@@ -122,6 +122,7 @@ export function CapabilitiesScreen() {
         }
       >
         <PremiumHeroSurface
+          strong
           style={styles.hero}
         >
           <View style={styles.heroTop}>

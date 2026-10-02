@@ -10,6 +10,10 @@ const header = fs.readFileSync(
   'src/features/projects/components/ProjectDetailHeader.tsx',
   'utf8',
 );
+const flagshipIconButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 const state = fs.readFileSync(
   'src/features/projects/components/ProjectDetailState.tsx',
   'utf8',
@@ -80,19 +84,22 @@ test(
 );
 
 test(
-  'project detail header uses stable glyph-free primitives with RTL back geometry',
+  'project detail header uses stable glyph-free flagship primitives with RTL back geometry',
   () => {
+    assert.match(header, /FlagshipIconButton/);
     assert.match(header, /ProjectBackIcon/);
     assert.match(header, /ProjectEditIcon/);
     assert.match(header, /isRTL/);
-    assert.match(header, /motion\.press\.subtleScale/);
-    assert.match(header, /width:\s*44/);
-    assert.match(header, /height:\s*44/);
     assert.doesNotMatch(header, /[‹✎]/u);
     assert.match(backIcon, /scaleX:\s*-1/);
 
+    assert.match(flagshipIconButton, /motion\.press/);
+    assert.match(flagshipIconButton, /subtleScale/);
+    assert.match(flagshipIconButton, /size = 44/);
+    assert.match(flagshipIconButton, /accessibilityRole="button"/);
+
     for (const icon of [backIcon, editIcon]) {
-      assert.doesNotMatch(icon, /<Text\b/);
+      assert.doesNotMatch(icon, /<Text/);
       assert.match(
         icon,
         /importantForAccessibility="no-hide-descendants"/,

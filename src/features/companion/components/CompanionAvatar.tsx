@@ -47,7 +47,7 @@ export function CompanionAvatar({
   name,
 }: Props) {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const { t, isRTL } = useLocale();
   const phaseLabel =
     t(
       getCompanionPhaseTranslationKey(
@@ -87,6 +87,7 @@ export function CompanionAvatar({
 
   return (
     <PremiumHeroSurface
+      strong
       active={active}
       style={styles.card}
     >
@@ -97,6 +98,9 @@ export function CompanionAvatar({
               styles.eyebrow,
               {
                 color: colors.accent,
+                textAlign: isRTL
+                  ? 'right'
+                  : 'left',
               },
             ]}
           >
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     fontWeight: '800',
     letterSpacing: 0.7,
-    writingDirection: 'auto',
+    writingDirection: 'ltr',
   },
   heading: {
     ...typeScale.heading,

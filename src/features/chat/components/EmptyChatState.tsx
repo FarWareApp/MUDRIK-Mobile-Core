@@ -87,6 +87,7 @@ export const EmptyChatState = memo(
       style={styles.container}
     >
       <PremiumHeroSurface
+        strong
         style={styles.hero}
       >
         <View style={styles.heroTop}>

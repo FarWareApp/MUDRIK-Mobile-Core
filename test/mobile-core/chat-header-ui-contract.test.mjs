@@ -10,30 +10,56 @@ const icon = fs.readFileSync(
   'src/features/chat/components/ChatNewConversationIcon.tsx',
   'utf8',
 );
+const flagshipButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 
 test(
-  'chat header keeps a stable localized new conversation affordance',
+  'chat header keeps a stable localized flagship new conversation affordance',
   () => {
-    assert.match(header, /accessibilityRole="button"/);
-    assert.match(header, /t\('newConversation'\)/);
-    assert.match(header, /width:\s*48/);
-    assert.match(header, /height:\s*48/);
+    assert.match(header, /FlagshipIconButton/);
+    assert.match(header, /primary/);
+    assert.match(header, /size=\{48\}/);
+    assert.ok(header.includes("t('newConversation')"));
     assert.match(header, /ChatNewConversationIcon/);
-    assert.doesNotMatch(header, />\s*\+\s*</);
+    assert.ok(!header.includes('>+</'));
+
+    assert.match(
+      flagshipButton,
+      /accessibilityRole="button"/,
+    );
+    assert.match(
+      flagshipButton,
+      /accessibilityLabel/,
+    );
+
     assert.match(
       icon,
       /importantForAccessibility="no-hide-descendants"/,
     );
-    assert.doesNotMatch(icon, /<Text\b/);
+    assert.doesNotMatch(icon, /<Text/);
   },
 );
 
 test(
-  'chat header press feedback uses the shared motion contract',
+  'chat header press feedback is delegated to the shared flagship motion contract',
   () => {
-    assert.match(header, /motion\.press[\s\S]*?\.scale/);
-    assert.doesNotMatch(header, /scale:[\s\S]*?\?\s*0\.96/);
-    assert.match(header, /palette[\s\S]*?\.secondaryAction/);
-    assert.match(header, /LinearGradient/);
+    assert.match(
+      flagshipButton,
+      /motion\.press/,
+    );
+    assert.match(
+      flagshipButton,
+      /primaryActionPressed/,
+    );
+    assert.match(
+      flagshipButton,
+      /LinearGradient/,
+    );
+    assert.match(
+      flagshipButton,
+      /reducedMotion/,
+    );
   },
 );

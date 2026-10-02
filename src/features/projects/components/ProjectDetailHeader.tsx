@@ -1,20 +1,34 @@
 import React from 'react';
 import {
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import {
+  router,
+} from 'expo-router';
 
-import { useLocale } from '../../../core/localization/LocaleProvider';
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
-import { motion } from '../../../design-system/tokens/motion';
-import { radius } from '../../../design-system/tokens/radius';
-import { spacing } from '../../../design-system/tokens/spacing';
-import { typeScale } from '../../../design-system/tokens/typography';
-import { ProjectBackIcon } from './ProjectBackIcon';
-import { ProjectEditIcon } from './ProjectEditIcon';
+import {
+  useLocale,
+} from '../../../core/localization/LocaleProvider';
+import {
+  FlagshipIconButton,
+} from '../../../design-system/components/FlagshipIconButton';
+import {
+  useTheme,
+} from '../../../design-system/theme/ThemeProvider';
+import {
+  spacing,
+} from '../../../design-system/tokens/spacing';
+import {
+  typeScale,
+} from '../../../design-system/tokens/typography';
+import {
+  ProjectBackIcon,
+} from './ProjectBackIcon';
+import {
+  ProjectEditIcon,
+} from './ProjectEditIcon';
 
 type Props = {
   title: string;
@@ -28,84 +42,60 @@ export function ProjectDetailHeader({
   onEdit,
 }: Props) {
   const { colors } = useTheme();
-  const { isRTL, t } = useLocale();
+  const {
+    isRTL,
+    t,
+  } = useLocale();
 
   return (
     <View
       style={[
         styles.container,
         {
-          borderBottomColor: colors.border,
-          backgroundColor: 'transparent',
+          borderBottomColor:
+            colors.border,
+          backgroundColor:
+            'transparent',
         },
       ]}
     >
-      <Pressable
-        accessibilityRole="button"
+      <FlagshipIconButton
         accessibilityLabel={t('back')}
+        renderIcon={(color) => (
+          <ProjectBackIcon
+            color={color}
+            isRTL={isRTL}
+          />
+        )}
         onPress={() => router.back()}
-        style={({ pressed }) => [
-          styles.circleButton,
-          {
-            backgroundColor: pressed
-              ? colors.surfacePressed
-              : colors.surface,
-            borderColor: colors.border,
-            transform: [
-              {
-                scale: pressed
-                  ? motion.press.subtleScale
-                  : 1,
-              },
-            ],
-          },
-        ]}
-      >
-        <ProjectBackIcon
-          color={colors.textPrimary}
-          isRTL={isRTL}
-        />
-      </Pressable>
+      />
 
       <Text
         accessibilityRole="header"
         numberOfLines={1}
         style={[
           styles.title,
-          { color: colors.textPrimary },
+          {
+            color:
+              colors.textPrimary,
+          },
         ]}
       >
         {title}
       </Text>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('editProject')}
-        accessibilityState={{ disabled: busy }}
+      <FlagshipIconButton
+        accessibilityLabel={
+          t('editProject')
+        }
         disabled={busy}
+        renderIcon={(color) => (
+          <ProjectEditIcon
+            color={color}
+          />
+        )}
         onPress={onEdit}
-        style={({ pressed }) => [
-          styles.circleButton,
-          {
-            backgroundColor: pressed
-              ? colors.surfacePressed
-              : colors.surface,
-            borderColor: colors.border,
-            opacity: busy ? 0.44 : 1,
-            transform: [
-              {
-                scale: pressed && !busy
-                  ? motion.press.subtleScale
-                  : 1,
-              },
-            ],
-          },
-        ]}
-      >
-        <ProjectEditIcon
-          color={colors.textPrimary}
-        />
-      </Pressable>
+      />
     </View>
   );
 }
@@ -115,7 +105,8 @@ const styles = StyleSheet.create({
     minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.lg,
   },
   title: {
@@ -124,20 +115,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     textAlign: 'center',
     fontWeight: '800',
-  },
-  circleButton: {
-    width: 44,
-    height: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 2,
   },
 });

@@ -43,7 +43,7 @@ export function VoiceRecorderStatus({
   durationMs,
 }: Props) {
   const { colors } = useTheme();
-  const { t } = useLocale();
+  const { t, isRTL } = useLocale();
 
   const phaseLabels:
     Record<VoiceRecorderPhase, string> = {
@@ -65,6 +65,7 @@ export function VoiceRecorderStatus({
 
   return (
     <PremiumHeroSurface
+      strong
       active={active}
       style={styles.container}
     >
@@ -75,6 +76,9 @@ export function VoiceRecorderStatus({
               styles.eyebrow,
               {
                 color: colors.accent,
+                textAlign: isRTL
+                  ? 'right'
+                  : 'left',
               },
             ]}
           >
@@ -234,7 +238,7 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     fontWeight: '800',
     letterSpacing: 0.7,
-    writingDirection: 'auto',
+    writingDirection: 'ltr',
   },
   title: {
     marginTop: spacing.xs,

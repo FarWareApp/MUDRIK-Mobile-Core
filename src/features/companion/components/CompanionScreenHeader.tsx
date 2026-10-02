@@ -1,21 +1,34 @@
 import React from 'react';
 import {
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import {
+  router,
+} from 'expo-router';
 
-import { useAccessibility } from '../../../core/accessibility/AccessibilityProvider';
-import { useLocale } from '../../../core/localization/LocaleProvider';
-import { useTheme } from '../../../design-system/theme/ThemeProvider';
-import { motion } from '../../../design-system/tokens/motion';
-import { radius } from '../../../design-system/tokens/radius';
-import { spacing } from '../../../design-system/tokens/spacing';
-import { typeScale } from '../../../design-system/tokens/typography';
-import { CompanionBackIcon } from './CompanionBackIcon';
-import { CompanionEditIcon } from './CompanionEditIcon';
+import {
+  useLocale,
+} from '../../../core/localization/LocaleProvider';
+import {
+  FlagshipIconButton,
+} from '../../../design-system/components/FlagshipIconButton';
+import {
+  useTheme,
+} from '../../../design-system/theme/ThemeProvider';
+import {
+  spacing,
+} from '../../../design-system/tokens/spacing';
+import {
+  typeScale,
+} from '../../../design-system/tokens/typography';
+import {
+  CompanionBackIcon,
+} from './CompanionBackIcon';
+import {
+  CompanionEditIcon,
+} from './CompanionEditIcon';
 
 type Props = {
   disabled?: boolean;
@@ -27,88 +40,59 @@ export function CompanionScreenHeader({
   onEdit,
 }: Props) {
   const { colors } = useTheme();
-  const { reducedMotion } = useAccessibility();
-  const { isRTL, t } = useLocale();
+  const {
+    isRTL,
+    t,
+  } = useLocale();
 
   return (
     <View
       style={[
         styles.container,
         {
-          borderBottomColor: colors.border,
-          backgroundColor: 'transparent',
+          borderBottomColor:
+            colors.border,
+          backgroundColor:
+            'transparent',
         },
       ]}
     >
-      <Pressable
-        accessibilityRole="button"
+      <FlagshipIconButton
         accessibilityLabel={t('back')}
+        renderIcon={(color) => (
+          <CompanionBackIcon
+            color={color}
+            isRTL={isRTL}
+          />
+        )}
         onPress={() => router.back()}
-        style={({ pressed }) => [
-          styles.circleButton,
-          {
-            backgroundColor: pressed
-              ? colors.surfacePressed
-              : colors.surface,
-            borderColor: colors.border,
-            transform: [
-              {
-                scale:
-                  pressed && !reducedMotion
-                    ? motion.press.subtleScale
-                    : 1,
-              },
-            ],
-          },
-        ]}
-      >
-        <CompanionBackIcon
-          color={colors.textPrimary}
-          isRTL={isRTL}
-        />
-      </Pressable>
+      />
 
       <Text
         accessibilityRole="header"
         style={[
           styles.title,
-          { color: colors.textPrimary },
+          {
+            color:
+              colors.textPrimary,
+          },
         ]}
       >
         {t('companion')}
       </Text>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('editCompanion')}
-        accessibilityState={{ disabled }}
+      <FlagshipIconButton
+        accessibilityLabel={
+          t('editCompanion')
+        }
         disabled={disabled}
+        renderIcon={(color) => (
+          <CompanionEditIcon
+            color={color}
+          />
+        )}
         onPress={onEdit}
-        style={({ pressed }) => [
-          styles.circleButton,
-          {
-            backgroundColor: pressed
-              ? colors.surfacePressed
-              : colors.surface,
-            borderColor: colors.border,
-            opacity: disabled ? 0.44 : 1,
-            transform: [
-              {
-                scale:
-                  pressed
-                  && !disabled
-                  && !reducedMotion
-                    ? motion.press.subtleScale
-                    : 1,
-              },
-            ],
-          },
-        ]}
-      >
-        <CompanionEditIcon
-          color={colors.textPrimary}
-        />
-      </Pressable>
+      />
     </View>
   );
 }
@@ -118,23 +102,9 @@ const styles = StyleSheet.create({
     minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.lg,
-  },
-  circleButton: {
-    width: 44,
-    height: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 2,
   },
   title: {
     ...typeScale.heading,

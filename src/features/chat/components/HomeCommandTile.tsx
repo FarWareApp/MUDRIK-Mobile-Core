@@ -146,7 +146,7 @@ export const HomeCommandTile = memo(
                 {
                   backgroundColor:
                     primary
-                      ? colors.accentText
+                      ? palette.primaryActionText
                       : palette.metal,
                   opacity:
                     primary ? 0.34 : 0.28,
@@ -189,7 +189,7 @@ export const HomeCommandTile = memo(
                 {
                   backgroundColor:
                     primary
-                      ? 'rgba(248,255,249,0.92)'
+                      ? 'rgba(247,244,236,0.94)'
                       : colors.accentSoft,
                   borderColor:
                     primary
@@ -209,7 +209,7 @@ export const HomeCommandTile = memo(
                   : styles.label,
                 {
                   color: primary
-                    ? colors.accentText
+                    ? palette.primaryActionText
                     : colors.textPrimary,
                 },
               ]}
@@ -223,7 +223,7 @@ export const HomeCommandTile = memo(
                 styles.description,
                 {
                   color: primary
-                    ? colors.accentText
+                    ? palette.primaryActionText
                     : colors.textSecondary,
                   opacity:
                     primary ? 0.86 : 1,
@@ -252,7 +252,7 @@ export const HomeCommandTile = memo(
                   {
                     backgroundColor:
                       primary
-                        ? colors.accentText
+                        ? palette.primaryActionText
                         : colors.accent,
                   },
                 ]}

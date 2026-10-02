@@ -14,6 +14,10 @@ const header = fs.readFileSync(
   'src/features/voice/components/VoiceScreenHeader.tsx',
   'utf8',
 );
+const flagshipIconButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 const backIcon = fs.readFileSync(
   'src/features/voice/components/VoiceBackIcon.tsx',
   'utf8',
@@ -36,6 +40,10 @@ const controls = fs.readFileSync(
 );
 const controlButton = fs.readFileSync(
   'src/features/voice/components/VoiceControlButton.tsx',
+  'utf8',
+);
+const flagshipAction = fs.readFileSync(
+  'src/design-system/components/FlagshipActionButton.tsx',
   'utf8',
 );
 const player = fs.readFileSync(
@@ -109,18 +117,27 @@ test(
     assert.match(controls, /VoiceControlButton/);
     assert.doesNotMatch(controls, /\bPressable\b/);
     assert.doesNotMatch(controls, /useTheme/);
-    assert.match(controlButton, /minHeight:\s*48/);
-    assert.match(controlButton, /accessibilityLabel=\{label\}/);
-    assert.match(controlButton, /motion\.press\.subtleScale/);
-    assert.doesNotMatch(controlButton, /\?\s*0\.98/);
+    assert.match(controlButton, /FlagshipActionButton/);
+    assert.match(flagshipAction, /minHeight:\s*52/);
+    assert.match(flagshipAction, /accessibilityLabel=\{label\}/);
+    assert.match(
+      flagshipAction,
+      /motion\.press[\s\S]*?\.subtleScale/,
+    );
+    assert.match(flagshipAction, /palette\.primaryAction/);
+    assert.match(flagshipAction, /palette\.primaryActionText/);
   },
 );
 
 test(
   'voice navigation and recorder status use platform stable visual primitives',
   () => {
+    assert.match(header, /FlagshipIconButton/);
     assert.match(header, /VoiceBackIcon/);
-    assert.match(header, /const \{ t, isRTL \} = useLocale\(\)/);
+    assert.match(header, /useLocale\(\)/);
+    assert.match(header, /isRTL/);
+    assert.match(flagshipIconButton, /motion\.press/);
+    assert.match(flagshipIconButton, /accessibilityRole="button"/);
     assert.doesNotMatch(header, /‹/u);
     assert.match(backIcon, /isRTL/);
     assert.match(backIcon, /scaleX:\s*-1/);
@@ -140,6 +157,8 @@ test(
       /importantForAccessibility="no-hide-descendants"/,
     );
     assert.match(signalStage, /BAR_HEIGHTS/);
+    assert.match(signalStage, /flagshipPalette/);
+    assert.match(signalStage, /heroStrong/);
     assert.match(signalStage, /phase === 'recording'/);
     assert.match(signalStage, /VoiceRecorderIndicator/);
     assert.doesNotMatch(signalStage, /Math\.random/);

@@ -10,6 +10,10 @@ const chatHeader = fs.readFileSync(
   'src/features/chat/components/ChatHeader.tsx',
   'utf8',
 );
+const flagshipIconButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 const quickBackdrop = fs.readFileSync(
   'src/features/chat/components/QuickActionBackdrop.tsx',
   'utf8',
@@ -58,13 +62,14 @@ test(
 );
 
 test(
-  'chat header keeps a large localized new-conversation target with pressed feedback',
+  'chat header keeps a large localized flagship new-conversation target with pressed feedback',
   () => {
-    assert.match(chatHeader, /width:\s*48/);
-    assert.match(chatHeader, /height:\s*48/);
-    assert.match(chatHeader, /LinearGradient/);
-    assert.match(chatHeader, /palette[\s\S]*?\.secondaryAction/);
+    assert.match(chatHeader, /FlagshipIconButton/);
+    assert.match(chatHeader, /size=\{48\}/);
     assert.match(chatHeader, /t\('newConversation'\)/);
+    assert.match(flagshipIconButton, /LinearGradient/);
+    assert.match(flagshipIconButton, /primaryActionPressed/);
+    assert.match(flagshipIconButton, /motion\.press/);
   },
 );
 

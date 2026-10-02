@@ -30,6 +30,10 @@ const header = fs.readFileSync(
   'src/features/settings/components/SettingsScreenHeader.tsx',
   'utf8',
 );
+const flagshipIconButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 const backIcon = fs.readFileSync(
   'src/features/settings/components/SettingsBackIcon.tsx',
   'utf8',
@@ -114,15 +118,19 @@ test(
 );
 
 test(
-  'settings header and controls use premium stable primitives, semantic roles and design motion',
+  'settings header and controls use premium shared primitives, semantic roles and design motion',
   () => {
+    assert.match(header, /FlagshipIconButton/);
     assert.match(header, /SettingsBackIcon/);
     assert.match(header, /isRTL/);
-    assert.match(header, /motion\.press\.subtleScale/);
     assert.match(header, /typeScale\.heading/);
     assert.doesNotMatch(header, /[‹›]/u);
-    assert.doesNotMatch(backIcon, /\bText\b/);
+    assert.doesNotMatch(backIcon, /Text/);
     assert.match(backIcon, /scaleX:\s*-1/);
+
+    assert.match(flagshipIconButton, /motion\.press/);
+    assert.match(flagshipIconButton, /subtleScale/);
+    assert.match(flagshipIconButton, /accessibilityRole="button"/);
 
     assert.match(optionGroup, /accessibilityRole="radiogroup"/);
     assert.match(optionGroup, /accessibilityRole="radio"/);

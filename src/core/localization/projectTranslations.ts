@@ -12,6 +12,20 @@ export const projectTranslations = {
       'نشط',
     projectWorkspaceArchived:
       'مؤرشف',
+    projectsEmptyEyebrow:
+      'MUDRIK WORKSPACE',
+    projectsEmptyTitle:
+      'حوّل العمل الطويل إلى مساحة منظمة',
+    projectsEmptyBody:
+      'ابدأ مشروعًا يجمع التفاصيل والملفات والمحادثات المرتبطة في مكان واحد.',
+    projectsEmptyLocal:
+      'مساحة محلية',
+    projectsEmptyFiles:
+      'ملفات ومرفقات',
+    projectsEmptyConversations:
+      'محادثات مرتبطة',
+    projectsEmptyArchive:
+      'أرشفة منظمة',
     projectNameRequired:
       'يجب إدخال اسم للمشروع.',
     projectCreateFailed:
@@ -52,6 +66,20 @@ export const projectTranslations = {
       'Aktiv',
     projectWorkspaceArchived:
       'Archiviert',
+    projectsEmptyEyebrow:
+      'MUDRIK WORKSPACE',
+    projectsEmptyTitle:
+      'Strukturiere längere Arbeit in einem eigenen Workspace',
+    projectsEmptyBody:
+      'Starte ein Projekt, das Details, Dateien und verknüpfte Unterhaltungen an einem Ort bündelt.',
+    projectsEmptyLocal:
+      'Lokaler Workspace',
+    projectsEmptyFiles:
+      'Dateien & Anhänge',
+    projectsEmptyConversations:
+      'Verknüpfte Unterhaltungen',
+    projectsEmptyArchive:
+      'Geordnete Archivierung',
     projectNameRequired:
       'Der Projektname darf nicht leer sein.',
     projectCreateFailed:
@@ -92,6 +120,20 @@ export const projectTranslations = {
       'Active',
     projectWorkspaceArchived:
       'Archived',
+    projectsEmptyEyebrow:
+      'MUDRIK WORKSPACE',
+    projectsEmptyTitle:
+      'Turn longer work into a focused workspace',
+    projectsEmptyBody:
+      'Start a project that keeps details, files, and linked conversations together in one place.',
+    projectsEmptyLocal:
+      'Local workspace',
+    projectsEmptyFiles:
+      'Files & attachments',
+    projectsEmptyConversations:
+      'Linked conversations',
+    projectsEmptyArchive:
+      'Organized archive',
     projectNameRequired:
       'Project name cannot be empty.',
     projectCreateFailed:

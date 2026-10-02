@@ -13,6 +13,9 @@ import {
 import {
   flagshipPalette,
 } from '../tokens/flagship';
+import {
+  radius,
+} from '../tokens/radius';
 
 type Props = {
   quiet?: boolean;
@@ -34,11 +37,11 @@ export function FlagshipBackdrop({
       <LinearGradient
         colors={palette.canvas}
         start={{
-          x: 0.06,
+          x: 0.04,
           y: 0,
         }}
         end={{
-          x: 0.94,
+          x: 0.96,
           y: 1,
         }}
         style={StyleSheet.absoluteFill}
@@ -52,18 +55,18 @@ export function FlagshipBackdrop({
         ]}
         start={{
           x: 0,
-          y: 0.18,
+          y: 0.08,
         }}
         end={{
           x: 0.78,
-          y: 0.86,
+          y: 0.92,
         }}
         style={[
           styles.lightField,
           styles.emeraldField,
           {
             opacity:
-              quiet ? 0.44 : 0.74,
+              quiet ? 0.42 : 0.82,
           },
         ]}
       />
@@ -79,7 +82,7 @@ export function FlagshipBackdrop({
           y: 0,
         }}
         end={{
-          x: 0.36,
+          x: 0.32,
           y: 1,
         }}
         style={[
@@ -87,7 +90,43 @@ export function FlagshipBackdrop({
           styles.warmField,
           {
             opacity:
-              quiet ? 0.34 : 0.62,
+              quiet ? 0.3 : 0.66,
+          },
+        ]}
+      />
+
+      <LinearGradient
+        colors={[
+          'transparent',
+          palette.canvasGlowTertiary,
+          'transparent',
+        ]}
+        start={{
+          x: 0.12,
+          y: 0,
+        }}
+        end={{
+          x: 0.9,
+          y: 1,
+        }}
+        style={[
+          styles.lightField,
+          styles.graphiteField,
+          {
+            opacity:
+              quiet ? 0.26 : 0.5,
+          },
+        ]}
+      />
+
+      <View
+        style={[
+          styles.architecturalFrame,
+          {
+            borderColor:
+              palette.hairline,
+            opacity:
+              quiet ? 0.2 : 0.38,
           },
         ]}
       />
@@ -99,7 +138,19 @@ export function FlagshipBackdrop({
             borderColor:
               palette.hairline,
             opacity:
-              quiet ? 0.28 : 0.46,
+              quiet ? 0.24 : 0.48,
+          },
+        ]}
+      />
+
+      <View
+        style={[
+          styles.metalRail,
+          {
+            backgroundColor:
+              palette.metal,
+            opacity:
+              quiet ? 0.06 : 0.15,
           },
         ]}
       />
@@ -111,7 +162,7 @@ export function FlagshipBackdrop({
             backgroundColor:
               palette.metal,
             opacity:
-              quiet ? 0.08 : 0.13,
+              quiet ? 0.07 : 0.14,
           },
         ]}
       />
@@ -123,7 +174,7 @@ export function FlagshipBackdrop({
             borderColor:
               palette.hairline,
             opacity:
-              quiet ? 0.18 : 0.32,
+              quiet ? 0.16 : 0.34,
           },
         ]}
       />
@@ -136,7 +187,35 @@ export function FlagshipBackdrop({
             borderColor:
               palette.hairline,
             opacity:
-              quiet ? 0.08 : 0.14,
+              quiet ? 0.07 : 0.16,
+          },
+        ]}
+      />
+
+      <View
+        style={[
+          styles.focusWindow,
+          {
+            borderColor:
+              palette.hairline,
+            opacity:
+              quiet ? 0.09 : 0.18,
+          },
+        ]}
+      />
+
+      <LinearGradient
+        colors={[
+          mode === 'dark'
+            ? 'rgba(0,0,0,0.34)'
+            : 'rgba(255,255,255,0.14)',
+          'transparent',
+        ]}
+        style={[
+          styles.topVignette,
+          {
+            opacity:
+              quiet ? 0.66 : 1,
           },
         ]}
       />
@@ -145,14 +224,14 @@ export function FlagshipBackdrop({
         colors={[
           'transparent',
           mode === 'dark'
-            ? 'rgba(0,0,0,0.24)'
-            : 'rgba(46,43,36,0.05)',
+            ? 'rgba(0,0,0,0.38)'
+            : 'rgba(46,43,36,0.07)',
         ]}
         style={[
           styles.lowerVignette,
           {
             opacity:
-              quiet ? 0.72 : 1,
+              quiet ? 0.7 : 1,
           },
         ]}
       />
@@ -165,64 +244,114 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   emeraldField: {
-    top: -80,
-    start: -96,
-    width: 420,
-    height: 580,
+    top: -118,
+    start: -128,
+    width: 468,
+    height: 650,
     transform: [
       {
-        rotate: '-12deg',
+        rotate: '-13deg',
       },
     ],
   },
   warmField: {
-    top: 40,
-    end: -148,
-    width: 370,
-    height: 520,
+    top: 22,
+    end: -176,
+    width: 410,
+    height: 580,
     transform: [
       {
-        rotate: '10deg',
+        rotate: '11deg',
       },
     ],
   },
+  graphiteField: {
+    bottom: -120,
+    start: -54,
+    width: 420,
+    height: 520,
+    transform: [
+      {
+        rotate: '-9deg',
+      },
+    ],
+  },
+  architecturalFrame: {
+    position: 'absolute',
+    top: 92,
+    start: 22,
+    end: 22,
+    height: 226,
+    borderWidth:
+      StyleSheet.hairlineWidth,
+    borderRadius: radius.xxl,
+  },
   architecturalBeam: {
     position: 'absolute',
-    top: 84,
-    end: 42,
-    width: 128,
-    height: 300,
+    top: 72,
+    end: 36,
+    width: 154,
+    height: 338,
     borderStartWidth:
       StyleSheet.hairlineWidth,
     borderTopWidth:
       StyleSheet.hairlineWidth,
+    transform: [
+      {
+        rotate: '2deg',
+      },
+    ],
+  },
+  metalRail: {
+    position: 'absolute',
+    top: 110,
+    start: 34,
+    width: 84,
+    height: 1,
   },
   verticalRail: {
     position: 'absolute',
-    top: 112,
-    bottom: 184,
-    end: 38,
+    top: 128,
+    bottom: 176,
+    end: 34,
     width: 1,
   },
   horizon: {
     position: 'absolute',
-    top: 196,
-    start: '8%',
-    end: '8%',
+    top: 214,
+    start: '7%',
+    end: '7%',
     height: 1,
     borderTopWidth:
       StyleSheet.hairlineWidth,
   },
   horizonSecondary: {
-    top: 201,
+    top: 219,
     start: '14%',
     end: '14%',
+  },
+  focusWindow: {
+    position: 'absolute',
+    bottom: 86,
+    start: -94,
+    width: 286,
+    height: 286,
+    borderWidth:
+      StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+  },
+  topVignette: {
+    position: 'absolute',
+    top: 0,
+    start: 0,
+    end: 0,
+    height: 168,
   },
   lowerVignette: {
     position: 'absolute',
     start: 0,
     end: 0,
     bottom: 0,
-    height: 260,
+    height: 310,
   },
 });

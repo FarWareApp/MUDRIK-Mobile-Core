@@ -22,15 +22,17 @@ export const flagshipPalette = {
       '#E4EAE5',
     ] as const,
     primaryAction: [
-      '#0B4F42',
-      '#0F6A57',
-      '#26836A',
+      '#0A4035',
+      '#0D5646',
+      '#156A55',
     ] as const,
     primaryActionPressed: [
-      '#083D34',
-      '#0B5748',
-      '#1F6E59',
+      '#072F28',
+      '#0A4438',
+      '#115545',
     ] as const,
+    primaryActionText:
+      '#F7F4EC',
     secondaryAction: [
       '#F7F4EC',
       '#E9ECE6',
@@ -74,15 +76,17 @@ export const flagshipPalette = {
       '#090D0A',
     ] as const,
     primaryAction: [
-      '#2A8A70',
-      '#3CAA89',
-      '#5BC6A0',
+      '#092F28',
+      '#0C493B',
+      '#12614D',
     ] as const,
     primaryActionPressed: [
-      '#236F5B',
-      '#318A70',
-      '#48A987',
+      '#06251F',
+      '#09392F',
+      '#0E4D3E',
     ] as const,
+    primaryActionText:
+      '#F6F2E8',
     secondaryAction: [
       '#18201B',
       '#101612',

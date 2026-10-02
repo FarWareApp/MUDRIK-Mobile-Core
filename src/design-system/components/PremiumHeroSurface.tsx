@@ -155,7 +155,9 @@ export function PremiumHeroSurface({
           styles.surface,
           {
             borderColor:
-              palette.hairline,
+              strong
+                ? palette.glow
+                : palette.hairline,
           },
         ]}
       >
@@ -175,6 +177,47 @@ export function PremiumHeroSurface({
               },
             ]}
           />
+
+          {strong ? (
+            <>
+              <LinearGradient
+                importantForAccessibility="no"
+                pointerEvents="none"
+                colors={[
+                  'transparent',
+                  palette.metal,
+                  'transparent',
+                ]}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.strongTopRail}
+              />
+
+              <View
+                importantForAccessibility="no"
+                pointerEvents="none"
+                style={[
+                  styles.strongCornerPlate,
+                  {
+                    borderColor:
+                      palette.hairline,
+                  },
+                ]}
+              />
+
+              <View
+                importantForAccessibility="no"
+                pointerEvents="none"
+                style={[
+                  styles.strongLowerRail,
+                  {
+                    backgroundColor:
+                      palette.metal,
+                  },
+                ]}
+              />
+            </>
+          ) : null}
 
           {decorativeAura ? (
             <>
@@ -271,6 +314,37 @@ const styles = StyleSheet.create({
     end: 32,
     height: 1,
     opacity: 0.78,
+    borderRadius: radius.pill,
+  },
+  strongTopRail: {
+    position: 'absolute',
+    top: 10,
+    start: 42,
+    width: 124,
+    height: 1,
+    opacity: 0.48,
+  },
+  strongCornerPlate: {
+    position: 'absolute',
+    top: 18,
+    end: 18,
+    width: 74,
+    height: 74,
+    borderTopWidth:
+      StyleSheet.hairlineWidth,
+    borderEndWidth:
+      StyleSheet.hairlineWidth,
+    borderTopEndRadius:
+      radius.xl,
+    opacity: 0.58,
+  },
+  strongLowerRail: {
+    position: 'absolute',
+    bottom: 14,
+    end: 32,
+    width: 76,
+    height: 1,
+    opacity: 0.32,
     borderRadius: radius.pill,
   },
   decorativeLayer: {

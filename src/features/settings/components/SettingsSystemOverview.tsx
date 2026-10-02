@@ -137,6 +137,7 @@ export function SettingsSystemOverview({
 
   return (
     <PremiumHeroSurface
+      strong
       style={styles.card}
     >
       <View style={styles.hero}>

@@ -26,6 +26,10 @@ const header = fs.readFileSync(
   'src/features/conversations/components/ConversationHistoryHeader.tsx',
   'utf8',
 );
+const flagshipIconButton = fs.readFileSync(
+  'src/design-system/components/FlagshipIconButton.tsx',
+  'utf8',
+);
 const searchBar = fs.readFileSync(
   'src/features/conversations/components/ConversationSearchBar.tsx',
   'utf8',
@@ -233,24 +237,28 @@ test(
 );
 
 test(
-  'conversation header removes font glyph controls and respects busy and RTL state',
+  'conversation header removes font glyph controls and delegates busy RTL motion semantics to flagship controls',
   () => {
+    assert.match(header, /FlagshipIconButton/);
     assert.match(header, /ConversationBackIcon/);
     assert.match(header, /ConversationAddIcon/);
-    assert.match(header, /accessibilityState=\{\{ disabled: busy \}\}/);
     assert.match(header, /disabled=\{busy\}/);
-    assert.match(header, /motion\.press\.scale/);
-    assert.match(header, /motion\.press\.subtleScale/);
     assert.doesNotMatch(header, /[‹+]/u);
     assert.match(backIcon, /isRTL/);
     assert.match(backIcon, /scaleX:\s*-1/);
+
+    assert.match(flagshipIconButton, /accessibilityState=\{\{/);
+    assert.match(flagshipIconButton, /disabled,/);
+    assert.match(flagshipIconButton, /motion\.press/);
+    assert.match(flagshipIconButton, /subtleScale/);
+    assert.match(flagshipIconButton, /accessibilityRole="button"/);
 
     for (const source of [backIcon, addIcon]) {
       assert.match(
         source,
         /importantForAccessibility="no-hide-descendants"/,
       );
-      assert.doesNotMatch(source, /<Text\b/);
+      assert.doesNotMatch(source, /<Text/);
     }
   },
 );
