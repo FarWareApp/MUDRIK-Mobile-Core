@@ -17,8 +17,8 @@ const BODY =
 const ROLLBACK_ID =
   new RegExp('^goal_rollback_' + BODY + '$');
 
-const RECEIPT_ID =
-  new RegExp('^goal_receipt_' + BODY + '$');
+const LEASE_ID =
+  new RegExp('^goal_lease_' + BODY + '$');
 
 export type GoalRollbackRegistration =
   Readonly<{
@@ -27,7 +27,7 @@ export type GoalRollbackRegistration =
     goalId: string;
     planId: string;
     stepId: string;
-    sourceReceiptId: string;
+    sourceLeaseId: string;
     rollbackRef: string;
     generation: number;
     registeredAtMs: number;
@@ -61,7 +61,7 @@ const REGISTRATION_KEYS =
     'goalId',
     'planId',
     'stepId',
-    'sourceReceiptId',
+    'sourceLeaseId',
     'rollbackRef',
     'generation',
     'registeredAtMs',
@@ -88,8 +88,8 @@ export function parseGoalRollbackRegistration(
     || !GOAL_PLAN_ID.test(record.planId)
     || typeof record.stepId !== 'string'
     || !GOAL_STEP_ID.test(record.stepId)
-    || typeof record.sourceReceiptId !== 'string'
-    || !RECEIPT_ID.test(record.sourceReceiptId)
+    || typeof record.sourceLeaseId !== 'string'
+    || !LEASE_ID.test(record.sourceLeaseId)
     || !safeReference(record.rollbackRef, 240)
     || !safeInteger(record.generation)
     || !safeInteger(record.registeredAtMs)
@@ -107,8 +107,8 @@ export function parseGoalRollbackRegistration(
     goalId: record.goalId as string,
     planId: record.planId as string,
     stepId: record.stepId as string,
-    sourceReceiptId:
-      record.sourceReceiptId as string,
+    sourceLeaseId:
+      record.sourceLeaseId as string,
     rollbackRef: record.rollbackRef as string,
     generation: record.generation as number,
     registeredAtMs:
@@ -178,7 +178,7 @@ function sameRegistration(
 export class GoalRollbackRegistry {
   private readonly byId =
     new Map<string, GoalRollbackState>();
-  private readonly bySourceReceipt =
+  private readonly bySourceLease =
     new Map<string, string>();
 
   register(
@@ -224,8 +224,8 @@ export class GoalRollbackRegistry {
     }
 
     const boundId =
-      this.bySourceReceipt.get(
-        registration.sourceReceiptId,
+      this.bySourceLease.get(
+        registration.sourceLeaseId,
       );
 
     if (boundId && boundId !== registration.rollbackId) {
@@ -251,8 +251,8 @@ export class GoalRollbackRegistry {
       registration.rollbackId,
       state,
     );
-    this.bySourceReceipt.set(
-      registration.sourceReceiptId,
+    this.bySourceLease.set(
+      registration.sourceLeaseId,
       registration.rollbackId,
     );
 
@@ -571,5 +571,31 @@ export class GoalRollbackRegistry {
     rollbackId: string,
   ): GoalRollbackState | null {
     return this.byId.get(rollbackId) ?? null;
+  }
+
+  getStates(): readonly GoalRollbackState[] {
+    return Object.freeze(
+      [...this.byId.values()],
+    );
+  }
+
+  requireAllArmed(
+    reasonCode: string,
+    trustedNowMs: number,
+  ): readonly GoalRollbackMutationResult[] {
+    return Object.freeze(
+      [...this.byId.values()]
+        .filter(
+          (state) => state.status === 'armed',
+        )
+        .map(
+          (state) =>
+            this.require(
+              state.registration.rollbackId,
+              reasonCode,
+              trustedNowMs,
+            ),
+        ),
+    );
   }
 }

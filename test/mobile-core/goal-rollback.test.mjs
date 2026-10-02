@@ -21,8 +21,8 @@ function registration(overrides = {}) {
     goalId: 'goal_1111111111111111',
     planId: 'goal_plan_1111111111111111',
     stepId: 'goal_step_1111111111111111',
-    sourceReceiptId:
-      'goal_receipt_1111111111111111',
+    sourceLeaseId:
+      'goal_lease_1111111111111111',
     rollbackRef:
       'rollback_ref_1111111111111111',
     generation: 2,
@@ -179,7 +179,7 @@ test('failed rollback remains blocking and can retry with monotonic attempt', ()
   );
 });
 
-test('one source receipt cannot arm two rollback identities', () => {
+test('one execution lease cannot arm two rollback identities', () => {
   const registry = new GoalRollbackRegistry();
 
   assert.equal(

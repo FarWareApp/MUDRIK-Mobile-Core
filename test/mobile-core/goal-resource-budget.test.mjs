@@ -145,7 +145,10 @@ test('commit is idempotent and releases unused reservation headroom', () => {
 
   assert.deepEqual(
     ledger.getCommittedUsage(),
-    actual,
+    {
+      ...actual,
+      concurrentOperations: 0,
+    },
   );
 
   const duplicate =
@@ -240,5 +243,38 @@ test('release returns reservation capacity without spending it', () => {
       NOW + 1,
     ).accepted,
     true,
+  );
+});
+
+test('reservation cannot be committed after wall-time deadline', () => {
+  const ledger =
+    new GoalResourceBudgetLedger(
+      policy,
+      NOW,
+    );
+
+  const id =
+    'goal_budget_reservation_9999999999999999';
+
+  assert.equal(
+    ledger.reserve(
+      id,
+      usage(),
+      NOW,
+    ).accepted,
+    true,
+  );
+
+  const late =
+    ledger.commit(
+      id,
+      usage(),
+      NOW + policy.maxWallTimeMs + 1,
+    );
+
+  assert.equal(late.accepted, false);
+  assert.equal(
+    late.reason,
+    'wall_time_exhausted',
   );
 });

@@ -144,6 +144,15 @@ function subtractUsage(
   });
 }
 
+function committedUsage(
+  usage: GoalResourceUsage,
+): GoalResourceUsage {
+  return Object.freeze({
+    ...usage,
+    concurrentOperations: 0,
+  });
+}
+
 function sameUsage(
   left: GoalResourceUsage,
   right: GoalResourceUsage,
@@ -347,15 +356,28 @@ export class GoalResourceBudgetLedger {
       );
     }
 
+    if (
+      trustedNowMs - this.startedAtMs
+      > this.policy.maxWallTimeMs
+    ) {
+      return decision(
+        false,
+        false,
+        'wall_time_exhausted',
+      );
+    }
+
     const committed =
       this.committedReservations.get(
         reservationId,
       );
+    const normalizedActual =
+      committedUsage(actualUsage);
 
     if (committed) {
       return sameUsage(
         committed,
-        actualUsage,
+        normalizedActual,
       )
         ? decision(
             true,
@@ -410,12 +432,12 @@ export class GoalResourceBudgetLedger {
     this.committed =
       addUsage(
         this.committed,
-        actualUsage,
+        normalizedActual,
       );
     this.reservations.delete(reservationId);
     this.committedReservations.set(
       reservationId,
-      Object.freeze({ ...actualUsage }),
+      normalizedActual,
     );
 
     return decision(
