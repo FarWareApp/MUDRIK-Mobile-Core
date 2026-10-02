@@ -59,7 +59,7 @@
     "brain:core": "node --test test/mobile-core/brain-*.test.mjs",
     "agent:core": "node --test test/mobile-core/agent-*.test.mjs",
     "internal:core": "npm run brain:core && npm run agent:core && npm run competition:core && npm run autonomy:core && npm run knowledge:core",
-    "autonomy:core": "node --test test/mobile-core/tool-*.test.mjs test/mobile-core/goal-replanner.test.mjs test/mobile-core/goal-execution-replan-kernel.test.mjs test/mobile-core/goal-autonomy-decision.test.mjs test/mobile-core/goal-watchdog.test.mjs test/mobile-core/goal-checkpoint-resume.test.mjs test/mobile-core/goal-checkpoint-integrity.test.mjs test/mobile-core/result-verifier.test.mjs test/mobile-core/instruction-firewall.test.mjs test/mobile-core/runtime-integrity-attestation.test.mjs test/mobile-core/runtime-trust-gate.test.mjs test/mobile-core/goal-task-graph-scheduler.test.mjs",
+    "autonomy:core": "node --test test/mobile-core/tool-*.test.mjs test/mobile-core/goal-replanner.test.mjs test/mobile-core/goal-execution-replan-kernel.test.mjs test/mobile-core/goal-autonomy-decision.test.mjs test/mobile-core/goal-watchdog.test.mjs test/mobile-core/goal-checkpoint-resume.test.mjs test/mobile-core/goal-checkpoint-integrity.test.mjs test/mobile-core/result-verifier.test.mjs test/mobile-core/instruction-firewall.test.mjs test/mobile-core/runtime-integrity-attestation.test.mjs test/mobile-core/runtime-trust-gate.test.mjs test/mobile-core/goal-task-graph-scheduler.test.mjs test/mobile-core/verification-planner.test.mjs",
     "knowledge:core": "node --test test/mobile-core/knowledge-engine.test.mjs test/mobile-core/knowledge-consensus.test.mjs test/mobile-core/knowledge-grounding-gate.test.mjs test/mobile-core/context-compiler.test.mjs"
   },
   "private": true,
