@@ -11,6 +11,9 @@ import { DiagnosticRepository } from '../../contracts/DiagnosticRepository';
 import { DraftRepository } from '../../contracts/DraftRepository';
 import { MessageRepository } from '../../contracts/MessageRepository';
 import { MessageTransport } from '../../contracts/MessageTransport';
+import type {
+  MemoryRepository,
+} from '../memory/memoryRepository';
 import { NotificationService } from '../../contracts/NotificationService';
 import { PermissionService } from '../../contracts/PermissionService';
 import { PermissionSettingsService } from '../../contracts/PermissionSettingsService';
@@ -52,6 +55,10 @@ import {
 import {
   MUDRIK_GATEWAY_CHAT_ENDPOINT,
 } from '../intelligence/gatewayRuntimeConfig';
+
+import {
+  SQLiteMemoryRepository,
+} from '../memory/SQLiteMemoryRepository';
 import { getDatabase } from '../storage/Database';
 
 const attachmentRepository =
@@ -61,6 +68,11 @@ const attachmentRepository =
 
 const gatewaySessionManager =
   new GatewaySessionManager();
+
+const memoryRepository =
+  new SQLiteMemoryRepository(
+    getDatabase,
+  );
 
 const gatewayMessageTransport =
   new GatewayMessageTransport(
@@ -86,6 +98,9 @@ export type AppServices = {
 
   gatewaySessionManager:
     GatewaySessionManager;
+
+  memoryRepository:
+    MemoryRepository;
 
   conversationRepository:
     ConversationRepository;
@@ -150,6 +165,8 @@ export const appServices: AppServices = {
     gatewayMessageTransport,
 
   gatewaySessionManager,
+
+  memoryRepository,
 
   conversationRepository:
     new SQLiteConversationRepository(

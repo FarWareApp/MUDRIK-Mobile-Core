@@ -6,11 +6,15 @@ import {
   migrationV9Presence,
 } from './migrations/migrationV9Presence';
 
+import {
+  migrationV10Memory,
+} from './migrations/migrationV10Memory';
+
 type SchemaVersionRow = {
   user_version: number;
 };
 
-const LATEST_SCHEMA_VERSION = 9;
+const LATEST_SCHEMA_VERSION = 10;
 
 const migrationV1 = `
   CREATE TABLE IF NOT EXISTS conversations (
@@ -443,6 +447,7 @@ export async function runMigrations(
     migrationV7,
     migrationV8,
     migrationV9Presence,
+    migrationV10Memory,
   ];
 
   while (

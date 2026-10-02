@@ -72,7 +72,7 @@ function createDatabase(
 }
 
 test(
-  'fresh database migrates sequentially from version 0 through version 9',
+  'fresh database migrates sequentially from version 0 through version 10',
   async () => {
     const state = createDatabase(0);
 
@@ -84,7 +84,7 @@ test(
     );
     assert.equal(
       state.executed.length,
-      9,
+      10,
     );
 
     assert.deepEqual(
@@ -102,6 +102,7 @@ test(
         'PRAGMA user_version = 7;',
         'PRAGMA user_version = 8;',
         'PRAGMA user_version = 9;',
+        'PRAGMA user_version = 10;',
       ],
     );
 
@@ -194,11 +195,39 @@ test(
       presenceSchema,
       /DELETE FROM/i,
     );
+
+    const memorySchema =
+      state.executed[9][0];
+
+    assert.match(
+      memorySchema,
+      /CREATE TABLE IF NOT EXISTS memory_snapshots/,
+    );
+    assert.match(
+      memorySchema,
+      /snapshot_revision INTEGER NOT NULL/,
+    );
+    assert.match(
+      memorySchema,
+      /integrity_digest TEXT NOT NULL/,
+    );
+    assert.match(
+      memorySchema,
+      /payload_json TEXT NOT NULL/,
+    );
+    assert.doesNotMatch(
+      memorySchema,
+      /DROP TABLE/i,
+    );
+    assert.doesNotMatch(
+      memorySchema,
+      /DELETE FROM/i,
+    );
   },
 );
 
 test(
-  'existing version 4 database applies only migrations 5 through 9',
+  'existing version 4 database applies only migrations 5 through 10',
   async () => {
     const state = createDatabase(4);
 
@@ -210,7 +239,7 @@ test(
     );
     assert.equal(
       state.executed.length,
-      5,
+      6,
     );
     assert.deepEqual(
       state.executed.map(
@@ -223,6 +252,7 @@ test(
         'PRAGMA user_version = 7;',
         'PRAGMA user_version = 8;',
         'PRAGMA user_version = 9;',
+        'PRAGMA user_version = 10;',
       ],
     );
   },
@@ -235,8 +265,8 @@ test(
 
     await runMigrations(state.database);
 
-    assert.equal(state.getVersion(), 9);
-    assert.equal(state.executed.length, 3);
+    assert.equal(state.getVersion(), 10);
+    assert.equal(state.executed.length, 4);
     assert.match(
       state.executed[0][0],
       /observation_privacy_state/,
@@ -253,6 +283,14 @@ test(
       state.executed[2].at(-1),
       'PRAGMA user_version = 9;',
     );
+    assert.match(
+      state.executed[3][0],
+      /memory_snapshots/,
+    );
+    assert.equal(
+      state.executed[3].at(-1),
+      'PRAGMA user_version = 10;',
+    );
   },
 );
 
@@ -263,8 +301,8 @@ test(
 
     await runMigrations(state.database);
 
-    assert.equal(state.getVersion(), 9);
-    assert.equal(state.executed.length, 2);
+    assert.equal(state.getVersion(), 10);
+    assert.equal(state.executed.length, 3);
 
     const companionSchema = state.executed[0][0];
     assert.match(
@@ -286,18 +324,22 @@ test(
       state.executed[1].at(-1),
       'PRAGMA user_version = 9;',
     );
+    assert.match(
+      state.executed[2][0],
+      /memory_snapshots/,
+    );
   },
 );
 
 test(
-  'version 8 applies only non-destructive Section 07 presence migration',
+  'version 8 applies presence then durable memory migrations',
   async () => {
     const state = createDatabase(8);
 
     await runMigrations(state.database);
 
-    assert.equal(state.getVersion(), 9);
-    assert.equal(state.executed.length, 1);
+    assert.equal(state.getVersion(), 10);
+    assert.equal(state.executed.length, 2);
 
     const schema = state.executed[0][0];
     assert.match(schema, /trusted_surfaces/);
@@ -308,17 +350,25 @@ test(
       state.executed[0].at(-1),
       'PRAGMA user_version = 9;',
     );
+    assert.match(
+      state.executed[1][0],
+      /memory_snapshots/,
+    );
+    assert.equal(
+      state.executed[1].at(-1),
+      'PRAGMA user_version = 10;',
+    );
   },
 );
 
 test(
   'database newer than supported schema is rejected before any migration',
   async () => {
-    const state = createDatabase(10);
+    const state = createDatabase(11);
 
     await assert.rejects(
       runMigrations(state.database),
-      /newer than supported version 9/,
+      /newer than supported version 10/,
     );
 
     assert.equal(
@@ -327,7 +377,7 @@ test(
     );
     assert.equal(
       state.getVersion(),
-      10,
+      11,
     );
   },
 );
