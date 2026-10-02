@@ -128,8 +128,12 @@ export function createIntelligenceChatHandler({
 }) {
   if (
     !gateway
-    || typeof gateway.invoke
-      !== 'function'
+    || (
+      typeof gateway.invoke
+        !== 'function'
+      && typeof gateway.invokePlan
+        !== 'function'
+    )
     || typeof authenticateBearer
       !== 'function'
     || typeof routeSelector
