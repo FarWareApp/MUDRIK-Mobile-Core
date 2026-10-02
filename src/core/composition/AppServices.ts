@@ -36,12 +36,35 @@ import { ExpoNotificationService } from '../../features/notifications/services/E
 import { SQLiteProjectRepository } from '../../features/projects/storage/SQLiteProjectRepository';
 import { SQLiteProjectConversationRepository } from '../../features/projects/storage/SQLiteProjectConversationRepository';
 import { SQLiteProjectAttachmentRepository } from '../../features/projects/storage/SQLiteProjectAttachmentRepository';
-import { MockMessageTransport } from '../../mocks/MockMessageTransport';
+import {
+  GatewayMessageTransport,
+} from '../intelligence/GatewayMessageTransport';
+import {
+  GatewaySessionManager,
+} from '../intelligence/GatewaySessionManager';
+import {
+  getNativeGatewayLanguageTag,
+} from '../intelligence/NativeGatewayLanguageTagProvider';
+import {
+  MUDRIK_GATEWAY_CHAT_ENDPOINT,
+} from '../intelligence/gatewayRuntimeConfig';
 import { getDatabase } from '../storage/Database';
 
 const attachmentRepository =
   new SQLiteAttachmentRepository(
     getDatabase,
+  );
+
+const gatewaySessionManager =
+  new GatewaySessionManager();
+
+const gatewayMessageTransport =
+  new GatewayMessageTransport(
+    MUDRIK_GATEWAY_CHAT_ENDPOINT,
+    () =>
+      gatewaySessionManager
+        .getAccessToken(),
+    getNativeGatewayLanguageTag,
   );
 
 const attachmentFileStore =
@@ -55,6 +78,9 @@ const attachmentCleanupService =
 
 export type AppServices = {
   messageTransport: MessageTransport;
+
+  gatewaySessionManager:
+    GatewaySessionManager;
 
   conversationRepository:
     ConversationRepository;
@@ -116,7 +142,9 @@ export type AppServices = {
 
 export const appServices: AppServices = {
   messageTransport:
-    new MockMessageTransport(),
+    gatewayMessageTransport,
+
+  gatewaySessionManager,
 
   conversationRepository:
     new SQLiteConversationRepository(
