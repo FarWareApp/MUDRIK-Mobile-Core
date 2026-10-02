@@ -14,6 +14,11 @@ export type MessageTransportAttachment = {
   durationMs: number | null;
 };
 
+export type MessageTransportHistoryItem = {
+  role: 'user' | 'assistant';
+  text: string;
+};
+
 export type MessageTransportInput = {
   id: string;
   conversationId: string;
@@ -21,6 +26,8 @@ export type MessageTransportInput = {
   text: string;
   attachments:
     readonly MessageTransportAttachment[];
+  history?:
+    readonly MessageTransportHistoryItem[];
   createdAt: number;
 };
 

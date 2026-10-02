@@ -79,6 +79,67 @@ function safeLanguageTag(
   );
 }
 
+function boundedHistory(
+  history:
+    MessageTransportInput['history'],
+): readonly Readonly<{
+  role: 'user' | 'assistant';
+  text: string;
+}>[] {
+  if (!history || history.length === 0) {
+    return [];
+  }
+
+  const selected: Array<{
+    role: 'user' | 'assistant';
+    text: string;
+  }> = [];
+  let characters = 0;
+
+  for (
+    let index = history.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    const item = history[index];
+
+    if (
+      !item
+      || (
+        item.role !== 'user'
+        && item.role !== 'assistant'
+      )
+      || typeof item.text !== 'string'
+    ) {
+      continue;
+    }
+
+    const text = item.text.trim();
+
+    if (
+      text.length === 0
+      || text.length > 32_000
+      || characters + text.length
+        > 64_000
+      || selected.length >= 48
+    ) {
+      continue;
+    }
+
+    selected.push({
+      role: item.role,
+      text,
+    });
+    characters += text.length;
+  }
+
+  return Object.freeze(
+    selected.reverse().map(
+      (item) => Object.freeze(item),
+    ),
+  );
+}
+
 function parseSseBlock(
   block: string,
 ): SseEvent | null {
@@ -244,6 +305,10 @@ implements MessageTransport {
                       languageTag,
                       inputText:
                         input.text,
+                      history:
+                        boundedHistory(
+                          input.history,
+                        ),
                       streaming: true,
                     }),
                     signal:

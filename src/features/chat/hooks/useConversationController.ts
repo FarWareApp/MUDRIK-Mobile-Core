@@ -451,6 +451,23 @@ export function useConversationController({
           conversationId,
           kind: 'message',
           text,
+          history:
+            messages
+              .filter(
+                (message) =>
+                  message.id
+                    !== userMessage.id
+                  && message.text.trim()
+                    .length > 0,
+              )
+              .slice(-48)
+              .map(
+                (message) => ({
+                  role: message.role,
+                  text:
+                    message.text.trim(),
+                }),
+              ),
           attachments: attachments.map(
             (attachment) => ({
               id: attachment.id,
@@ -645,6 +662,7 @@ export function useConversationController({
       conversationTitle,
       draftRepository,
       messageRepository,
+      messages,
       sending,
       transport,
     ],

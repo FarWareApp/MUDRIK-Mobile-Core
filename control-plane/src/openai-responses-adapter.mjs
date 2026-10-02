@@ -304,9 +304,28 @@ export class OpenAIResponsesAdapter {
       );
     }
 
+    const history =
+      Array.isArray(request.history)
+        ? request.history
+        : [];
+
     const body = {
       model: this.apiModel,
       input: [
+        ...history.map(
+          (item) => ({
+            role: item.role,
+            content: [
+              {
+                type:
+                  item.role === 'assistant'
+                    ? 'output_text'
+                    : 'input_text',
+                text: item.text,
+              },
+            ],
+          }),
+        ),
         {
           role: 'user',
           content: [
@@ -371,18 +390,51 @@ export class OpenAIResponsesAdapter {
         Number.isInteger(response?.status)
           ? response.status
           : null;
+      let providerType = null;
+      let providerCode = null;
+
+      try {
+        const payload =
+          await response.json();
+        providerType =
+          typeof payload?.error?.type
+            === 'string'
+            ? payload.error.type
+            : null;
+        providerCode =
+          typeof payload?.error?.code
+            === 'string'
+            ? payload.error.code
+            : null;
+      } catch {}
+
+      const quotaExhausted =
+        status === 429
+        && (
+          providerType
+            === 'insufficient_quota'
+          || providerCode
+            === 'credit_balance_exhausted'
+        );
 
       return providerFailure(
-        status === 429
-          ? 'rate_limited'
-          : status !== null
-            && status >= 500
-            ? 'provider_unavailable'
-            : 'provider_rejected',
-        status === 429
-          || (
-            status !== null
-            && status >= 500
+        quotaExhausted
+          ? 'quota_exhausted'
+          : status === 401
+            ? 'credential_rejected'
+            : status === 429
+              ? 'rate_limited'
+              : status !== null
+                && status >= 500
+                ? 'provider_unavailable'
+                : 'provider_rejected',
+        !quotaExhausted
+          && (
+            status === 429
+            || (
+              status !== null
+              && status >= 500
+            )
           ),
         status,
       );

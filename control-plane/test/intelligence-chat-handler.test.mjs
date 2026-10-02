@@ -16,6 +16,7 @@ function publicRequest(
       'conversation_1111111111111111',
     languageTag: 'ar',
     inputText: 'مرحبا',
+    history: [],
     streaming: true,
     ...overrides,
   };
@@ -304,3 +305,37 @@ test(
     );
   },
 );
+
+
+test('chat handler forwards validated conversation history only to the server-selected route', async () => {
+  let observed;
+
+  const response = await handler({
+    gateway: {
+      async invokePlan(request) {
+        observed = request;
+        return {
+          ok: true,
+          providerResponseRef: 'resp_history_123',
+          text: 'ok',
+          usage: null,
+          routeIndex: 0,
+          attempts: 1,
+        };
+      },
+    },
+  })(makeRequest(publicRequest({
+    history: [
+      { role: 'user', text: 'old question' },
+      { role: 'assistant', text: 'old answer' },
+    ],
+  })));
+
+  assert.equal(response.status, 200);
+  await response.text();
+
+  assert.deepEqual(observed.history, [
+    { role: 'user', text: 'old question' },
+    { role: 'assistant', text: 'old answer' },
+  ]);
+});

@@ -10,6 +10,58 @@ const LANGUAGE =
 const SERVICES =
   new Set(['general', 'coding']);
 
+const HISTORY_ROLES =
+  new Set(['user', 'assistant']);
+
+function parseHistory(value) {
+  if (value === undefined) {
+    return Object.freeze([]);
+  }
+
+  if (
+    !Array.isArray(value)
+    || value.length > 48
+  ) {
+    return null;
+  }
+
+  let totalCharacters = 0;
+  const history = [];
+
+  for (const item of value) {
+    if (
+      !item
+      || typeof item !== 'object'
+      || Array.isArray(item)
+      || Object.keys(item)
+        .sort()
+        .join(',')
+        !== 'role,text'
+      || !HISTORY_ROLES.has(item.role)
+      || typeof item.text !== 'string'
+      || item.text.length < 1
+      || item.text.length > 32_000
+    ) {
+      return null;
+    }
+
+    totalCharacters += item.text.length;
+
+    if (totalCharacters > 64_000) {
+      return null;
+    }
+
+    history.push(
+      Object.freeze({
+        role: item.role,
+        text: item.text,
+      }),
+    );
+  }
+
+  return Object.freeze(history);
+}
+
 export function parseGatewayRequest(input) {
   if (
     !input
@@ -21,23 +73,50 @@ export function parseGatewayRequest(input) {
 
   const keys =
     Object.keys(input).sort().join(',');
+  const baseKeys = [
+    'deadlineAtMs',
+    'inputText',
+    'languageTag',
+    'maxOutputTokens',
+    'modelRef',
+    'protocolVersion',
+    'providerRef',
+    'requestId',
+    'service',
+    'streaming',
+  ].sort().join(',');
+  const historyKeys = [
+    'deadlineAtMs',
+    'history',
+    'inputText',
+    'languageTag',
+    'maxOutputTokens',
+    'modelRef',
+    'protocolVersion',
+    'providerRef',
+    'requestId',
+    'service',
+    'streaming',
+  ].sort().join(',');
+  const history =
+    parseHistory(input.history);
 
   if (
-    keys !== [
-      'deadlineAtMs',
-      'inputText',
-      'languageTag',
-      'maxOutputTokens',
-      'modelRef',
-      'protocolVersion',
-      'providerRef',
-      'requestId',
-      'service',
-      'streaming',
-    ].sort().join(',')
+    (
+      keys !== baseKeys
+      && keys !== historyKeys
+    )
+    || history === null
   ) {
     return null;
   }
+
+  const historyCharacters =
+    history.reduce(
+      (total, item) =>
+        total + item.text.length,
+      0,
+    );
 
   if (
     input.protocolVersion !== '1.0'
@@ -53,6 +132,9 @@ export function parseGatewayRequest(input) {
     || typeof input.inputText !== 'string'
     || input.inputText.length < 1
     || input.inputText.length > 200_000
+    || historyCharacters
+      + input.inputText.length
+      > 200_000
     || typeof input.streaming !== 'boolean'
     || !Number.isSafeInteger(input.maxOutputTokens)
     || input.maxOutputTokens < 16
@@ -76,6 +158,7 @@ export function parseGatewayRequest(input) {
     service: input.service,
     languageTag: input.languageTag,
     inputText: input.inputText,
+    history,
     streaming: input.streaming,
     maxOutputTokens: input.maxOutputTokens,
     deadlineAtMs: input.deadlineAtMs,

@@ -54,6 +54,10 @@ function input() {
     kind: 'message',
     text: 'مرحبا',
     attachments: [],
+    history: [
+      { role: 'user', text: 'old question' },
+      { role: 'assistant', text: 'old answer' },
+    ],
     createdAt: 1000,
   };
 }
@@ -115,6 +119,13 @@ test(
     assert.equal(
       observedBody.languageTag,
       'ar',
+    );
+    assert.deepEqual(
+      observedBody.history,
+      [
+        { role: 'user', text: 'old question' },
+        { role: 'assistant', text: 'old answer' },
+      ],
     );
     assert.deepEqual(
       deltas,

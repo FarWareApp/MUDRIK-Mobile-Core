@@ -28,6 +28,7 @@ function request(overrides = {}) {
     service: 'general',
     languageTag: 'ar',
     inputText: 'مرحبا',
+    history: [],
     streaming: false,
     maxOutputTokens: 1024,
     deadlineAtMs: null,
@@ -423,3 +424,95 @@ test(
     assert.equal(called, false);
   },
 );
+
+
+test('OpenAI adapter preserves bounded conversation history before the new user turn', async () => {
+  let sent;
+  const client = adapter({
+    fetchImpl: async (_url, init) => {
+      sent = JSON.parse(init.body);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            id: 'resp_history_123',
+            output: [{
+              type: 'message',
+              content: [{ type: 'output_text', text: 'جواب' }],
+            }],
+          };
+        },
+      };
+    },
+  });
+
+  const result = await client.invoke(
+    parseGatewayRequest(request({
+      history: [
+        { role: 'user', text: 'سؤال سابق' },
+        { role: 'assistant', text: 'جواب سابق' },
+      ],
+    })),
+  );
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    sent.input.map((item) => [
+      item.role,
+      item.content[0].type,
+      item.content[0].text,
+    ]),
+    [
+      ['user', 'input_text', 'سؤال سابق'],
+      ['assistant', 'output_text', 'جواب سابق'],
+      ['user', 'input_text', 'مرحبا'],
+    ],
+  );
+});
+
+test('gateway contract rejects malformed conversation history', () => {
+  assert.equal(
+    parseGatewayRequest(request({
+      history: [{ role: 'system', text: 'forbidden' }],
+    })),
+    null,
+  );
+  assert.equal(
+    parseGatewayRequest(request({
+      history: Array.from(
+        { length: 49 },
+        () => ({ role: 'user', text: 'x' }),
+      ),
+    })),
+    null,
+  );
+});
+
+test('OpenAI quota exhaustion is normalized as non-retryable', async () => {
+  const client = adapter({
+    fetchImpl: async () => ({
+      ok: false,
+      status: 429,
+      async json() {
+        return {
+          error: {
+            type: 'insufficient_quota',
+            code: 'credit_balance_exhausted',
+          },
+        };
+      },
+    }),
+  });
+
+  const result = await client.invoke(
+    parseGatewayRequest(request()),
+  );
+
+  assert.deepEqual(result, {
+    ok: false,
+    code: 'quota_exhausted',
+    retryable: false,
+    status: 429,
+  });
+});

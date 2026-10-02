@@ -59,7 +59,11 @@ function validPublicRequest(value) {
     return false;
   }
 
-  const expected =
+  const actual =
+    Object.keys(value)
+      .sort()
+      .join(',');
+  const baseExpected =
     [
       'conversationId',
       'inputText',
@@ -68,13 +72,64 @@ function validPublicRequest(value) {
       'requestId',
       'streaming',
     ].sort().join(',');
+  const historyExpected =
+    [
+      'conversationId',
+      'history',
+      'inputText',
+      'languageTag',
+      'protocolVersion',
+      'requestId',
+      'streaming',
+    ].sort().join(',');
 
   if (
-    Object.keys(value)
-      .sort()
-      .join(',') !== expected
+    actual !== baseExpected
+    && actual !== historyExpected
   ) {
     return false;
+  }
+
+  const history =
+    value.history === undefined
+      ? []
+      : value.history;
+
+  if (
+    !Array.isArray(history)
+    || history.length > 48
+  ) {
+    return false;
+  }
+
+  let historyCharacters = 0;
+
+  for (const item of history) {
+    if (
+      !item
+      || typeof item !== 'object'
+      || Array.isArray(item)
+      || Object.keys(item)
+        .sort()
+        .join(',')
+        !== 'role,text'
+      || (
+        item.role !== 'user'
+        && item.role !== 'assistant'
+      )
+      || typeof item.text !== 'string'
+      || item.text.length < 1
+      || item.text.length > 32_000
+    ) {
+      return false;
+    }
+
+    historyCharacters +=
+      item.text.length;
+
+    if (historyCharacters > 64_000) {
+      return false;
+    }
   }
 
   return (
@@ -99,6 +154,9 @@ function validPublicRequest(value) {
       === 'string'
     && value.inputText.length > 0
     && value.inputText.length
+      <= 200_000
+    && historyCharacters
+      + value.inputText.length
       <= 200_000
     && value.streaming === true
   );
@@ -287,6 +345,10 @@ export function createIntelligenceChatHandler({
             input.languageTag,
           inputTextLength:
             input.inputText.length,
+          historyMessageCount:
+            Array.isArray(input.history)
+              ? input.history.length
+              : 0,
         });
     } catch {
       route = null;
@@ -375,6 +437,10 @@ export function createIntelligenceChatHandler({
               input.languageTag,
             inputText:
               input.inputText,
+            history:
+              Array.isArray(input.history)
+                ? input.history
+                : [],
             streaming: true,
             maxOutputTokens:
               route.maxOutputTokens,
