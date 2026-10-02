@@ -150,3 +150,23 @@ The checkpoint object is intentionally not treated as self-authenticating.
 Persistent deployments should bind the trusted checkpoint anchor to MUDRIK's
 signed integrity ledger or platform secure storage so durable rollback attacks
 remain detectable across process and device restarts.
+
+## Cryptographic checkpoint attestation
+
+Checkpoint persistence now has an explicit cryptographic envelope. The parsed,
+canonical checkpoint is SHA-256 digested and bound into MUDRIK's signed
+integrity-ledger format.
+
+The first checkpoint starts ledger sequence zero. Later checkpoints must supply
+the previous checkpoint ledger digest, so the cryptographic ledger follows the
+same monotonic checkpoint history.
+
+Verification independently checks the checkpoint binding, payload digest,
+ledger stream, ledger sequence, observed time, trusted checkpoint anchor,
+ledger chain digest and signature. A payload mutation, forged signature or
+substituted anchor fails closed.
+
+The restore path still requires the trusted checkpoint identity/sequence
+anchor. A deployment should persist the integrity anchor in platform secure
+storage so both stale-checkpoint replay and checkpoint-content tampering can be
+detected after process restart.

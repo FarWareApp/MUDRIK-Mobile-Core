@@ -283,6 +283,99 @@ export type IntegrityAcceptResult =
       | 'signature_invalid';
   }>;
 
+export type IntegrityCryptographicCheck =
+  Readonly<{
+    accepted: boolean;
+    reason:
+      | 'valid'
+      | 'invalid_entry'
+      | 'digest_mismatch'
+      | 'signature_invalid';
+    entry: IntegrityLedgerEntry | null;
+  }>;
+
+export async function verifyIntegrityLedgerEntryCryptographically(
+  input: unknown,
+  digestProvider: IntegrityDigestProvider,
+  verifier: IntegrityVerifier,
+): Promise<IntegrityCryptographicCheck> {
+  const entry =
+    parseIntegrityLedgerEntry(input);
+
+  if (!entry) {
+    return Object.freeze({
+      accepted: false,
+      reason: 'invalid_entry',
+      entry: null,
+    });
+  }
+
+  const draft: IntegrityLedgerDraft = {
+    entryId: entry.entryId,
+    streamRef: entry.streamRef,
+    sequence: entry.sequence,
+    previousDigest: entry.previousDigest,
+    payloadDigest: entry.payloadDigest,
+    observedAtMs: entry.observedAtMs,
+  };
+
+  let expectedDigest: string;
+
+  try {
+    expectedDigest =
+      await digestProvider.sha256Utf8(
+        canonicalPayload(
+          draft,
+          entry.keyRef,
+        ),
+      );
+  } catch {
+    return Object.freeze({
+      accepted: false,
+      reason: 'digest_mismatch',
+      entry,
+    });
+  }
+
+  if (
+    !DIGEST.test(expectedDigest)
+    || expectedDigest !== entry.chainDigest
+  ) {
+    return Object.freeze({
+      accepted: false,
+      reason: 'digest_mismatch',
+      entry,
+    });
+  }
+
+  let signatureValid = false;
+
+  try {
+    signatureValid =
+      await verifier.verifyDigest(
+        entry.keyRef,
+        entry.chainDigest,
+        entry.signature,
+      );
+  } catch {
+    signatureValid = false;
+  }
+
+  if (!signatureValid) {
+    return Object.freeze({
+      accepted: false,
+      reason: 'signature_invalid',
+      entry,
+    });
+  }
+
+  return Object.freeze({
+    accepted: true,
+    reason: 'valid',
+    entry,
+  });
+}
+
 function acceptResult(
   accepted: boolean,
   idempotent: boolean,
